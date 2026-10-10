@@ -1,6 +1,6 @@
-from prism.reference import (
-    FiniteProblem, Hypothesis, Observation, abstain, certified_stop,
-)
+import unittest
+
+from prism.reference import FiniteProblem, Hypothesis, Observation, abstain, certified_stop
 
 
 def problem():
@@ -15,54 +15,46 @@ def problem():
     )
 
 
-def test_initial_state_is_not_sufficient():
-    p = problem()
-    assert certified_stop(p, p.initial_state()) is None
+class ReferenceTests(unittest.TestCase):
+    def test_initial_state_is_not_sufficient(self):
+        p = problem()
+        self.assertIsNone(certified_stop(p, p.initial_state()))
+
+    def test_decision_sufficiency_does_not_require_model_identification(self):
+        p = problem()
+        r = certified_stop(p, p.apply(p.initial_state(), "a", "0"))
+        self.assertEqual(r.status, "CERTIFIED_DECISION")
+        self.assertEqual(r.decision, "right")
+        self.assertEqual(set(r.certificate.hypothesis_ids), {"h00", "h01"})
+        self.assertTrue(p.verify(r.certificate))
+
+    def test_certificate_rejects_wrong_decision(self):
+        p = problem()
+        c = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        self.assertFalse(p.verify(c.__class__(c.hypothesis_ids, c.evidence, "left")))
+
+    def test_evidence_can_reduce_to_one_model(self):
+        p = problem()
+        s = p.apply(p.apply(p.initial_state(), "a", "0"), "b", "0")
+        self.assertEqual(s.compatible, frozenset({"h00"}))
+        self.assertEqual(certified_stop(p, s).decision, "right")
+
+    def test_abstention_is_explicit(self):
+        p = problem()
+        r = abstain(p, p.initial_state(), "budget_exhausted")
+        self.assertEqual((r.status, r.decision, r.reason), ("ABSTAIN", None, "budget_exhausted"))
+
+    def test_unknown_observation_is_rejected(self):
+        p = problem()
+        with self.assertRaises(KeyError):
+            p.apply(p.initial_state(), "unknown", "0")
+
+    def test_duplicate_observation_is_rejected(self):
+        p = problem()
+        s = p.apply(p.initial_state(), "a", "0")
+        with self.assertRaises(ValueError):
+            p.apply(s, "a", "0")
 
 
-def test_decision_sufficiency_does_not_require_model_identification():
-    p = problem()
-    state = p.apply(p.initial_state(), "a", "0")
-    result = certified_stop(p, state)
-    assert result is not None
-    assert result.status == "CERTIFIED_DECISION"
-    assert result.decision == "right"
-    assert set(result.certificate.hypothesis_ids) == {"h00", "h01"}
-    assert p.verify(result.certificate)
-
-
-def test_certificate_rejects_wrong_decision():
-    p = problem()
-    state = p.apply(p.initial_state(), "a", "0")
-    certificate = p.certificate(state)
-    assert certificate is not None
-    invalid = certificate.__class__(certificate.hypothesis_ids, certificate.evidence, "left")
-    assert not p.verify(invalid)
-
-
-def test_evidence_can_reduce_to_one_model():
-    p = problem()
-    state = p.apply(p.initial_state(), "a", "0")
-    state = p.apply(state, "b", "0")
-    assert state.compatible == frozenset({"h00"})
-    result = certified_stop(p, state)
-    assert result is not None
-    assert result.decision == "right"
-
-
-def test_abstention_is_explicit():
-    p = problem()
-    result = abstain(p, p.initial_state(), "budget_exhausted")
-    assert result.status == "ABSTAIN"
-    assert result.decision is None
-    assert result.reason == "budget_exhausted"
-
-
-def test_unknown_observation_is_rejected():
-    p = problem()
-    try:
-        p.apply(p.initial_state(), "unknown", "0")
-    except KeyError:
-        pass
-    else:
-        raise AssertionError("unknown observations must be rejected")
+if __name__ == "__main__":
+    unittest.main()
