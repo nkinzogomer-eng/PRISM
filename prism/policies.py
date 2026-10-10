@@ -1,65 +1,49 @@
-"""Transparent policies for finite PRISM comparisons."""
+"""Transparent policies for finite PRISM comparisons.
+
+Each policy returns an observation order. The runner then executes that order
+against the oracle, so no policy can read the hidden answer.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from random import Random
 
-from .reference import FiniteProblem, Result, State, certified_stop
+from .generators import Generated
 
 
-@dataclass(frozen=True)
-class Run:
-    result: Result
-    operations: tuple[str, ...]
+def fixed_cost(g: Generated) -> list[str]:
+    obs = g.declared.observations
+    return sorted(obs, key=lambda x: (obs[x].cost, x))
 
 
-def _run(problem: FiniteProblem, hidden_id: str, order: list[str]) -> Run:
-    state = problem.initial_state()
-    operations = []
-    for obs_id in order:
-        stop = certified_stop(problem, state)
-        if stop is not None:
-            return Run(stop, tuple(operations))
-        obs = problem.observations[obs_id]
-        value = problem.hypotheses[hidden_id].observations[obs_id]
-        state = problem.apply(state, obs_id, value)
-        operations.append(obs_id)
-    stop = certified_stop(problem, state)
-    if stop is not None:
-        return Run(stop, tuple(operations))
-    return Run(Result("ABSTAIN", None, None, state, "observations_exhausted"), tuple(operations))
-
-
-def fixed_cost(problem: FiniteProblem, hidden_id: str) -> Run:
-    return _run(problem, hidden_id, sorted(problem.observations, key=lambda x: (problem.observations[x].cost, x)))
-
-
-def random_order(problem: FiniteProblem, hidden_id: str, seed: int = 0) -> Run:
-    order = list(problem.observations)
+def random_order(g: Generated, seed: int = 0) -> list[str]:
+    order = sorted(g.declared.observations)
     Random(seed).shuffle(order)
-    return _run(problem, hidden_id, order)
+    return order
 
 
-def decision_disagreement(problem: FiniteProblem, hidden_id: str) -> Run:
-    """Greedy policy maximizing the number of distinct possible decisions."""
-    state = problem.initial_state()
-    operations = []
-    while True:
-        stop = certified_stop(problem, state)
-        if stop is not None:
-            return Run(stop, tuple(operations))
-        available = [x for x in problem.observations if x not in state.evidence]
-        if not available:
-            return Run(Result("ABSTAIN", None, None, state, "observations_exhausted"), tuple(operations))
-        def score(obs_id):
-            obs = problem.observations[obs_id]
-            groups = {}
-            for h in state.compatible:
-                value = problem.hypotheses[h].observations[obs_id]
-                groups.setdefault(value, set()).add(problem.hypotheses[h].decision)
-            return (sum(len(v) for v in groups.values()), -obs.cost, obs_id)
-        obs_id = max(available, key=score)
-        value = problem.hypotheses[hidden_id].observations[obs_id]
-        state = problem.apply(state, obs_id, value)
-        operations.append(obs_id)
+def decision_disagreement(g: Generated) -> list[str]:
+    """Greedy ordering: at each step prefer the observation whose outcome groups
+    keep the most distinct decisions, computed from declared information only.
+    Ordering heuristic only; certification is done by the runner, never here."""
+    problem = g.declared
+    compatible = set(problem.hypotheses)
+    remaining = set(problem.observations)
+    order: list[str] = []
+    while remaining and len({problem.hypotheses[h].decision for h in compatible}) > 1:
+        def score(o):
+            groups: dict[str, set[str]] = {}
+            for h in compatible:
+                groups.setdefault(problem.hypotheses[h].observations[o], set()).add(
+                    problem.hypotheses[h].decision)
+            return (sum(len(v) for v in groups.values()), -problem.observations[o].cost, o)
+        best = max(remaining, key=score)
+        order.append(best)
+        remaining.discard(best)
+        # Ordering approximation: follow the largest surviving group.
+        groups: dict[str, set[str]] = {}
+        for h in compatible:
+            groups.setdefault(problem.hypotheses[h].observations[best], set()).add(h)
+        compatible = max(groups.values(), key=len)
+    order.extend(sorted(remaining))
+    return order
