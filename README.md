@@ -34,7 +34,10 @@ Given a problem specification, evidence, candidate explanations, available opera
 
 The hypothesis is unproven. Existing methods already cover many components: program slicing, abstract interpretation, active learning, value of information, constraint propagation, branch-and-bound, incremental computation, and proof certificates. PRISM can only claim novelty through a precise integration and a demonstrated capability to discover useful distinctions that existing baselines miss.
 
-See:
+## Code and research notes
 
-- [`docs/core.md`](docs/core.md): formal kernel and algorithm
-- [`docs/scm-roadmap.md`](docs/scm-roadmap.md): staged research and implementation gates\n- [`journal/2026-10-10.md`](journal/2026-10-10.md): initial research decision log\n- [`prism/adaptive.py`](prism/adaptive.py): opt-in adaptive finite runner; legacy runner remains unchanged\n- [`tests/test_adaptive.py`](tests/test_adaptive.py): adaptive runner contract tests
+- [Core specification](docs/core.md)
+- [SCM → PRISM roadmap](docs/scm-roadmap.md)
+- [Initial research decision log](journal/2026-10-10.md)
+- [Adaptive finite runner](prism/adaptive.py)
+- [Adaptive runner tests](tests/test_adaptive.py)
