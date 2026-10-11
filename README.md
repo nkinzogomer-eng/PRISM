@@ -37,4 +37,4 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 See:
 
 - [`docs/core.md`](docs/core.md): formal kernel and algorithm
-- [`journal/2026-10-10.md`](journal/2026-10-10.md): initial research decision log
+- [`docs/scm-roadmap.md`](docs/scm-roadmap.md): staged research and implementation gates\n- [`journal/2026-10-10.md`](journal/2026-10-10.md): initial research decision log\n- [`prism/adaptive.py`](prism/adaptive.py): opt-in adaptive finite runner; legacy runner remains unchanged\n- [`tests/test_adaptive.py`](tests/test_adaptive.py): adaptive runner contract tests
