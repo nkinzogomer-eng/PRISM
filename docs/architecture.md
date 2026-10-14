@@ -126,7 +126,11 @@ Timeout is normally `ABSTAIN`, not `INVALID_INSTANCE`.
 
 A certificate states its quantifier scope: declared hypothesis class, probability/risk model, adversarial world set, or domain invariant.
 
-The verifier does not trust the controller's internal decision. It independently checks the claim from the certificate and declared assumptions. If checking is incomplete, the certificate is rejected or marked uncertified.
+The finite reference implementation emits certificates with scope `declared_hypothesis_class`. Its verifier recomputes compatibility and decision invariance only within that class. It rejects an external-world scope because it has no independent external validator or attestation interface.
+
+An omitted true world can therefore still produce a model-relative certificate, including one whose decision is wrong for that hidden world. This is the known misspecification failure and remains separately scored by the benchmark. A consumer requiring an external-world guarantee must have an independent validator that supports that claim; without one, it must abstain. Held-out checks may find some omissions, but cannot prove the hypothesis class complete.
+
+The verifier does not trust the controller's internal decision. If checking is incomplete, the certificate is rejected or marked uncertified.
 
 ## 9. Reproducibility
 
