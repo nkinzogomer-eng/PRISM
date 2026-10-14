@@ -67,7 +67,18 @@ The verifier recomputes compatibility and decision invariance. It must reject a 
 
 ## Cost accounting
 
-Every run reports planning, execution, verification, representation, preprocessing, memory, and communication costs. The initial simulator uses scalar planning and execution costs, but the vector remains part of the interface.
+Each completed run reports a component vector:
+
+```text
+planning, execution, verification, representation,
+preprocessing, memory, communication
+```
+
+Planning cost is mandatory for every policy run; a baseline never receives free planning by omission. Each benchmark must state the measurement method and units for each component. An unavailable measurement is recorded as unknown, not zero. In the current finite harness, observation execution cost is available from the model; other components must be supplied by the benchmark or remain unknown.
+
+Report the component vector for the first (cold-start) run, the component-wise arithmetic mean across repeated runs (amortized cost), and component-wise maximum (tail cost). Do not add unlike units into one number. A scalar total is valid only when the benchmark declares weights for every component and all required measurements are available.
+
+The exact solver currently reports expected observation execution cost only. It is an execution-cost reference, not a free end-to-end baseline; solver planning/runtime cost remains unmeasured until the benchmark supplies it.
 
 ## Required generator families
 
@@ -87,7 +98,9 @@ The exact policy is an execution-cost reference. Its planning cost must not be s
 
 ## Required metrics
 
-Certified decision rate, incorrect non-abstention rate, correct abstention rate, abstention rate, total cost by component, gap to exact execution optimum, planning overhead, certificate verification cost, tail cost, and deterministic replay success.
+Certified decision rate, incorrect non-abstention rate, correct abstention rate, abstention rate, invalid-instance count, cold-start and amortized cost by component, component-wise tail cost, gap to exact execution optimum, planning overhead, certificate verification cost, and deterministic replay success.
+
+Rates use all runs as their denominator. A correct decision means a certified decision equal to the hidden decision. An incorrect non-abstention is a certified decision that disagrees with hidden truth. A correct abstention is an `ABSTAIN` result where the final declared state is contradictory or still contains multiple possible decisions.
 
 ## Acceptance gates
 
@@ -99,5 +112,5 @@ Before adding domain adapters:
 4. contradiction produces abstention;
 5. exact-policy comparison on small instances;
 6. explicit losses on parity and dense controls;
-7. all costs included in every comparison;
+7. all measurable costs included in every comparison, with unknown costs reported explicitly;
 8. fixed seeds and reproducible traces.
