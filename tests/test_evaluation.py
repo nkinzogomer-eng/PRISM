@@ -1,5 +1,6 @@
 import unittest
 
+from prism.benchmark import run_policy_suite
 from prism.evaluation import (
     CostVector,
     evaluate_order_policy,
@@ -7,7 +8,7 @@ from prism.evaluation import (
     summarize_policy,
 )
 from prism.generators import Generated, misspecified, sparse_binary
-from prism.policies import fixed_cost
+from prism.policies import fixed_cost, random_order
 from prism.reference import FiniteProblem, Hypothesis, Observation
 from prism.runner import run_order
 
@@ -111,6 +112,24 @@ class EvaluationTests(unittest.TestCase):
             and metric.correct_decision is False
             for metric in incorrect
         ))
+
+    def test_policy_suite_compares_policies_on_shared_instances(self):
+        instances = [
+            (f"seed-{seed}", sparse_binary(seed=seed, n=3, support=1))
+            for seed in range(3)
+        ]
+        summaries = run_policy_suite(
+            instances,
+            {
+                "fixed_cost": fixed_cost,
+                "random": lambda public_view: random_order(public_view, seed=9),
+            },
+        )
+        self.assertEqual(set(summaries), {"fixed_cost", "random"})
+        for summary in summaries.values():
+            self.assertEqual(summary.runs, len(instances))
+            self.assertEqual(summary.certified_decision_rate, 1.0)
+            self.assertGreaterEqual(summary.costs.amortized.planning, 0.0)
 
     def test_policy_summary_reports_first_run_amortized_and_tail(self):
         generated = sparse_binary(seed=2, n=3, support=1)
