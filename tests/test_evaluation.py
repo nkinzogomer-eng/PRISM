@@ -6,8 +6,9 @@ from prism.evaluation import (
     score_run,
     summarize_policy,
 )
-from prism.generators import sparse_binary
+from prism.generators import Generated, misspecified, sparse_binary
 from prism.policies import fixed_cost
+from prism.reference import FiniteProblem, Hypothesis, Observation
 from prism.runner import run_order
 
 
@@ -64,6 +65,52 @@ class EvaluationTests(unittest.TestCase):
         self.assertGreaterEqual(metrics.costs.verification, 0.0)
         self.assertGreater(metrics.costs.execution, 0.0)
         self.assertIsNone(metrics.costs.representation)
+
+    def test_evaluator_marks_contradiction_as_correct_abstention(self):
+        declared = FiniteProblem(
+            hypotheses=[
+                Hypothesis("left", {"a": "seen", "b": "left"}, "left"),
+                Hypothesis("right", {"a": "seen", "b": "right"}, "right"),
+            ],
+            observations=[Observation("a", 1.0), Observation("b", 1.0)],
+        )
+        generated = Generated(
+            declared=declared,
+            world_table={"outside": {
+                "observations": {"a": "seen", "b": "other"},
+                "decision": "outside",
+            }},
+            hidden_id="outside",
+        )
+        metrics = evaluate_order_policy(
+            generated,
+            lambda public_view: ["a", "b"],
+            policy="contradiction",
+            run_id="outside",
+        )
+        self.assertEqual(metrics.status, "ABSTAIN")
+        self.assertTrue(metrics.correct_abstention)
+        self.assertFalse(metrics.incorrect_non_abstention)
+
+    def test_evaluator_counts_wrong_certificates_on_omitted_worlds(self):
+        incorrect = []
+        for seed in range(50):
+            generated = misspecified(seed=seed, n=3, support=2)
+            metrics = evaluate_order_policy(
+                generated,
+                fixed_cost,
+                policy="fixed_cost",
+                run_id=str(seed),
+            )
+            if metrics.incorrect_non_abstention:
+                incorrect.append(metrics)
+
+        self.assertTrue(incorrect)
+        self.assertTrue(all(
+            metric.status == "CERTIFIED_DECISION"
+            and metric.correct_decision is False
+            for metric in incorrect
+        ))
 
     def test_policy_summary_reports_first_run_amortized_and_tail(self):
         generated = sparse_binary(seed=2, n=3, support=1)
