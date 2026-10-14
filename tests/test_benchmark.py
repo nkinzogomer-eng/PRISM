@@ -1,8 +1,9 @@
 import unittest
 
-from prism.generators import misspecified, parity, sparse_binary
+from prism.generators import Generated, misspecified, parity, sparse_binary
 from prism.optimal import solve_expected
 from prism.policies import decision_disagreement, fixed_cost, random_order
+from prism.reference import FiniteProblem, Hypothesis, Observation
 from prism.replay import Trace, replay
 from prism.runner import run_order
 
@@ -23,6 +24,48 @@ class RunnerTests(unittest.TestCase):
         g = misspecified(seed=3)
         self.assertNotIn(g.hidden_id, g.declared.hypotheses)
         self.assertIn(g.hidden_id, g.world_table)
+
+    def test_omitted_world_certificates_are_explicitly_model_relative(self):
+        wrong_certificates = []
+        for seed in range(50):
+            g = misspecified(seed=seed, n=3, support=2)
+            truth = g.world_table[g.hidden_id]["decision"]
+            out = run_order(g, fixed_cost(g))
+            if (
+                out.result.status == "CERTIFIED_DECISION"
+                and out.result.decision != truth
+            ):
+                wrong_certificates.append(out.result.certificate)
+
+        # The known failure remains observable: the declared class can be
+        # incomplete. The certificate now states the narrower claim it proves.
+        self.assertTrue(wrong_certificates)
+        self.assertTrue(all(
+            certificate.scope == "declared_hypothesis_class"
+            for certificate in wrong_certificates
+        ))
+
+    def test_contradictory_external_observation_abstains(self):
+        declared = FiniteProblem(
+            hypotheses=[
+                Hypothesis("left", {"a": "seen", "b": "left"}, "left"),
+                Hypothesis("right", {"a": "seen", "b": "right"}, "right"),
+            ],
+            observations=[Observation("a", 1.0), Observation("b", 1.0)],
+        )
+        generated = Generated(
+            declared=declared,
+            world_table={"outside": {
+                "observations": {"a": "seen", "b": "other"},
+                "decision": "outside",
+            }},
+            hidden_id="outside",
+        )
+        out = run_order(generated, ["a", "b"])
+        self.assertEqual(out.result.status, "ABSTAIN")
+        self.assertEqual(out.result.reason, "declared_class_contradicted")
+        self.assertIsNone(out.result.certificate)
+        self.assertEqual(out.result.state.compatible, frozenset())
 
     def test_in_class_policies_never_certify_wrong_decision(self):
         for seed in range(20):
