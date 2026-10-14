@@ -7,7 +7,7 @@ supplies an explicit scalarization.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import isfinite
 from typing import ClassVar, Sequence
 
@@ -105,6 +105,9 @@ def score_run(
     correct_abstention = abstained and (
         not result.state.compatible or len(decision_set) != 1
     )
+    # The solver's actual recorded execution cost is authoritative, preventing
+    # the evaluator from accidentally accepting a caller's free/understated run.
+    recorded_costs = replace(costs, execution=outcome.execution_cost)
     return RunMetrics(
         policy=policy,
         run_id=run_id,
@@ -114,7 +117,7 @@ def score_run(
         incorrect_non_abstention=certified and correct is False,
         abstained=abstained,
         correct_abstention=correct_abstention,
-        costs=costs,
+        costs=recorded_costs,
     )
 
 
