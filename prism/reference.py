@@ -55,6 +55,9 @@ class Certificate:
     hypothesis_ids: tuple[str, ...]
     evidence: tuple[tuple[str, str], ...]
     decision: str
+    # Additive default preserves existing three-argument construction. This
+    # verifier can establish only a claim relative to the declared class.
+    scope: str = "declared_hypothesis_class"
 
 
 @dataclass(frozen=True)
@@ -120,6 +123,10 @@ class FiniteProblem:
         )
 
     def verify(self, certificate: Certificate) -> bool:
+        # The finite reference verifier cannot establish external-world
+        # completeness or validation. Reject stronger, unsupported scope claims.
+        if certificate.scope != "declared_hypothesis_class":
+            return False
         if not certificate.hypothesis_ids:
             return False
         if any(h_id not in self.hypotheses for h_id in certificate.hypothesis_ids):
