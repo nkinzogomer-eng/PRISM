@@ -62,7 +62,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(seen, [({}, "")])
         self.assertGreaterEqual(metrics.costs.planning, 0.0)
         self.assertGreaterEqual(metrics.costs.verification, 0.0)
-        self.assertEqual(metrics.costs.execution, metrics.costs.execution)
+        self.assertGreater(metrics.costs.execution, 0.0)
         self.assertIsNone(metrics.costs.representation)
 
     def test_policy_summary_reports_cold_start_amortized_and_tail(self):
