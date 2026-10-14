@@ -69,7 +69,7 @@ class RunMetrics:
 
 @dataclass(frozen=True)
 class CostSummary:
-    cold_start: CostVector
+    first_run: CostVector
     amortized: CostVector
     tail: CostVector
 
@@ -176,7 +176,7 @@ def _aggregate_component(records: Sequence[RunMetrics], name: str, mode: str) ->
 
 
 def summarize_policy(records: Sequence[RunMetrics]) -> PolicySummary:
-    """Summarize one policy; the first record is its cold-start run."""
+    """Summarize one policy; the first record is its first measured run."""
     if not records:
         raise ValueError("at least one run is required")
     policy = records[0].policy
@@ -207,7 +207,7 @@ def summarize_policy(records: Sequence[RunMetrics]) -> PolicySummary:
         ) / count,
         invalid_instances=sum(record.status == "INVALID_INSTANCE" for record in records),
         costs=CostSummary(
-            cold_start=records[0].costs,
+            first_run=records[0].costs,
             amortized=vector("mean"),
             tail=vector("max"),
         ),
