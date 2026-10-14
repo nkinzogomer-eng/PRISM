@@ -65,11 +65,11 @@ class EvaluationTests(unittest.TestCase):
         self.assertGreater(metrics.costs.execution, 0.0)
         self.assertIsNone(metrics.costs.representation)
 
-    def test_policy_summary_reports_cold_start_amortized_and_tail(self):
+    def test_policy_summary_reports_first_run_amortized_and_tail(self):
         generated = sparse_binary(seed=2, n=3, support=1)
         outcome = run_order(generated, fixed_cost(generated))
         records = []
-        for run_id, planning in (("cold", 4.0), ("repeat", 2.0)):
+        for run_id, planning in (("first", 4.0), ("repeat", 2.0)):
             records.append(score_run(
                 generated,
                 outcome,
@@ -85,7 +85,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(summary.runs, 2)
         self.assertEqual(summary.certified_decision_rate, 1.0)
         self.assertEqual(summary.incorrect_non_abstention_rate, 0.0)
-        self.assertEqual(summary.costs.cold_start.planning, 4.0)
+        self.assertEqual(summary.costs.first_run.planning, 4.0)
         self.assertEqual(summary.costs.amortized.planning, 3.0)
         self.assertEqual(summary.costs.tail.planning, 4.0)
         self.assertIsNone(summary.costs.amortized.representation)
