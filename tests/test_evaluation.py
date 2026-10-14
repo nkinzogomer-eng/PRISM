@@ -1,6 +1,11 @@
 import unittest
 
-from prism.evaluation import CostVector, score_run, summarize_policy
+from prism.evaluation import (
+    CostVector,
+    evaluate_order_policy,
+    score_run,
+    summarize_policy,
+)
 from prism.generators import sparse_binary
 from prism.policies import fixed_cost
 from prism.runner import run_order
@@ -28,6 +33,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(metrics.incorrect_non_abstention)
         self.assertEqual(metrics.costs.planning, 0.25)
         self.assertEqual(metrics.costs.execution, outcome.execution_cost)
+        self.assertEqual(metrics.costs.verification, outcome.verification_time_seconds)
         self.assertIsNone(metrics.costs.memory)
 
     def test_execution_cost_comes_from_completed_runner(self):
@@ -41,6 +47,23 @@ class EvaluationTests(unittest.TestCase):
             costs=CostVector(planning=0.25, execution=0.0),
         )
         self.assertEqual(metrics.costs.execution, outcome.execution_cost)
+
+    def test_policy_planning_is_measured_without_hidden_world_access(self):
+        generated = sparse_binary(seed=2, n=3, support=1)
+        seen = []
+
+        def policy(public_view):
+            seen.append((public_view.world_table, public_view.hidden_id))
+            return fixed_cost(public_view)
+
+        metrics = evaluate_order_policy(
+            generated, policy, policy="fixed_cost", run_id="seed-2"
+        )
+        self.assertEqual(seen, [({}, "")])
+        self.assertGreaterEqual(metrics.costs.planning, 0.0)
+        self.assertGreaterEqual(metrics.costs.verification, 0.0)
+        self.assertEqual(metrics.costs.execution, metrics.costs.execution)
+        self.assertIsNone(metrics.costs.representation)
 
     def test_policy_summary_reports_cold_start_amortized_and_tail(self):
         generated = sparse_binary(seed=2, n=3, support=1)
