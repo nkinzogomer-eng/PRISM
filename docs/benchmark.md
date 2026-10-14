@@ -74,9 +74,11 @@ planning, execution, verification, representation,
 preprocessing, memory, communication
 ```
 
-Planning cost is mandatory for every policy run; a baseline never receives free planning by omission. Each benchmark must state the measurement method and units for each component. An unavailable measurement is recorded as unknown, not zero. In the current finite harness, observation execution cost is available from the model; other components must be supplied by the benchmark or remain unknown.
+The order-policy evaluator measures planning and certificate-checking time in seconds. It passes the policy a declared-only view with no hidden-world table. Observation execution is reported using the benchmark's declared operation cost model. Each benchmark must state the measurement method and units for every component.
 
-Report the component vector for the first (cold-start) run, the component-wise arithmetic mean across repeated runs (amortized cost), and component-wise maximum (tail cost). Do not add unlike units into one number. A scalar total is valid only when the benchmark declares weights for every component and all required measurements are available.
+Planning is mandatory for every policy run; a baseline never receives free planning by omission. An unavailable measurement is recorded as unknown, not zero. Representation, preprocessing, memory, and communication remain unknown unless the benchmark supplies measurements for them.
+
+Report the component vector for the first run in the measured sequence, the component-wise arithmetic mean across repeated runs (amortized cost), and component-wise maximum (tail cost). The first run is not a process-level cold start unless process initialization is included in the measurement. Do not add unlike units into one number. A scalar total is valid only when the benchmark declares weights for every component and all required measurements are available.
 
 The exact solver currently reports expected observation execution cost only. It is an execution-cost reference, not a free end-to-end baseline; solver planning/runtime cost remains unmeasured until the benchmark supplies it.
 
@@ -98,7 +100,7 @@ The exact policy is an execution-cost reference. Its planning cost must not be s
 
 ## Required metrics
 
-Certified decision rate, incorrect non-abstention rate, correct abstention rate, abstention rate, invalid-instance count, cold-start and amortized cost by component, component-wise tail cost, gap to exact execution optimum, planning overhead, certificate verification cost, and deterministic replay success.
+Certified decision rate, incorrect non-abstention rate, correct abstention rate, abstention rate, invalid-instance count, first-run and amortized cost by component, component-wise tail cost, gap to exact execution optimum, planning overhead, certificate verification cost, and deterministic replay success.
 
 Rates use all runs as their denominator. A correct decision means a certified decision equal to the hidden decision. An incorrect non-abstention is a certified decision that disagrees with hidden truth. A correct abstention is an `ABSTAIN` result where the final declared state is contradictory or still contains multiple possible decisions.
 
