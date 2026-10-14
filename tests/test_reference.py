@@ -26,12 +26,21 @@ class ReferenceTests(unittest.TestCase):
         self.assertEqual(r.status, "CERTIFIED_DECISION")
         self.assertEqual(r.decision, "right")
         self.assertEqual(set(r.certificate.hypothesis_ids), {"h00", "h01"})
+        self.assertEqual(r.certificate.scope, "declared_hypothesis_class")
         self.assertTrue(p.verify(r.certificate))
 
     def test_certificate_rejects_wrong_decision(self):
         p = problem()
         c = p.certificate(p.apply(p.initial_state(), "a", "0"))
         self.assertFalse(p.verify(c.__class__(c.hypothesis_ids, c.evidence, "left")))
+
+    def test_certificate_rejects_unsupported_external_scope(self):
+        p = problem()
+        c = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        external_claim = c.__class__(
+            c.hypothesis_ids, c.evidence, c.decision, scope="external_world"
+        )
+        self.assertFalse(p.verify(external_claim))
 
     def test_evidence_can_reduce_to_one_model(self):
         p = problem()
