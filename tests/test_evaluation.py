@@ -30,6 +30,18 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(metrics.costs.execution, outcome.execution_cost)
         self.assertIsNone(metrics.costs.memory)
 
+    def test_execution_cost_comes_from_completed_runner(self):
+        generated = sparse_binary(seed=2, n=3, support=1)
+        outcome = run_order(generated, fixed_cost(generated))
+        metrics = score_run(
+            generated,
+            outcome,
+            policy="fixed_cost",
+            run_id="seed-2",
+            costs=CostVector(planning=0.25, execution=0.0),
+        )
+        self.assertEqual(metrics.costs.execution, outcome.execution_cost)
+
     def test_policy_summary_reports_cold_start_amortized_and_tail(self):
         generated = sparse_binary(seed=2, n=3, support=1)
         outcome = run_order(generated, fixed_cost(generated))
