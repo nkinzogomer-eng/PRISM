@@ -76,6 +76,8 @@ preprocessing, memory, communication
 
 The order-policy evaluator measures planning and certificate-checking time in seconds. It passes the policy a declared-only view with no hidden-world table. Observation execution is reported using the benchmark's declared operation cost model. Each benchmark must state the measurement method and units for every component.
 
+The shared policy runner applies each named order policy to the same instance list and returns per-policy quality and cost summaries. Policy callbacks receive only the sanitized declared view.
+
 Planning is mandatory for every policy run; a baseline never receives free planning by omission. An unavailable measurement is recorded as unknown, not zero. Representation, preprocessing, memory, and communication remain unknown unless the benchmark supplies measurements for them.
 
 Report the component vector for the first run in the measured sequence, the component-wise arithmetic mean across repeated runs (amortized cost), and component-wise maximum (tail cost). The first run is not a process-level cold start unless process initialization is included in the measurement. Do not add unlike units into one number. A scalar total is valid only when the benchmark declares weights for every component and all required measurements are available.
