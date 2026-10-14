@@ -38,6 +38,8 @@ Hypothesis = {
 
 ### Observation
 
+Each observation defines:
+
 ```text
 Observation = {
   id,
@@ -59,9 +61,9 @@ D(H) = { h.decision(target) for h in H }
 
 The state is decision-sufficient exactly when `len(D(H)) == 1`. Full hypothesis identification is not required.
 
-A certificate contains the declared hypothesis-class identifier, observed operation/value pairs, compatible hypothesis identifiers or an independently checkable symbolic equivalent, the unique decision, and the verifier version.
+A certificate contains the declared hypothesis-class identifier, explicit scope, observed operation/value pairs, compatible hypothesis identifiers or an independently checkable symbolic equivalent, the unique decision, and the verifier version. The finite reference verifier can accept only `declared_hypothesis_class` scope. External-world scope requires an independent validator; without one, consumers requiring that guarantee must abstain.
 
-The verifier recomputes compatibility and decision invariance. It must reject a certificate with an empty hypothesis set, multiple decisions, unknown observations, or unsupported assumptions.
+The verifier recomputes compatibility and decision invariance. It must reject a certificate with an empty hypothesis set, multiple decisions, unknown observations, or unsupported assumptions. A model-relative certificate on an omitted-world instance is scored against the hidden world, so incorrect non-abstentions remain visible even though the relative claim itself verifies.
 
 ## Cost accounting
 
@@ -93,8 +95,9 @@ Before adding domain adapters:
 
 1. zero incorrect certified decisions on in-class deterministic instances;
 2. zero accepted certificates with multiple compatible decisions;
-3. correct abstention on omitted-world instances;
-4. exact-policy comparison on small instances;
-5. explicit losses on parity and dense controls;
-6. all costs included in every comparison;
-7. fixed seeds and reproducible traces.
+3. correct model-relative scope labeling on omitted-world instances, with incorrect non-abstentions scored against the hidden world;
+4. contradiction produces abstention;
+5. exact-policy comparison on small instances;
+6. explicit losses on parity and dense controls;
+7. all costs included in every comparison;
+8. fixed seeds and reproducible traces.
