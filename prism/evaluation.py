@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from math import isfinite
-from typing import ClassVar, Sequence
+from time import perf_counter
+from typing import Callable, ClassVar, Sequence
 
 from .generators import Generated
-from .runner import Outcome
+from .runner import Outcome, run_order
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,7 @@ class CostVector:
     """Per-run costs; None means unavailable or not measured, never zero.
 
     Planning is required so a policy cannot silently receive free planning.
-    Execution is taken from the completed runner outcome.
+    Execution and verification are taken from the completed runner outcome.
     """
 
     planning: float
@@ -105,9 +106,13 @@ def score_run(
     correct_abstention = abstained and (
         not result.state.compatible or len(decision_set) != 1
     )
-    # The solver's actual recorded execution cost is authoritative, preventing
-    # the evaluator from accidentally accepting a caller's free/understated run.
-    recorded_costs = replace(costs, execution=outcome.execution_cost)
+    # Runner measurements are authoritative, preventing understated execution
+    # or verifier costs in a supplied report.
+    recorded_costs = replace(
+        costs,
+        execution=outcome.execution_cost,
+        verification=outcome.verification_time_seconds,
+    )
     return RunMetrics(
         policy=policy,
         run_id=run_id,
@@ -118,6 +123,43 @@ def score_run(
         abstained=abstained,
         correct_abstention=correct_abstention,
         costs=recorded_costs,
+    )
+
+
+def evaluate_order_policy(
+    generated: Generated,
+    policy_function: Callable[[Generated], list[str]],
+    *,
+    policy: str,
+    run_id: str,
+    representation: float | None = None,
+    preprocessing: float | None = None,
+    memory: float | None = None,
+    communication: float | None = None,
+) -> RunMetrics:
+    """Measure an order policy without exposing hidden-world labels to it.
+
+    Planning and verification are timed in seconds. Observation execution is
+    also reported separately using the benchmark's declared operation costs.
+    Other dimensions remain unknown unless explicitly measured and supplied.
+    """
+    public_view = Generated(declared=generated.declared, world_table={}, hidden_id="")
+    started = perf_counter()
+    order = policy_function(public_view)
+    planning_seconds = perf_counter() - started
+
+    outcome = run_order(generated, order)
+    costs = CostVector(
+        planning=planning_seconds,
+        execution=outcome.execution_cost,
+        verification=outcome.verification_time_seconds,
+        representation=representation,
+        preprocessing=preprocessing,
+        memory=memory,
+        communication=communication,
+    )
+    return score_run(
+        generated, outcome, policy=policy, run_id=run_id, costs=costs
     )
 
 
