@@ -8,9 +8,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from pathlib import Path
 from collections import defaultdict
 from statistics import mean
 from time import perf_counter
+
+# Allow direct execution as `python scripts/run_comparison.py` from the repo root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from prism.adaptive import Selection, run_adaptive
 from prism.evaluation import evaluate_order_policy
