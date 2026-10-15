@@ -67,6 +67,34 @@ class EvaluationTests(unittest.TestCase):
         self.assertGreater(metrics.costs.execution, 0.0)
         self.assertIsNone(metrics.costs.representation)
 
+    def test_policy_mutation_cannot_change_evaluator_or_next_policy(self):
+        generated = sparse_binary(seed=2, n=3, support=1)
+        expected = evaluate_order_policy(
+            generated, fixed_cost, policy="baseline", run_id="baseline"
+        )
+        original_hypotheses = list(generated.declared.hypotheses)
+        original_observations = list(generated.declared.observations)
+
+        def mutating_policy(public_view):
+            order = fixed_cost(public_view)
+            public_view.declared.hypotheses.clear()
+            public_view.declared.observations.clear()
+            return order
+
+        mutated = evaluate_order_policy(
+            generated, mutating_policy, policy="mutator", run_id="mutated"
+        )
+        after_mutator = evaluate_order_policy(
+            generated, fixed_cost, policy="after-mutator", run_id="after"
+        )
+
+        self.assertEqual(generated.declared.hypotheses, original_hypotheses)
+        self.assertEqual(generated.declared.observations, original_observations)
+        self.assertEqual(mutated.status, expected.status)
+        self.assertEqual(mutated.decision, expected.decision)
+        self.assertEqual(after_mutator.status, expected.status)
+        self.assertEqual(after_mutator.decision, expected.decision)
+
     def test_evaluator_marks_contradiction_as_correct_abstention(self):
         declared = FiniteProblem(
             hypotheses=[
