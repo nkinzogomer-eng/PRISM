@@ -66,6 +66,13 @@ Important semantic boundary: this quotient preserves the set of possible decisio
 
 This is one verified transformation, not yet a general structural discovery engine. The next work must add transformation provenance, benchmark the cost of finding/applying/verifying transformations, and compare transformed versus untransformed runs on held-out cases. No advantage claim follows from passing preservation tests alone.
 
+### Gate 4 second implementation — dominated-observation pruning
+
+The second audited transformation removes an observation only when a retained observation determines its value for every declared hypothesis and costs no more. The verifier checks that dominance witness, the retained observation costs, and preservation of every hypothesis and decision. Because hypothesis multiplicities remain unchanged, this rewrite preserves the uniform hypothesis prior. Under the deterministic finite cost model, a dominated query can be replaced by its no-more-expensive dominator, so the optimal expected execution cost cannot increase.
+
+This guarantee is narrower than general structural simplification: the dominance relation must be established over the entire declared hypothesis class. It does not prove that the class includes the real world, and it does not license removal of a cheaper but less-informative observation. Equal-cost equivalent observations use deterministic identifier tie-breaking.
+
+
 ## Gate 5 — domain adapters and real benchmarks
 
 Only after the finite gates pass, build narrow adapters for representative tasks.
