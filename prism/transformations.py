@@ -186,23 +186,41 @@ def prune_dominated_observations(
         problem.observations,
         key=lambda obs_id: (problem.observations[obs_id].cost, obs_id),
     )
-    retained: list[str] = []
-    removed_by: list[tuple[str, str]] = []
 
+    def dominates(source_id: str, target_id: str) -> bool:
+        if source_id == target_id:
+            return False
+        source_cost = problem.observations[source_id].cost
+        target_cost = problem.observations[target_id].cost
+        if source_cost > target_cost:
+            return False
+        if not _observation_determines(problem, source_id, target_id):
+            return False
+        # If the two observations encode exactly the same partition at equal
+        # cost, retain the lexicographically smaller ID. If source is strictly
+        # more informative, it dominates regardless of identifier order.
+        equivalent = _observation_determines(problem, target_id, source_id)
+        return source_cost < target_cost or not equivalent or source_id < target_id
+
+    retained = [
+        candidate for candidate in candidates
+        if not any(dominates(other, candidate) for other in candidates)
+    ]
+    removed_by: list[tuple[str, str]] = []
     for candidate in candidates:
-        dominators = [
-            kept for kept in retained
-            if problem.observations[kept].cost <= problem.observations[candidate].cost
-            and _observation_determines(problem, kept, candidate)
-        ]
-        if dominators:
-            chosen = min(
-                dominators,
-                key=lambda obs_id: (problem.observations[obs_id].cost, obs_id),
-            )
-            removed_by.append((candidate, chosen))
-        else:
+        if candidate in retained:
+            continue
+        dominators = [kept for kept in retained if dominates(kept, candidate)]
+        if not dominators:
+            # Defensive fallback: an invalid dominance relation must not
+            # silently delete an operation.
             retained.append(candidate)
+            continue
+        chosen = min(
+            dominators,
+            key=lambda obs_id: (problem.observations[obs_id].cost, obs_id),
+        )
+        removed_by.append((candidate, chosen))
 
     retained_set = set(retained)
     transformed_hypotheses = [
