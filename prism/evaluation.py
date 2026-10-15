@@ -7,6 +7,7 @@ supplies an explicit scalarization.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, replace
 from math import isfinite
 from time import perf_counter
@@ -137,13 +138,21 @@ def evaluate_order_policy(
     memory: float | None = None,
     communication: float | None = None,
 ) -> RunMetrics:
-    """Measure an order policy without exposing hidden-world labels to it.
+    """Measure an order policy without exposing or allowing mutation of evaluator state.
+
+    The policy receives a defensive deep copy of the declared problem and no
+    hidden-world table. Mutating that public view therefore cannot alter the
+    oracle/evaluator's problem or contaminate subsequent policy runs.
 
     Planning and verification are timed in seconds. Observation execution is
-    also reported separately using the benchmark's declared operation costs.
-    Other dimensions remain unknown unless explicitly measured and supplied.
+    reported using the benchmark's declared operation costs. Other dimensions
+    remain unknown unless explicitly measured and supplied.
     """
-    public_view = Generated(declared=generated.declared, world_table={}, hidden_id="")
+    public_view = Generated(
+        declared=deepcopy(generated.declared),
+        world_table={},
+        hidden_id="",
+    )
     started = perf_counter()
     order = policy_function(public_view)
     planning_seconds = perf_counter() - started
