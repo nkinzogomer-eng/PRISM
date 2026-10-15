@@ -72,8 +72,8 @@ class EvaluationTests(unittest.TestCase):
         expected = evaluate_order_policy(
             generated, fixed_cost, policy="baseline", run_id="baseline"
         )
-        original_hypotheses = list(generated.declared.hypotheses)
-        original_observations = list(generated.declared.observations)
+        original_hypotheses = dict(generated.declared.hypotheses)
+        original_observations = dict(generated.declared.observations)
 
         def mutating_policy(public_view):
             order = fixed_cost(public_view)
