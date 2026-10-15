@@ -10,6 +10,7 @@ Contract:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import perf_counter
 
 from .generators import Generated
 from .oracle import HiddenWorldOracle
@@ -21,6 +22,7 @@ class Outcome:
     result: Result
     operations: tuple[str, ...]
     execution_cost: float
+    verification_time_seconds: float = 0.0
 
 
 def run_order(generated: Generated, order: list[str]) -> Outcome:
@@ -28,10 +30,22 @@ def run_order(generated: Generated, order: list[str]) -> Outcome:
     oracle = HiddenWorldOracle(generated)
     state: State = problem.initial_state()
     executed: list[str] = []
+    verification_time_seconds = 0.0
+
+    def checked_stop() -> Result | None:
+        nonlocal verification_time_seconds
+        started = perf_counter()
+        result = certified_stop(problem, state)
+        verification_time_seconds += perf_counter() - started
+        return result
+
     for obs_id in order:
-        stop = certified_stop(problem, state)
+        stop = checked_stop()
         if stop is not None:
-            return Outcome(stop, tuple(executed), state.cost.execution)
+            return Outcome(
+                stop, tuple(executed), state.cost.execution,
+                verification_time_seconds,
+            )
         answer = oracle.observe(obs_id)
         executed.append(obs_id)
         survivors = [
@@ -46,12 +60,15 @@ def run_order(generated: Generated, order: list[str]) -> Outcome:
         if not survivors:
             return Outcome(
                 Result("ABSTAIN", None, None, state, "declared_class_contradicted"),
-                tuple(executed), state.cost.execution,
+                tuple(executed), state.cost.execution, verification_time_seconds,
             )
-    stop = certified_stop(problem, state)
+    stop = checked_stop()
     if stop is not None:
-        return Outcome(stop, tuple(executed), state.cost.execution)
+        return Outcome(
+            stop, tuple(executed), state.cost.execution,
+            verification_time_seconds,
+        )
     return Outcome(
         Result("ABSTAIN", None, None, state, "observations_exhausted"),
-        tuple(executed), state.cost.execution,
+        tuple(executed), state.cost.execution, verification_time_seconds,
     )
