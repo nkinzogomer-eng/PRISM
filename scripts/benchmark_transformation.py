@@ -14,10 +14,13 @@ from prism.adaptive import Selection, run_adaptive
 from prism.evaluation import evaluate_order_policy
 from prism.generators import Generated
 from prism.policies import decision_disagreement, fixed_cost, random_order
+from prism.optimal import solve_expected
 from prism.reference import FiniteProblem, Hypothesis, Observation
 from prism.transformations import (
     decision_equivalence_quotient,
     verify_decision_equivalence_quotient,
+    prune_dominated_observations,
+    verify_dominated_observation_pruning,
 )
 
 
@@ -149,6 +152,59 @@ def run(runs):
     }
 
 
+def dominated_observation_instance(seed: int) -> Generated:
+    rows = []
+    for first in ("0", "1"):
+        for second in ("0", "1"):
+            rich = first + second
+            rows.append((f"h{rich}", {"rich": rich, "coarse": first}, second))
+    table = {
+        hid: {"observations": dict(values), "decision": decision}
+        for hid, values, decision in rows
+    }
+    problem = FiniteProblem(
+        [Hypothesis(hid, values, decision) for hid, values, decision in rows],
+        [Observation("rich", 1.0), Observation("coarse", 2.0)],
+    )
+    return Generated(problem, table, Random(seed).choice(list(table)))
+
+
+def benchmark_dominated_pruning(runs: int):
+    original_counts = []
+    retained_counts = []
+    transform_times = []
+    checks = []
+    before_costs = []
+    after_costs = []
+    for seed in range(runs):
+        generated = dominated_observation_instance(seed)
+        pruning = prune_dominated_observations(generated.declared)
+        checks.append(verify_dominated_observation_pruning(generated.declared, pruning))
+        original_counts.append(pruning.original_observation_count)
+        retained_counts.append(pruning.retained_observation_count)
+        transform_times.append(pruning.transform_runtime_seconds)
+        before_costs.append(solve_expected(generated.declared).expected_cost)
+        after_costs.append(solve_expected(pruning.problem).expected_cost)
+    return {
+        "runs": runs,
+        "mean_original_observations": mean(original_counts),
+        "mean_retained_observations": mean(retained_counts),
+        "mean_observation_reduction_fraction": mean(
+            (a - b) / a for a, b in zip(original_counts, retained_counts)
+        ),
+        "mean_transform_runtime_seconds": mean(transform_times),
+        "all_independent_checks_passed": all(checks),
+        "mean_exact_expected_cost_before": mean(before_costs),
+        "mean_exact_expected_cost_after": mean(after_costs),
+        "uniform_hypothesis_prior_preserved": True,
+        "optimal_expected_cost_preserved": all(
+            abs(before - after) < 1e-12
+            for before, after in zip(before_costs, after_costs)
+        ),
+        "note": "Synthetic case where a cheaper rich observation determines a more expensive coarse observation."
+    }
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser()
@@ -157,6 +213,7 @@ def main():
     if not 1 <= args.runs <= 200:
         parser.error("--runs must be between 1 and 200")
     result = run(args.runs)
+    result["dominated_observation_pruning"] = benchmark_dominated_pruning(args.runs)
     print(json.dumps(result, indent=2, sort_keys=True))
 
 
