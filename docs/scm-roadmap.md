@@ -58,6 +58,14 @@ Introduce transformations as explicit, auditable operations rather than hidden h
 
 Each transformation must declare preconditions, output representation, preservation claim, actual cost, provenance, and independent validation method. A transformation that cannot justify decision preservation must remain heuristic and cannot strengthen a certificate.
 
+### Gate 4 initial implementation — decision-equivalence quotient
+
+The first audited structural transformation is implemented in `prism/transformations.py`. It merges hypotheses only when both their complete observation vectors and their target decisions are identical. The verifier checks the representative mapping, observation costs, decisions, and observation vectors. Exhaustive small-instance tests compare decision sets across evidence assignments.
+
+Important semantic boundary: this quotient preserves the set of possible decisions for every evidence assignment, but it does **not** necessarily preserve a uniform probability distribution over hypothesis IDs. Therefore it is valid for decision-sufficiency reasoning under the stated semantics, but must not silently replace a probability-weighted model or be used to claim unchanged expected costs. A regression test demonstrates a case where the exact solver's uniform-prior expected cost changes from 1.75 to 1.6667 after quotienting.
+
+This is one verified transformation, not yet a general structural discovery engine. The next work must add transformation provenance, benchmark the cost of finding/applying/verifying transformations, and compare transformed versus untransformed runs on held-out cases. No advantage claim follows from passing preservation tests alone.
+
 ## Gate 5 — domain adapters and real benchmarks
 
 Only after the finite gates pass, build narrow adapters for representative tasks.
