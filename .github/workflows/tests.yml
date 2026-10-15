@@ -21,3 +21,5 @@ jobs:
           python-version: "3.12"
       - name: Run standard-library test suite
         run: python -m unittest discover -s tests -v
+      - name: Run reproducible synthetic policy comparison
+        run: python scripts/run_comparison.py --runs 20
