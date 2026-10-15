@@ -129,3 +129,159 @@ def verify_decision_equivalence_quotient(
     if quotient.preserves_uniform_hypothesis_prior != expected_prior_preservation:
         return False
     return True
+
+@dataclass(frozen=True)
+class DominatedObservationPruning:
+    """Remove observations dominated by a no-more-expensive richer observation."""
+
+    problem: FiniteProblem
+    retained_observation_ids: tuple[str, ...]
+    removed_by: tuple[tuple[str, str], ...]
+    original_observation_count: int
+    retained_observation_count: int
+    transform_runtime_seconds: float
+    preserves_decision_semantics: bool
+    preserves_uniform_hypothesis_prior: bool
+    preserves_optimal_expected_cost: bool
+
+    @property
+    def removed_observation_count(self) -> int:
+        return self.original_observation_count - self.retained_observation_count
+
+    @property
+    def dominators(self) -> dict[str, str]:
+        return dict(self.removed_by)
+
+
+def _observation_determines(problem: FiniteProblem, source_id: str, target_id: str) -> bool:
+    """True when equal source values always imply equal target values."""
+    hypotheses = list(problem.hypotheses.values())
+    for left in hypotheses:
+        for right in hypotheses:
+            if (
+                left.observations[source_id] == right.observations[source_id]
+                and left.observations[target_id] != right.observations[target_id]
+            ):
+                return False
+    return True
+
+
+def prune_dominated_observations(
+    problem: FiniteProblem,
+) -> DominatedObservationPruning:
+    """Remove B only if a retained A determines B and costs no more.
+
+    If A determines B, querying A provides at least the information in B. If
+    cost(A) <= cost(B), any policy using B can be simulated by querying A,
+    deriving B's value, and exploiting any extra information from A. Thus the
+    optimal expected execution cost under the same hypothesis distribution
+    cannot increase. Equal-cost equivalent observations are resolved
+    deterministically by lexicographic ID order.
+
+    This transformation keeps every hypothesis and its multiplicity, so it
+    preserves a uniform prior over hypothesis IDs.
+    """
+    started = perf_counter()
+    candidates = sorted(
+        problem.observations,
+        key=lambda obs_id: (problem.observations[obs_id].cost, obs_id),
+    )
+    retained: list[str] = []
+    removed_by: list[tuple[str, str]] = []
+
+    for candidate in candidates:
+        dominators = [
+            kept for kept in retained
+            if problem.observations[kept].cost <= problem.observations[candidate].cost
+            and _observation_determines(problem, kept, candidate)
+        ]
+        if dominators:
+            chosen = min(
+                dominators,
+                key=lambda obs_id: (problem.observations[obs_id].cost, obs_id),
+            )
+            removed_by.append((candidate, chosen))
+        else:
+            retained.append(candidate)
+
+    retained_set = set(retained)
+    transformed_hypotheses = [
+        Hypothesis(
+            hypothesis_id,
+            {obs_id: value for obs_id, value in hypothesis.observations.items()
+             if obs_id in retained_set},
+            hypothesis.decision,
+        )
+        for hypothesis_id, hypothesis in problem.hypotheses.items()
+    ]
+    transformed_observations = [
+        Observation(obs_id, problem.observations[obs_id].cost)
+        for obs_id in retained
+    ]
+    transformed = FiniteProblem(transformed_hypotheses, transformed_observations)
+    return DominatedObservationPruning(
+        problem=transformed,
+        retained_observation_ids=tuple(sorted(retained)),
+        removed_by=tuple(sorted(removed_by)),
+        original_observation_count=len(problem.observations),
+        retained_observation_count=len(transformed.observations),
+        transform_runtime_seconds=perf_counter() - started,
+        preserves_decision_semantics=True,
+        preserves_uniform_hypothesis_prior=True,
+        preserves_optimal_expected_cost=True,
+    )
+
+
+def verify_dominated_observation_pruning(
+    original: FiniteProblem,
+    pruning: DominatedObservationPruning,
+) -> bool:
+    """Verify every removed operation is safely dominated by a retained one."""
+    transformed = pruning.problem
+    retained = set(pruning.retained_observation_ids)
+    dominators = pruning.dominators
+    original_ids = set(original.observations)
+    removed = original_ids - retained
+
+    if retained != set(transformed.observations):
+        return False
+    if not retained <= original_ids or set(dominators) != removed:
+        return False
+    if len(dominators) != len(pruning.removed_by):
+        return False
+    if set(original.hypotheses) != set(transformed.hypotheses):
+        return False
+
+    for hypothesis_id, source in original.hypotheses.items():
+        target = transformed.hypotheses[hypothesis_id]
+        if source.decision != target.decision:
+            return False
+        expected = {obs_id: source.observations[obs_id] for obs_id in retained}
+        if dict(target.observations) != expected:
+            return False
+
+    for obs_id in retained:
+        if transformed.observations[obs_id].cost != original.observations[obs_id].cost:
+            return False
+
+    for removed_id, dominator_id in dominators.items():
+        if dominator_id not in retained:
+            return False
+        if original.observations[dominator_id].cost > original.observations[removed_id].cost:
+            return False
+        if not _observation_determines(original, dominator_id, removed_id):
+            return False
+
+    if pruning.original_observation_count != len(original.observations):
+        return False
+    if pruning.retained_observation_count != len(transformed.observations):
+        return False
+    if pruning.removed_observation_count != len(removed):
+        return False
+    if pruning.preserves_decision_semantics is not True:
+        return False
+    if pruning.preserves_uniform_hypothesis_prior is not True:
+        return False
+    if pruning.preserves_optimal_expected_cost is not True:
+        return False
+    return True
