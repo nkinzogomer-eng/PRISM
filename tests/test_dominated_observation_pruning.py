@@ -43,6 +43,13 @@ class DominatedObservationPruningTests(unittest.TestCase):
         self.assertAlmostEqual(solve_expected(original).expected_cost, 1.0)
         self.assertAlmostEqual(solve_expected(pruning.problem).expected_cost, 1.0)
 
+    def test_equal_cost_strictly_richer_observation_dominates_regardless_of_id(self):
+        original = rich_and_coarse_problem(rich_cost=1.0, coarse_cost=1.0)
+        pruning = prune_dominated_observations(original)
+        self.assertEqual(set(pruning.retained_observation_ids), {"rich"})
+        self.assertEqual(pruning.dominators, {"coarse": "rich"})
+        self.assertTrue(verify_dominated_observation_pruning(original, pruning))
+
     def test_does_not_remove_cheaper_coarse_observation_for_expensive_rich_one(self):
         original = rich_and_coarse_problem(rich_cost=3.0, coarse_cost=1.0)
         pruning = prune_dominated_observations(original)
