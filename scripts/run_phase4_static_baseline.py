@@ -107,7 +107,7 @@ def main() -> int:
         result["source_files"] = len(source_files)
         results.append(result)
         if not result["output_valid_json"]:
-            print(f"{name}: scanner output invalid; inspect {raw_path}", file=sys.stderr)
+            print(f"{name}: scanner output invalid; inspect {raw_path}; return_code={result['return_code']}; stderr={result['stderr']}", file=sys.stderr)
             continue
         flagged = set(result["flagged_case_ids"])
         normalized = output_dir / f"{name}-predictions.csv"
@@ -123,6 +123,10 @@ def main() -> int:
         score_proc = subprocess.run(score_cmd, capture_output=True, text=True, check=False)
         result["scoring_return_code"] = score_proc.returncode
         result["score_path"] = str(score_path)
+        if score_proc.returncode == 0:
+            score_data = json.loads(score_path.read_text(encoding="utf-8"))
+            overall = score_data["results"]["ALL"]
+            result["metrics"] = {key: overall[key] for key in ("cases", "evaluated", "coverage", "tp", "fp", "tn", "fn", "precision", "recall", "f1", "recall_lower_bound", "false_positive_rate_upper_bound")}
         if score_proc.returncode != 0:
             result["scoring_stderr"] = score_proc.stderr[-4000:]
 
@@ -146,7 +150,7 @@ def main() -> int:
     print(json.dumps({"summary": str(report_path), "tools": [
         {k: v for k, v in r.items() if k in {"name", "return_code", "wall_seconds",
           "output_valid_json", "finding_count", "distinct_case_files_flagged",
-          "non_case_findings", "scoring_return_code"}} for r in results]}, indent=2))
+          "non_case_findings", "scoring_return_code", "metrics"}} for r in results]}, indent=2))
     return 0 if all(r.get("output_valid_json") and r.get("scoring_return_code") == 0
                     for r in results) else 1
 
