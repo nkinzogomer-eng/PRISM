@@ -6,7 +6,7 @@
 
 **Reasoning:** PRISM currently has a finite decision-sufficiency core, not a validated cyber adapter. A labeled, reproducible benchmark provides ground truth for a first falsifiable evaluation while limiting operational risk.
 
-**Candidate datasets:** OWASP Benchmark for Java first; a pinned NIST SARD/Juliet subset as a possible replication. Neither is accepted until source, license, labels, checksum, build requirements, and tool compatibility are verified.
+**Candidate datasets:** OWASP Benchmark for Python v0.1 is the pilot candidate because it fits the existing Python prototype; its preliminary status, GPL-3.0 license, and known label concern are recorded in the feasibility note. OWASP Benchmark for Java v1.2 and NIST SARD/Juliet remain separate replication candidates. No dataset is accepted until commit/checksum, labels, and tool compatibility are pinned.
 
 **Comparisons required:** individual tools; fixed-order/all-tools orchestration; a simple cost-aware policy; PRISM using the same operations and visible inputs; and an exact oracle only where tractable.
 
@@ -14,6 +14,6 @@
 
 **Current evidence:** None yet for Phase 4. The Phase 2/3 synthetic findings do not count as cyber evidence.
 
-**Next action:** verify benchmark acquisition/licensing and local toolchain feasibility, then implement a reproducible baseline before connecting PRISM to the task.
+**Next action:** pin the Python benchmark commit/checksum, audit labels and license, test the normalized-output scorer, identify compatible static analyzers, and establish individual-tool baselines before connecting PRISM to the task.
 
 **Revisit only if:** the candidate dataset is unavailable, its labels are unsuitable, its license blocks the intended evaluation, or no compatible static analyzer can produce reproducible machine-readable outputs. Any replacement dataset and reason must be logged before held-out evaluation.
