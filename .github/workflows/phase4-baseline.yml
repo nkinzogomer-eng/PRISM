@@ -55,7 +55,8 @@ jobs:
             --labels benchmark/expectedresults-0.1.csv \
             --source-dir benchmark/testcode \
             --output-dir reports/phase4-static-baseline \
-            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python"
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/lang/security" \
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/flask/security"
 
       - name: Upload raw results and summary
         if: always()
