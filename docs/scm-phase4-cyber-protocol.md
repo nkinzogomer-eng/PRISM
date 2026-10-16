@@ -1,7 +1,7 @@
 # SCM–PRISM Phase 4: defensive cybersecurity evaluation protocol
 
 **Status:** protocol draft; no empirical gate has passed.  
-**Version:** 1.0 — 2026-10-16
+**Version:** 1.1 — 2026-10-17
 
 ## Research question
 
@@ -73,3 +73,9 @@ Benchmark labels and source patterns do not represent all production software. S
 ## Current decision
 
 **No empirical conclusion yet.** The next gate is dataset/tool feasibility and a reproducible baseline. This protocol is not evidence that PRISM already performs cybersecurity analysis.
+
+## Strong-baseline requirement (added 2026-10-17)
+
+The initial Bandit/Semgrep Community/fixed-OR pilot is a smoke test, not a sufficient competitive evaluation. Before PRISM is judged against the state of the art, follow the [strong-baseline addendum](scm-phase4-strong-baselines.md). At minimum, attempt reproducible Bandit, Semgrep CE with immutable rules, and CodeQL Python `default` and `security-extended` suites; separately record unsupported or failed configurations rather than scoring them as zero detections. Evaluate Semgrep Pro or other commercial baselines only when access, licensing, configuration, and repeatability permit, and report them as a separate tier.
+
+The current coarse “any finding in module” score must remain labeled preliminary. The main competitive score must assess relevance to the intended case/CWE and location where possible, include a manual label/finding audit, use a family-aware held-out split, and report per-category metrics with uncertainty. SAST and any later DAST/IAST experiments must remain separate leaderboards. The exact strongest supported configurations and their versions/rules/query packs must be frozen before held-out evaluation.
