@@ -194,6 +194,66 @@ def main() -> int:
         else:
             combined_and = {"scoring_return_code": score_proc_and.returncode, "scoring_stderr": score_proc_and.stderr[-4000:]}
 
+    sequential_policy = None
+    if len(valid_tools) == 2:
+        bandit_result = next((r for r in valid_tools if r["name"] == "bandit"), None)
+        if bandit_result is not None:
+            bandit_ids = set(bandit_result["flagged_case_ids"])
+            remaining_files = []
+            for source_file in source_files:
+                match = TEST_ID_RE.search(source_file.name)
+                if match and match.group(1) not in bandit_ids:
+                    remaining_files.append(source_file)
+            sequential_raw = output_dir / "semgrep-sequential-raw.json"
+            sequential_command = [
+                "semgrep", "scan", *semgrep_config_args, "--metrics=off",
+                "--no-git-ignore", "--json", *[str(path) for path in remaining_files],
+            ]
+            sequential_result = run_tool(
+                "semgrep-sequential", sequential_command, sequential_raw, source_root, labels
+            )
+            sequential_result["source_files"] = len(remaining_files)
+            sequential_result["policy_note"] = "Semgrep runs only on cases not flagged by Bandit; labels are not used for selection"
+            if sequential_result.get("output_valid_json"):
+                semgrep_remaining_ids = set(sequential_result["flagged_case_ids"])
+                combined_ids = bandit_ids | semgrep_remaining_ids
+                normalized_seq = output_dir / "bandit-first-sequential-predictions.csv"
+                with normalized_seq.open("w", newline="", encoding="utf-8") as handle:
+                    writer = csv.writer(handle)
+                    writer.writerow(["test_id", "category", "detected", "status"])
+                    for test_id, category in sorted(labels.items()):
+                        writer.writerow([test_id, category, str(test_id in combined_ids).lower(), "ok"])
+                score_path_seq = output_dir / "bandit-first-sequential-score.json"
+                score_cmd_seq = [sys.executable, str(Path(__file__).with_name("score_phase4.py")),
+                                 "--labels", str(args.labels.resolve()),
+                                 "--predictions", str(normalized_seq), "--output", str(score_path_seq)]
+                score_proc_seq = subprocess.run(score_cmd_seq, capture_output=True, text=True, check=False)
+                sequential_policy = {
+                    "policy": "run Bandit on all cases, then run Semgrep only on cases Bandit did not flag",
+                    "cases_sent_to_semgrep": len(remaining_files),
+                    "cases_flagged": len(combined_ids),
+                    "wall_seconds_sum_of_policy_tool_runs": bandit_result["wall_seconds"] + sequential_result["wall_seconds"],
+                    "semgrep_return_code": sequential_result.get("return_code"),
+                    "semgrep_output_valid_json": sequential_result.get("output_valid_json"),
+                    "semgrep_findings": sequential_result.get("finding_count"),
+                    "semgrep_wall_seconds": sequential_result.get("wall_seconds"),
+                    "scoring_return_code": score_proc_seq.returncode,
+                    "score_path": str(score_path_seq),
+                }
+                if score_proc_seq.returncode == 0:
+                    score_data_seq = json.loads(score_path_seq.read_text(encoding="utf-8"))
+                    overall_seq = score_data_seq["results"]["ALL"]
+                    sequential_policy["metrics"] = {key: overall_seq[key] for key in ("cases", "evaluated", "coverage", "tp", "fp", "tn", "fn", "precision", "recall", "f1", "recall_lower_bound", "false_positive_rate_upper_bound")}
+                else:
+                    sequential_policy["scoring_stderr"] = score_proc_seq.stderr[-4000:]
+            else:
+                sequential_policy = {
+                    "policy": "run Bandit on all cases, then run Semgrep only on cases Bandit did not flag",
+                    "semgrep_return_code": sequential_result.get("return_code"),
+                    "semgrep_output_valid_json": False,
+                    "stderr": sequential_result.get("stderr"),
+                }
+
     report = {
         "schema_version": 1,
         "benchmark_commit": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
@@ -210,6 +270,7 @@ def main() -> int:
         "tools": results,
         "combined_all_tools_baseline": combined,
         "combined_and_tools_baseline": combined_and,
+        "bandit_first_sequential_policy": sequential_policy,
     }
     report_path = output_dir / "summary.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -217,7 +278,7 @@ def main() -> int:
         {k: v for k, v in r.items() if k in {"name", "return_code", "wall_seconds",
           "output_valid_json", "finding_count", "distinct_case_files_flagged",
           "non_case_findings", "scoring_return_code", "metrics"}} for r in results],
-        "combined_all_tools_baseline": combined, "combined_and_tools_baseline": combined_and}, indent=2))
+        "combined_all_tools_baseline": combined, "combined_and_tools_baseline": combined_and, "bandit_first_sequential_policy": sequential_policy}, indent=2))
     return 0 if all(r.get("output_valid_json") and r.get("scoring_return_code") == 0
                     for r in results) else 1
 
