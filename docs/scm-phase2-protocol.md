@@ -20,7 +20,7 @@ Establish reproducible reference measurements before any new structural planner 
 
 - Fixed integer seeds, range recorded in output.
 - No third-party Python dependencies.
-- CI artifact contains machine-readable JSON and Markdown with Python/platform, protocol version, metrics, and limitations.
+- The runner writes machine-readable JSON and Markdown to its output directory. The CI test uses a temporary directory and prints summaries into the job log; local runs can retain files by choosing a persistent output directory.
 - 100 seeds per seeded family by default; allowed range 20–200.
 - Wall-clock timings are diagnostics only. Abstract operation-cost units are not converted into seconds or energy.
 
