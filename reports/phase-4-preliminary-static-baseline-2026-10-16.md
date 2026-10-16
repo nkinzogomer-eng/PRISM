@@ -101,3 +101,21 @@ Bandit and Semgrep have complementary but incomplete coverage. In this coarse la
 - Next, inspect the full push-triggered CodeQL SARIF and score; the PR-triggered CodeQL output was diff-informed and is not a valid full-dataset result.
 - Then audit category/CWE and location relevance, freeze the family-aware held-out split, and compare a development-tuned cost-aware selector and PRISM with all planning/normalization/verification costs charged. Do not use benchmark labels or category identities as hidden runtime features.
 - No PRISM orchestration has yet been tested. No SCM advantage is demonstrated at this stage.
+
+
+### Follow-up — Bandit-first selective Semgrep (2026-10-17)
+
+I added and ran a fixed sequential policy that first runs Bandit over all 1,230 cases, then runs the same pinned Semgrep security rules only on the 878 cases Bandit did not flag. The policy uses only Bandit's observable findings to decide which files receive the second scan; it does not read benchmark labels for selection.
+
+| Metric | Full fixed OR | Bandit-first selective Semgrep |
+|---|---:|---:|
+| Bandit wall time | 4.12 s | 4.12 s |
+| Semgrep wall time | 16.49 s | 13.07 s |
+| Sum of policy tool times | 20.61 s | 17.19 s |
+| Cases sent to Semgrep | 1,230 | 878 |
+| TP / FP / TN / FN | 262 / 207 / 571 / 190 | 262 / 207 / 571 / 190 |
+| Precision | 55.86% | 55.86% |
+| Recall | 57.96% | 57.96% |
+| F1 | 56.89% | 56.89% |
+
+This preserves the same coarse decisions and saves 3.42 seconds (about 16.6%) versus the full OR run in this single measurement. It is a real execution-cost improvement for this fixed policy, but **not a meaningful quality improvement and not evidence of SCM superiority**. The measured total is still about 4.2 times Bandit alone for only a 1.17-point F1 increase over Bandit, so we must test whether a cost-aware controller can obtain a better trade-off or conclude this tool pair is not worth escalating on this benchmark. Repeat timings and held-out tests are still required.
