@@ -25,3 +25,5 @@ jobs:
         run: python scripts/run_comparison.py --runs 20
       - name: Benchmark decision-equivalence transformation
         run: python scripts/benchmark_transformation.py --runs 20
+      - name: Run Phase 2 reference benchmark (100 fixed seeds)
+        run: python scripts/run_phase2_reference.py --runs 100
