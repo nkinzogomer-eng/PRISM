@@ -1,0 +1,90 @@
+name: Phase 4 CodeQL strong baseline
+
+on:
+  push:
+    branches: ["research/phase-4-cyber-benchmark-protocol"]
+    paths:
+      - "scripts/normalize_codeql_sarif.py"
+      - "scripts/score_phase4.py"
+      - "tests/test_phase4_scoring.py"
+      - "tests/test_phase4_codeql_normalizer.py"
+      - ".github/workflows/phase4-codeql.yml"
+      - "docs/scm-phase4-cyber-protocol.md"
+      - "docs/scm-phase4-strong-baselines.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL Python ${{ matrix.suite_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite_name: default
+            query_suite: ""
+          - suite_name: security-extended
+            query_suite: security-extended
+    steps:
+      - name: Check out PRISM
+        uses: actions/checkout@v4
+
+      - name: Check out pinned OWASP Benchmark for Python
+        uses: actions/checkout@v4
+        with:
+          repository: OWASP-Benchmark/BenchmarkPython
+          ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
+          path: benchmark
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scorer and SARIF normalizer tests
+        run: |
+          python -m unittest discover -s tests -p 'test_phase4*.py' -v
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          build-mode: none
+          source-root: benchmark
+          queries: ${{ matrix.query_suite }}
+
+      - name: Analyze benchmark
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:python/suite:${{ matrix.suite_name }}
+          output: reports/codeql-${{ matrix.suite_name }}.sarif
+          upload: false
+
+      - name: Normalize CodeQL SARIF and score coarse pilot metric
+        run: |
+          python scripts/normalize_codeql_sarif.py \
+            --labels benchmark/expectedresults-0.1.csv \
+            --sarif reports/codeql-${{ matrix.suite_name }}.sarif/python.sarif \
+            --predictions reports/codeql-${{ matrix.suite_name }}-predictions.csv \
+            --summary reports/codeql-${{ matrix.suite_name }}-summary.json
+          python scripts/score_phase4.py \
+            --labels benchmark/expectedresults-0.1.csv \
+            --predictions reports/codeql-${{ matrix.suite_name }}-predictions.csv \
+            --output reports/codeql-${{ matrix.suite_name }}-score.json
+
+      - name: Upload raw SARIF, normalized predictions, and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-codeql-${{ matrix.suite_name }}
+          path: |
+            reports/codeql-${{ matrix.suite_name }}.sarif
+            reports/codeql-${{ matrix.suite_name }}-predictions.csv
+            reports/codeql-${{ matrix.suite_name }}-summary.json
+            reports/codeql-${{ matrix.suite_name }}-score.json
+          if-no-files-found: warn
+          retention-days: 30

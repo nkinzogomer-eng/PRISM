@@ -1,7 +1,7 @@
 # SCM → PRISM phase register
 
 **Plan version:** 1.0 (working baseline)  
-**Last reviewed:** 2026-10-16  
+**Last reviewed:** 2026-10-17  
 **Rule:** A phase is checked only when its stated exit criteria have been reviewed and met. A checked research-planning phase does not imply that the scientific hypotheses it defines have been proven.
 
 ## Status
@@ -10,7 +10,7 @@
 - [x] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit reviewed; H-SCM-1 and Phase 2 protocol documented; repository CI passed on 2026-10-16.
 - [x] **Phase 2 — Baselines and reproducible reference measurements.** 100 fixed seeds per seeded family; all independent checks and exact-cost preservation gates passed; detailed results recorded in the Phase 2 report.
 - [x] **Phase 3 — Controlled structural-computation experiments.** 500 controlled synthetic instances across five regimes passed the semantic, verifier, and exact-cost gates; see the Phase 3 report. General SCM superiority remains unproven.
-- [ ] **Phase 4 — Cybersecurity application: authorized Red Team + Blue Team, repair, and independent verification.**
+- [ ] **Phase 4 — Defensive cybersecurity benchmark, remediation, and independent verification (in progress; initial pilot baselines exist, competitive gates not passed).** Strong-baseline addendum now requires pinned Bandit, Semgrep CE rules, CodeQL `default` and `security-extended` where supported, and separately tiered paid/modal baselines. A separate CodeQL GitHub Actions workflow and SARIF normalizer with regression tests have been added on the working branch; PR-triggered outputs were found to be diff-informed and invalid for full-dataset scoring, so the workflow was moved to research-branch pushes/manual dispatch and full-run artifacts still require review. Semgrep is now pinned to CLI 1.181.0 and immutable community-rules commit `17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9`; security-only Semgrep plus Bandit improves fixed-OR F1 only from 55.72% to 56.89% on one in-sample coarse run while increasing measured tool time about 5×. Fixed AND performs worse. A Bandit-first policy that sends only the 878 unflagged cases to Semgrep preserves the OR decisions while reducing measured total time from 20.61 s to 17.19 s (16.6%) in one run; this is a narrow cost improvement, not a quality or SCM-superiority result. The existing 1,230-case “any finding in module” results remain diagnostic only; PRISM orchestration has not been evaluated. See [protocol](scm-phase4-cyber-protocol.md), [strong-baseline addendum](scm-phase4-strong-baselines.md), and [decision log](../journal/2026-10-16-phase4-decision.md).
 - [ ] **Phase 5 — Optional Ciel orchestration integration, only after measured core value.**
 - [ ] **Phase 6 — Generalization to separate domains, including financial-flow analysis and astronomy.**
 
@@ -67,6 +67,26 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] GitHub Actions run [38969083638](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38969083638) succeeded.
 
 **Scientific conclusion:** the existing dominated-observation rule passed its narrow finite-model safety tests. Abstract optimal execution cost remained unchanged; only representation size decreased in eligible regimes. Timing diagnostics are preliminary and do not establish portable speedup. H-SCM-1 and general SCM superiority remain unproven.
+
+## Phase 4 — in progress, protocol only
+
+- [x] Bounded offline defensive evaluation scope selected.
+- [x] Candidate labeled benchmark and fallback identified, pending source/license/toolchain verification.
+- [x] Fair comparison arms, metrics, cost accounting, held-out evaluation, and falsification gates specified in [Phase 4 protocol](scm-phase4-cyber-protocol.md).
+- [x] Initial scope decision recorded in [Phase 4 decision log](../journal/2026-10-16-phase4-decision.md).
+- [x] Candidate dataset and local toolchain checked; Python benchmark v0.1 selected as a pilot candidate with its limitations recorded in [feasibility note](scm-phase4-feasibility.md).
+- [x] Standard-library scoring utility and unit tests added for normalized per-case outputs, unknown cases, coverage, and conservative bounds ([script](../scripts/score_phase4.py), [tests](../tests/test_phase4_scoring.py)).
+- [x] Pin the benchmark commit and expected-results Git blob; parse all 1,230 labels and record the 14-category distribution in [feasibility note](scm-phase4-feasibility.md). Archive SHA-256 and known-label disposition remain outstanding.
+- [x] Scoring tests pass in CI (3/3); the label CSV parses and the scorer evaluates all 1,230 IDs in the Bandit pilot.
+- [x] First Bandit baseline measured; see [preliminary report](../reports/phase-4-preliminary-static-baseline-2026-10-16.md). It is a coarse, in-sample diagnostic, not a PRISM result.
+- [x] Obtain valid per-case baselines for Bandit 1.8.6 and Semgrep 1.127.1 plus a fixed OR policy; all 1,230 cases were scored. See [preliminary report](../reports/phase-4-preliminary-static-baseline-2026-10-16.md) and [successful CI run](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38972068969).
+- [ ] Pin Semgrep ruleset content and audit per-category/CWE mapping and known label issues.
+- [ ] Freeze split manifest and run development-only pilot.
+- [ ] Run locked held-out comparison, uncertainty analysis, and negative controls.
+- [ ] Evaluate remediation separately with independent verification.
+- [ ] Review evidence and only then decide whether Phase 4 exits.
+
+**Current conclusion:** no empirical cybersecurity result exists yet. Protocol/documentation work is not evidence of PRISM efficacy; Phase 4 remains unchecked.
 
 ## Change control
 
