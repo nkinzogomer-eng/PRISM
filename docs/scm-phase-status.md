@@ -79,7 +79,7 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] Pin the benchmark commit and expected-results Git blob; parse all 1,230 labels and record the 14-category distribution in [feasibility note](scm-phase4-feasibility.md). Archive SHA-256 and known-label disposition remain outstanding.
 - [x] Scoring tests pass in CI (3/3); the label CSV parses and the scorer evaluates all 1,230 IDs in the Bandit pilot.
 - [x] First Bandit baseline measured; see [preliminary report](../reports/phase-4-preliminary-static-baseline-2026-10-16.md). It is a coarse, in-sample diagnostic, not a PRISM result.
-- [ ] Fix Semgrep startup compatibility and obtain a valid per-case baseline.
+- [x] Obtain valid per-case baselines for Bandit 1.8.6 and Semgrep 1.127.1 plus a fixed OR policy; all 1,230 cases were scored. See [preliminary report](../reports/phase-4-preliminary-static-baseline-2026-10-16.md) and [successful CI run](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38972068969).
 - [ ] Pin Semgrep ruleset content and audit per-category/CWE mapping and known label issues.
 - [ ] Freeze split manifest and run development-only pilot.
 - [ ] Run locked held-out comparison, uncertainty analysis, and negative controls.
