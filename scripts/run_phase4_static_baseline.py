@@ -85,6 +85,8 @@ def main() -> int:
     parser.add_argument("--source-dir", required=True, type=Path,
                         help="pinned benchmark testcode directory")
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--semgrep-config", default="p/python",
+                        help="Semgrep registry alias or local immutable rules directory")
     args = parser.parse_args()
     labels = load_labels(args.labels)
     source_root = args.source_dir.resolve()
@@ -94,10 +96,12 @@ def main() -> int:
     if len(source_files) != 1230:
         raise SystemExit(f"expected 1230 test modules, found {len(source_files)}")
 
+    semgrep_config = (args.semgrep_config if args.semgrep_config.startswith("p/")
+                      else str(Path(args.semgrep_config).resolve()))
     commands = {
         "bandit": [sys.executable, "-m", "bandit", "-r", str(source_root),
                    "-f", "json", "-q"],
-        "semgrep": ["semgrep", "scan", "--config", "p/python", "--metrics=off",
+        "semgrep": ["semgrep", "scan", "--config", semgrep_config, "--metrics=off",
                     "--no-git-ignore", "--json", str(source_root)],
     }
     results = []
