@@ -6,7 +6,7 @@
 ## Phase tracker
 
 - [x] **Phase 0 — scientific contract:** approved by the project owner on 2026-10-16. The core must operate without an external AI model; correctness and verifiability cannot be traded away for speed; all costs and strong baselines must be counted.
-- [ ] **Phase 1 — theoretical audit:** source-backed audit and falsifiable candidate hypothesis drafted; review and CI still pending.
+- [x] **Phase 1 — theoretical audit:** source-backed audit, falsifiable candidate hypothesis, Phase 2 protocol, documentation checks, and repository CI completed. H-SCM-1 itself remains unproven.
 - [ ] **Phase 2 — baselines and reference measurements.**
 - [ ] **Phase 3 — controlled structural-computation experiments.**
 - [ ] **Phase 4 — authorized cyber Red Team + Blue Team, repair, and independent verification.**
