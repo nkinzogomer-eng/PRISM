@@ -9,7 +9,7 @@
 - [x] **Phase 0 — Scientific contract and constraints.** Approved by the project owner on 2026-10-16.
 - [x] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit reviewed; H-SCM-1 and Phase 2 protocol documented; repository CI passed on 2026-10-16.
 - [x] **Phase 2 — Baselines and reproducible reference measurements.** 100 fixed seeds per seeded family; all independent checks and exact-cost preservation gates passed; detailed results recorded in the Phase 2 report.
-- [ ] **Phase 3 — Controlled structural-computation experiments.**
+- [x] **Phase 3 — Controlled structural-computation experiments.** 500 controlled synthetic instances across five regimes passed the semantic, verifier, and exact-cost gates; see the Phase 3 report. General SCM superiority remains unproven.
 - [ ] **Phase 4 — Cybersecurity application: authorized Red Team + Blue Team, repair, and independent verification.**
 - [ ] **Phase 5 — Optional Ciel orchestration integration, only after measured core value.**
 - [ ] **Phase 6 — Generalization to separate domains, including financial-flow analysis and astronomy.**
@@ -52,6 +52,21 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] GitHub Actions run [38967359906](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38967359906) succeeded.
 
 **Scientific conclusion:** Phase 2 validates the benchmark apparatus and narrow transformation contracts only. It does not validate H-SCM-1 or establish general SCM superiority. Fixed-cost order beat adaptive greedy and decision-disagreement on sparse binary cases; omitted-world cases produced 52–100% wrong-certificate rates despite 100% model-relative certification. Phase 3 may begin with these baselines locked.
+
+## Phase 3 — validated controlled transformation experiment
+
+- [x] Protocol and falsifiable acceptance gates documented in [Phase 3 protocol](scm-phase3-protocol.md).
+- [x] 500 deterministic finite instances executed: 100 seeds in each of five regimes (favorable dominance, cost reversal, unrelated observations, equal-cost duplicate, and chained dominance).
+- [x] Independent dominance verifier passed 500/500 instances.
+- [x] Exhaustive decision-set preservation checks passed 500/500 instances.
+- [x] Exact expected execution cost did not increase in any of the 500 instances; mean cost delta was zero in every regime.
+- [x] Positive/negative controls behaved as specified: favorable 100/100 removals; cost reversal 0/100; unrelated 0/100; equal-cost duplicate 100/100; chain 100/100, removing two observations per instance.
+- [x] Omitted-world counterexample reproduced: the declared-class verifier passes even though an omitted world violates the declared dominance relation.
+- [x] 53 tests ran; 52 passed and one pre-existing expected-failure test remained expected-failing. Existing Phase 2 benchmark and legacy benchmark steps passed.
+- [x] Results and timing limitations recorded in [Phase 3 report](../reports/phase-3-controlled-dominance-2026-10-16.md).
+- [x] GitHub Actions run [38969083638](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38969083638) succeeded.
+
+**Scientific conclusion:** the existing dominated-observation rule passed its narrow finite-model safety tests. Abstract optimal execution cost remained unchanged; only representation size decreased in eligible regimes. Timing diagnostics are preliminary and do not establish portable speedup. H-SCM-1 and general SCM superiority remain unproven.
 
 ## Change control
 
