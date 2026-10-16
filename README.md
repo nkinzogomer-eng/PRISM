@@ -48,6 +48,8 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 - [Phase 4 defensive cybersecurity protocol](docs/scm-phase4-cyber-protocol.md)
 - [Phase 4 decision log](journal/2026-10-16-phase4-decision.md)
 - [Phase 4 dataset/toolchain feasibility note](docs/scm-phase4-feasibility.md)
+- [Phase 4 scoring utility](scripts/score_phase4.py)
+- [Phase 4 scoring tests](tests/test_phase4_scoring.py)
 - [Phase 4 defensive cybersecurity protocol](docs/scm-phase4-cyber-protocol.md)
 - [Phase 4 decision log](journal/2026-10-16-phase4-decision.md)
 - [Initial research decision log](journal/2026-10-10.md)
