@@ -2,6 +2,17 @@
 
 ## Preliminary source checks
 
+Sources reviewed on 2026-10-16:
+- OWASP Benchmark Python repository: https://github.com/OWASP-Benchmark/BenchmarkPython
+- Expected labels: https://github.com/OWASP-Benchmark/BenchmarkPython/blob/main/expectedresults-0.1.csv
+- License: https://github.com/OWASP-Benchmark/BenchmarkPython/blob/main/LICENSE
+- Official OWASP Benchmark project description and case counts: https://owasp.org/www-project-benchmark/
+- Upstream label concern (BenchmarkTest00008): https://github.com/OWASP-Benchmark/BenchmarkPython/issues/1
+- OWASP Benchmark Java: https://github.com/OWASP-Benchmark/BenchmarkJava
+- NIST SARD suite catalogue: https://samate.nist.gov/SARD/test-suites/
+- Semgrep Community Edition: https://semgrep.dev/products/community-edition
+
+
 The initial candidate review found a better first fit than Java for the prototype's current environment:
 
 - **OWASP Benchmark for Python v0.1** is the preferred pilot candidate because the current PRISM repository and first evaluator can remain Python-only.
