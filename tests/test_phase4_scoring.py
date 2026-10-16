@@ -32,7 +32,7 @@ class Phase4ScoringTests(unittest.TestCase):
             labels = read_labels(labels_path)
             predictions = read_predictions(predictions_path, labels)
             report = calculate(labels, predictions)
-            overall = report["ALL"]
+            overall = report["results"]["ALL"]
             self.assertEqual((overall["tp"], overall["fp"], overall["tn"], overall["fn"]), (1, 1, 0, 0))
             self.assertEqual(overall["unknown_positive"], 1)
             self.assertEqual(overall["unknown_negative"], 1)
