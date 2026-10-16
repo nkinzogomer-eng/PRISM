@@ -37,6 +37,11 @@ The scanner did not produce valid JSON because its startup failed with `ModuleNo
 
 The workflow now pins `setuptools==80.9.0` to restore the dependency expected by this Semgrep version. The retry must succeed before any two-tool comparison is reported.
 
+## CI evidence
+
+- [Scoring tests and first successful two-tool pilot](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38971933848): workflow succeeded, both analyzers emitted valid JSON, and the scorer evaluated all 1,230 cases for each tool.
+- A subsequent runner change adds an explicit fixed all-tools OR baseline; its output is pending and will be reported separately.
+
 ## Interpretation and next gates
 
 1. This is an initial, in-sample baseline over all benchmark modules; no development/held-out split has been frozen yet.
