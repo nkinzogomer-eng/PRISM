@@ -47,6 +47,14 @@ Because OWASP Benchmark for Python is a runnable web application, DAST/IAST resu
 
 A separate GitHub Actions workflow, `.github/workflows/phase4-codeql.yml`, attempts CodeQL Python `default` and `security-extended` analyses on the pinned OWASP Benchmark revision, preserves SARIF, normalizes case-level predictions, scores the coarse metric, and uploads artifacts. The Bandit/Semgrep baseline workflow now checks out the Semgrep Community rules repository at immutable commit `17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9` and uses Semgrep CLI `1.181.0`; the earlier Semgrep `1.127.1` + registry-alias result remains a historical pilot, not the final frozen configuration. The SARIF normalizer has regression tests. The first execution caught two integration errors and was not accepted as a CodeQL benchmark result: the action writes SARIF into a directory containing `python.sarif`, and the initial database source root selected PRISM instead of the nested benchmark checkout. After correcting the source root, the pull-request SARIF still reported zero benchmark alerts despite extracting the 1,230 modules. Inspection showed the SARIF run used `incrementalMode: diff-informed`, so PR-only change filtering can invalidate a full-dataset score when the benchmark is a nested checkout. The CodeQL benchmark workflow now runs on pushes to the research branch (and manual dispatch), not on pull-request events, so the full dataset is analyzed without PR diff filtering. The zero-alert outputs from the earlier runs are explicitly invalid as full-dataset competitive scores. These failures illustrate why tool output and scope are checked before interpreting metrics. The coarse mapping is retained only for continuity and must not be treated as CWE-relevant detection.
 
+
+
+### Live configuration diagnostic — broad Semgrep rules (not final)
+
+The first pinned local rules checkout used the entire `python/` tree. On the 1,230-case coarse metric, Semgrep CLI 1.181.0 reported 3,526 findings and flagged **all 1,230 cases**: TP=452, FP=778, TN=0, FN=0; precision=36.75%, recall=100%, F1=53.75%, measured scanner time 36.04 s. Bandit in the same run flagged 352 cases with F1=55.72% and measured 3.02 s. These are single-run, in-sample, label-relative results, and the times are not controlled enough for a speed claim. The broad Semgrep configuration is not useful as a binary case classifier: its perfect recall is achieved by flagging every case, with zero specificity.
+
+**Live correction:** the next run narrows the immutable Semgrep ruleset to `python/lang/security` and `python/flask/security`, while preserving the broad-rule result as a negative configuration diagnostic. This does not guarantee better performance; the new run must demonstrate whether the precision/recall balance improves.
+
 ## PRISM comparison arms
 
 At minimum compare:
