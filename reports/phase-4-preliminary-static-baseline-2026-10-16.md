@@ -70,3 +70,34 @@ The fixed OR policy finds only **3 additional positive cases** over Bandit alone
 5. Only after the individual-tool baselines are reproducible should fixed-order, cost-aware, and PRISM orchestration be compared with identical visible inputs and full end-to-end costs.
 
 **Current conclusion:** Bandit provides a measurable but limited first baseline. No PRISM-versus-baseline result exists. Phase 4 remains in progress.
+
+
+## Follow-up diagnostic — immutable security-only Semgrep configuration (2026-10-17)
+
+A new run used Bandit 1.8.6 and Semgrep CLI 1.181.0 with the Semgrep Community rules repository pinned to commit `17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9`. The Semgrep configuration was restricted to `python/lang/security` and `python/flask/security`. This remains a single-run, in-sample, coarse “any finding in module” comparison against the supplied labels; it is not a held-out result and findings have not been matched to intended CWE/source locations.
+
+| Metric | Bandit 1.8.6 | Semgrep 1.181.0, pinned security rules | Fixed OR | Fixed AND |
+|---|---:|---:|---:|---:|
+| Tool wall time (single run) | 5.64 s | 22.05 s | 27.69 s total | 27.69 s total |
+| Cases flagged | 352 | 371 | 469 | 254 |
+| TP | 224 | 173 | 262 | 135 |
+| FP | 128 | 198 | 207 | 119 |
+| TN | 650 | 580 | 571 | 659 |
+| FN | 228 | 279 | 190 | 317 |
+| Precision | 63.64% | 46.63% | 55.86% | 53.15% |
+| Recall | 49.56% | 38.27% | 57.96% | 29.87% |
+| F1 | 55.72% | 42.04% | 56.89% | 38.24% |
+
+The OR policy raises recall by 8.40 percentage points and reduces misses by 38, but adds 79 false positives and raises F1 by only 1.17 percentage points. In this run, the two-tool wall time was about 4.9 times Bandit alone. The AND policy reduces the number of flags but sharply worsens recall and F1. **Neither naïve combination is an adequate SCM result.** These timing ratios are descriptive only because each tool was timed once on a shared hosted runner.
+
+### Category-level signal from the same run
+
+Bandit and Semgrep have complementary but incomplete coverage. In this coarse label mapping, Bandit flags no cases in path traversal, redirect, secure-cookie, trust-boundary, or XSS categories; Semgrep adds some path-traversal and redirect flags and flags secure-cookie cases, but its XSS configuration still misses all positive XSS cases. Both tools show important blind spots in LDAP injection and other categories. These category results need finding-to-CWE/source-location adjudication before being treated as vulnerability detection accuracy.
+
+### Live correction and next experiment
+
+- The unfiltered Semgrep `python/` directory was rejected as too noisy: it flagged all 1,230 cases (precision 36.75%, recall 100%, F1 53.75%) and took 36.04 s in one run.
+- The baseline now uses only the pinned Python language-security and Flask-security directories, and the runner records both fixed OR and fixed AND policies.
+- Next, inspect the full push-triggered CodeQL SARIF and score; the PR-triggered CodeQL output was diff-informed and is not a valid full-dataset result.
+- Then audit category/CWE and location relevance, freeze the family-aware held-out split, and compare a development-tuned cost-aware selector and PRISM with all planning/normalization/verification costs charged. Do not use benchmark labels or category identities as hidden runtime features.
+- No PRISM orchestration has yet been tested. No SCM advantage is demonstrated at this stage.
