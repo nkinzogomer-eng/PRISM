@@ -264,7 +264,7 @@ def main() -> int:
             "This is a first static-analysis baseline, not an end-to-end DAST evaluation.",
             "A finding anywhere in a test module is counted as a positive case prediction; findings are not yet adjudicated for category/CWE relevance.",
             "Benchmark labels are imperfect and v0.1 is preliminary.",
-            "Tool configuration and version are part of the result; Semgrep's registry ruleset must be pinned separately before any final held-out comparison.",
+            "Tool configuration and version are part of the result; current Semgrep Community rules are pinned to an immutable commit, while the original registry-alias pilot remains historical.",
             "No PRISM orchestration or optimization is evaluated by this runner.",
         ],
         "tools": results,
