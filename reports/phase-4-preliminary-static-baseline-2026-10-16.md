@@ -119,3 +119,8 @@ I added and ran a fixed sequential policy that first runs Bandit over all 1,230 
 | F1 | 56.89% | 56.89% |
 
 This preserves the same coarse decisions and saves 3.42 seconds (about 16.6%) versus the full OR run in this single measurement. It is a real execution-cost improvement for this fixed policy, but **not a meaningful quality improvement and not evidence of SCM superiority**. The measured total is still about 4.2 times Bandit alone for only a 1.17-point F1 increase over Bandit, so we must test whether a cost-aware controller can obtain a better trade-off or conclude this tool pair is not worth escalating on this benchmark. Repeat timings and held-out tests are still required.
+
+
+### Data-split integrity decision
+
+Because we have now inspected aggregate results across all 1,230 cases and used those results to change Semgrep configurations, **OWASP Benchmark for Python v0.1 is now a development/diagnostic dataset for this work, not an untouched final holdout**. We must not retroactively label any split from this same dataset as pristine held-out evidence. The next independent validation must use a separately pinned dataset/task or an independently adjudicated set of production-like Python projects. OWASP Benchmark Java or NIST SARD/Juliet can support a separate cross-language replication, but those results must not be presented as direct Python-scanner performance.
