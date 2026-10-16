@@ -45,7 +45,7 @@ Because OWASP Benchmark for Python is a runnable web application, DAST/IAST resu
 
 ## Implemented automation (initial)
 
-A separate GitHub Actions workflow, `.github/workflows/phase4-codeql.yml`, now attempts CodeQL Python `default` and `security-extended` analyses on the pinned OWASP Benchmark revision, preserves SARIF, normalizes case-level predictions, scores the coarse metric, and uploads artifacts. The SARIF normalizer has regression tests. These jobs must pass and their outputs must be reviewed; adding the workflow is not evidence of scanner quality. The coarse mapping is retained only for continuity and must not be treated as CWE-relevant detection.
+A separate GitHub Actions workflow, `.github/workflows/phase4-codeql.yml`, now attempts CodeQL Python `default` and `security-extended` analyses on the pinned OWASP Benchmark revision, preserves SARIF, normalizes case-level predictions, scores the coarse metric, and uploads artifacts. The SARIF normalizer has regression tests. The first execution caught two integration errors and was not accepted as a CodeQL benchmark result: the action writes SARIF into a directory containing `python.sarif`, and the initial database source root selected PRISM instead of the nested benchmark checkout. The workflow was corrected to read the SARIF file and target `benchmark` as the source root; the corrected run is pending. The zero-alert output from the mis-scoped run is explicitly invalid for benchmark scoring. These failures illustrate why tool output and scope are checked before interpreting metrics. The coarse mapping is retained only for continuity and must not be treated as CWE-relevant detection.
 
 ## PRISM comparison arms
 
