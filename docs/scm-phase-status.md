@@ -7,7 +7,7 @@
 ## Status
 
 - [x] **Phase 0 — Scientific contract and constraints.** Approved by the project owner on 2026-10-16.
-- [ ] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit artifacts prepared on 2026-10-16; final review and CI evidence pending.
+- [x] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit reviewed; H-SCM-1 and Phase 2 protocol documented; repository CI passed on 2026-10-16.
 - [ ] **Phase 2 — Baselines and reproducible reference measurements.**
 - [ ] **Phase 3 — Controlled structural-computation experiments.**
 - [ ] **Phase 4 — Cybersecurity application: authorized Red Team + Blue Team, repair, and independent verification.**
@@ -31,13 +31,13 @@ The project owner explicitly approved these non-negotiable constraints:
 
 Phase 1 is eligible to be checked when all of the following artifacts exist and have been reviewed:
 
-- [ ] A source-backed map of relevant existing theories and methods.
-- [ ] A limitation/counterexample for each major method family, not just its promise.
-- [ ] A clear separation between established techniques, the SCM research hypothesis, and claims not yet supported.
-- [ ] A falsifiable, narrow candidate hypothesis and explicit conditions that would refute or limit it.
-- [ ] A reproducible Phase 2 benchmark protocol with baselines, resource accounting, and decision-quality criteria.
-- [ ] A written decision about which claims are currently unsupported and which implementation work remains paused.
-- [ ] Repository regression CI passes for the documentation change. CI success is not evidence that SCM is superior.
+- [x] A source-backed map of relevant existing theories and methods.
+- [x] A limitation/counterexample for each major method family, not just its promise.
+- [x] A clear separation between established techniques, the SCM research hypothesis, and claims not yet supported.
+- [x] A falsifiable, narrow candidate hypothesis and explicit conditions that would refute or limit it.
+- [x] A reproducible Phase 2 benchmark protocol with baselines, resource accounting, and decision-quality criteria.
+- [x] A written decision about which claims are currently unsupported and which implementation work remains paused.
+- [x] Repository regression CI passes for the documentation change. CI success is not evidence that SCM is superior.
 
 See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed review, candidate hypothesis, protocol, and limitations.
 
@@ -50,6 +50,6 @@ A change to goals, success metrics, or resource assumptions must be recorded in 
 - Documentation consistency assertions: **15/15 passed** (phase markers, AI-model independence, hypothesis/refutation conditions, negative results, baselines, cost accounting, Phase 2 protocol, and navigation links).
 - Internal Markdown link resolution: **10/10 passed** against the branch contents.
 - No production code was changed in this PR, so no new algorithmic unit test was authored for Phase 1.
-- GitHub Actions has not yet reported a run for the PR head commit. The existing unit-test suite therefore remains **not re-run for this change**; Phase 1 stays unchecked until this regression gate is resolved.
+- GitHub Actions PR run [38944823840](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38944823840) completed successfully. The standard-library unit-test suite and both existing synthetic benchmark steps passed.
 
-These checks validate documentation consistency and navigation only. They do not validate H-SCM-1 or prove a computational advantage.
+These checks validate documentation consistency and repository regression only. They do not validate H-SCM-1 or prove a computational advantage.
