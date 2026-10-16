@@ -54,6 +54,7 @@ jobs:
         with:
           languages: python
           build-mode: none
+          source-root: benchmark
           queries: ${{ matrix.query_suite }}
 
       - name: Analyze benchmark
