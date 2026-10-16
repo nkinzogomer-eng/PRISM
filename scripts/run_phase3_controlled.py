@@ -79,6 +79,9 @@ def run_mode(mode, runs):
         "mean_transform_wall_seconds_diagnostic": mean(r["transform_wall_seconds_diagnostic"] for r in rows),
         "mean_exact_solver_before_seconds_diagnostic": mean(r["exact_solver_before_seconds_diagnostic"] for r in rows),
         "mean_exact_solver_after_seconds_diagnostic": mean(r["exact_solver_after_seconds_diagnostic"] for r in rows),
+        "mean_pipeline_wall_seconds_before_diagnostic": mean(r["exact_solver_before_seconds_diagnostic"] for r in rows),
+        "mean_pipeline_wall_seconds_after_diagnostic": mean(r["transform_wall_seconds_diagnostic"] + r["exact_solver_after_seconds_diagnostic"] for r in rows),
+        "mean_pipeline_wall_delta_seconds_diagnostic": mean(r["transform_wall_seconds_diagnostic"] + r["exact_solver_after_seconds_diagnostic"] - r["exact_solver_before_seconds_diagnostic"] for r in rows),
         "per_seed": rows,
     }
 
@@ -137,10 +140,10 @@ def main():
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for name, s in modes.items():
         lines.append(f"| {name} | {s['runs']} | {s['mean_observations_before']:.2f} → {s['mean_observations_after']:.2f} | {s['mean_observations_removed']:.2f} | {s['runs_with_any_removal']} | {s['mean_expected_cost_before_units']:.4f} → {s['mean_expected_cost_after_units']:.4f} | {s['mean_expected_cost_delta_units']:.6f} | {s['all_independent_verifiers_passed']} | {s['all_decision_sets_preserved']} | {s['exact_expected_cost_never_increased']} |")
-    lines += ["", "## Wall-clock diagnostics", "", "Seconds are runner-dependent diagnostics; abstract execution-cost units are not added to seconds.", "",
-        "| Regime | Transform wall time mean (s) | Exact solver before (s) | Exact solver after (s) |", "|---|---:|---:|---:|"]
+    lines += ["", "## Wall-clock diagnostics", "", "Pipeline wall time is estimated as transform time + transformed exact-solver time and compared with the untransformed exact-solver time. All values are runner-dependent diagnostics; abstract operation-cost units are not added to seconds.", "",
+        "| Regime | Transform (s) | Solver before (s) | Solver after (s) | Pipeline before (s) | Pipeline after (s) | Paired delta (s) |", "|---|---:|---:|---:|---:|---:|---:|"]
     for name, s in modes.items():
-        lines.append(f"| {name} | {s['mean_transform_wall_seconds_diagnostic']:.9f} | {s['mean_exact_solver_before_seconds_diagnostic']:.9f} | {s['mean_exact_solver_after_seconds_diagnostic']:.9f} |")
+        lines.append(f"| {name} | {s['mean_transform_wall_seconds_diagnostic']:.9f} | {s['mean_exact_solver_before_seconds_diagnostic']:.9f} | {s['mean_exact_solver_after_seconds_diagnostic']:.9f} | {s['mean_pipeline_wall_seconds_before_diagnostic']:.9f} | {s['mean_pipeline_wall_seconds_after_diagnostic']:.9f} | {s['mean_pipeline_wall_delta_seconds_diagnostic']:.9f} |")
     lines += ["", "## Omitted-world counterexample", "", f"- Declared-class verifier passed: **{external['declared_class_verifier_passed']}**",
         f"- Omitted world violates declared dominance: **{external['omitted_world_violates_declared_dominance_relation']}**",
         f"- Interpretation: {external['interpretation']}", "", "## Hard gates", ""]
