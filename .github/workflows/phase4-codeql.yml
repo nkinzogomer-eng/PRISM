@@ -7,6 +7,7 @@ on:
       - "scripts/normalize_codeql_sarif.py"
       - "scripts/score_phase4.py"
       - "tests/test_phase4_scoring.py"
+      - "tests/test_phase4_codeql_normalizer.py"
       - ".github/workflows/phase4-codeql.yml"
       - "docs/scm-phase4-cyber-protocol.md"
       - "docs/scm-phase4-strong-baselines.md"
@@ -43,6 +44,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Run scorer and SARIF normalizer tests
+        run: |
+          python -m unittest tests.test_phase4_scoring tests.test_phase4_codeql_normalizer -v
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
