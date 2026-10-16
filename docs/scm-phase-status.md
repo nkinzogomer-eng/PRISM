@@ -76,9 +76,11 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] Initial scope decision recorded in [Phase 4 decision log](../journal/2026-10-16-phase4-decision.md).
 - [x] Candidate dataset and local toolchain checked; Python benchmark v0.1 selected as a pilot candidate with its limitations recorded in [feasibility note](scm-phase4-feasibility.md).
 - [x] Standard-library scoring utility and unit tests added for normalized per-case outputs, unknown cases, coverage, and conservative bounds ([script](../scripts/score_phase4.py), [tests](../tests/test_phase4_scoring.py)).
-- [ ] Pin dataset commit/checksum and audit labels, including known upstream issues; identify compatible analyzer versions.
-- [ ] Run the scoring tests in CI and validate the evaluator against the full upstream label CSV.
-- [ ] Build a reproducible per-case analyzer baseline.
+- [x] Pin the benchmark commit and expected-results Git blob; parse all 1,230 labels and record the 14-category distribution in [feasibility note](scm-phase4-feasibility.md). Archive SHA-256 and known-label disposition remain outstanding.
+- [x] Scoring tests pass in CI (3/3); the label CSV parses and the scorer evaluates all 1,230 IDs in the Bandit pilot.
+- [x] First Bandit baseline measured; see [preliminary report](../reports/phase-4-preliminary-static-baseline-2026-10-16.md). It is a coarse, in-sample diagnostic, not a PRISM result.
+- [ ] Fix Semgrep startup compatibility and obtain a valid per-case baseline.
+- [ ] Pin Semgrep ruleset content and audit per-category/CWE mapping and known label issues.
 - [ ] Freeze split manifest and run development-only pilot.
 - [ ] Run locked held-out comparison, uncertainty analysis, and negative controls.
 - [ ] Evaluate remediation separately with independent verification.
