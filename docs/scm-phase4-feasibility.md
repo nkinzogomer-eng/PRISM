@@ -16,11 +16,33 @@ Sources reviewed on 2026-10-16:
 The initial candidate review found a better first fit than Java for the prototype's current environment:
 
 - **OWASP Benchmark for Python v0.1** is the preferred pilot candidate because the current PRISM repository and first evaluator can remain Python-only.
-- Its upstream README calls v0.1 a preliminary release; the OWASP project page lists 1,230 cases across 13 categories.
-- The upstream repository provides `expectedresults-0.1.csv` with test ID, category, expected vulnerability boolean, and CWE. The repository declares GPL-3.0.
-- A current upstream issue reports a possible false-positive label in Path Traversal case BenchmarkTest00008. This is a concrete reason to retain label-audit and ambiguity reporting rather than treating all expected labels as infallible.
+- The candidate is pinned for evaluation to upstream commit `f1291485808b66e20ddb6b01b10dc71b3df8c8ba` (resolved from `main` during this check). The `expectedresults-0.1.csv` Git blob SHA reported by the connector is `f38bbc821529b21476cae68953edb6c95a23ad0e`; record a SHA-256 archive checksum when the data is actually downloaded.
+- The upstream README calls v0.1 preliminary. A direct parse of the pinned expected-results file found **1,230 rows, 1,230 unique test IDs, zero duplicate IDs, zero malformed label rows, 452 positive labels, 778 negative labels, and 14 distinct category values**. This differs from a summary count of 13 categories on the OWASP page; use the actual CSV and report the discrepancy rather than silently resolving it.
+- The upstream repository declares GPL-3.0. The expected-results CSV contains test ID, category, expected boolean, and CWE.
+- An upstream issue reports a possible label problem in Path Traversal case BenchmarkTest00008. It is marked positive in the current CSV; this case must be audited and its disposition logged before held-out scoring.
 - OWASP Benchmark for Java v1.2 remains a possible replication, but requires a separate Java/Maven toolchain and has a GPL-2.0 license.
 - NIST SARD/Juliet is a possible later replication; its official catalogue lists large Java/C/C++ suites, including 28,881 Juliet Java 1.3 cases. Dataset scale and older synthetic test patterns make it a separate evaluation, not a pool to mix silently with the OWASP benchmark.
+
+## Label distribution observed in the current CSV
+
+| Category | Cases | Positive | Negative |
+|---|---:|---:|---:|
+| pathtraver | 168 | 65 | 103 |
+| sqli | 16 | 5 | 11 |
+| xpathi | 186 | 51 | 135 |
+| xxe | 28 | 8 | 20 |
+| weakrand | 326 | 99 | 227 |
+| hash | 151 | 71 | 80 |
+| securecookie | 39 | 24 | 15 |
+| redirect | 34 | 13 | 21 |
+| trustbound | 37 | 18 | 19 |
+| codeinj | 53 | 20 | 33 |
+| ldapi | 29 | 16 | 13 |
+| deserialization | 54 | 18 | 36 |
+| xss | 89 | 31 | 58 |
+| cmdi | 20 | 13 | 7 |
+
+These counts are a direct parse of the label CSV, not scanner performance. Several categories are small and class balance varies substantially; report category-level metrics and avoid treating the micro-average as sufficient.
 
 ## Local toolchain snapshot
 
