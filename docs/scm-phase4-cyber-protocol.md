@@ -22,7 +22,7 @@ Primary pilot candidate: OWASP Benchmark for Python v0.1, pinned to a commit and
 
 Replication candidate: OWASP Benchmark for Java v1.2, after a separate Java/Maven environment is pinned. A subset of NIST SARD/Juliet may provide a later independent replication if licensing, labels, buildability, and tool compatibility are documented. Report each dataset separately. See [Phase 4 feasibility note](scm-phase4-feasibility.md).
 
-The first task is narrow: classify labeled cases for declared categories using static analysis, then evaluate outputs against benchmark labels. Labels are an imperfect reference, not proof of real-world exploitability.
+The first task is narrow: run static analyzers separately against the 1,230 individual `testcode/BenchmarkTestNNNNN.py` modules in the pinned benchmark revision, map each finding to its case ID from the source path, and score the binary case-level prediction against the supplied labels. The benchmark also runs as a local web application, but the first experiment does not expose or scan a network service; DAST/IAST would be a separate follow-up. A case is initially predicted positive if at least one analyzer finding is reported in its module. This is a deliberately coarse baseline: finding-to-category/CWE adjudication and rule coverage must be examined before drawing conclusions. Labels are an imperfect reference, not proof of real-world exploitability.
 
 ## Dataset lock
 
@@ -38,7 +38,7 @@ All arms use the same inputs, pinned tools/rules, observable metadata, and resou
 4. PRISM using the same operation catalogue and observable inputs, logging every selection, estimated/actual cost, evidence update, stop/abstain decision, and certificate scope.
 5. An exact optimum only for small cases where tractable, clearly labelled as an oracle.
 
-Include ablations for each PRISM-specific component. No arm gets free preprocessing or planning. Until a real adapter exists, the finite reference runner is not a cybersecurity result.
+Include ablations for each PRISM-specific component. No arm gets free preprocessing or planning. The finite reference runner is not a cybersecurity result. The Phase 4 static baseline runner is a tool baseline only; it does not evaluate PRISM orchestration.
 
 ## Metrics
 
