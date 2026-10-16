@@ -44,3 +44,12 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 ## Change control
 
 A change to goals, success metrics, or resource assumptions must be recorded in the research log before the relevant evaluation results are examined. If a hypothesis fails, narrow or reject it rather than silently changing the evaluation target. No implementation gate is passed by writing a specification alone.
+
+## Validation snapshot — 2026-10-16
+
+- Documentation consistency assertions: **15/15 passed** (phase markers, AI-model independence, hypothesis/refutation conditions, negative results, baselines, cost accounting, Phase 2 protocol, and navigation links).
+- Internal Markdown link resolution: **10/10 passed** against the branch contents.
+- No production code was changed in this PR, so no new algorithmic unit test was authored for Phase 1.
+- GitHub Actions has not yet reported a run for the PR head commit. The existing unit-test suite therefore remains **not re-run for this change**; Phase 1 stays unchecked until this regression gate is resolved.
+
+These checks validate documentation consistency and navigation only. They do not validate H-SCM-1 or prove a computational advantage.
