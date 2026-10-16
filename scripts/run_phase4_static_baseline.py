@@ -166,6 +166,34 @@ def main() -> int:
         else:
             combined = {"scoring_return_code": score_proc.returncode, "scoring_stderr": score_proc.stderr[-4000:]}
 
+    combined_and = None
+    if len(valid_tools) == 2:
+        intersection_ids = sorted(set(valid_tools[0]["flagged_case_ids"]) & set(valid_tools[1]["flagged_case_ids"]))
+        normalized_and = output_dir / "all-tools-and-predictions.csv"
+        with normalized_and.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["test_id", "category", "detected", "status"])
+            for test_id, category in sorted(labels.items()):
+                writer.writerow([test_id, category, str(test_id in set(intersection_ids)).lower(), "ok"])
+        score_path_and = output_dir / "all-tools-and-score.json"
+        score_cmd_and = [sys.executable, str(Path(__file__).with_name("score_phase4.py")),
+                         "--labels", str(args.labels.resolve()),
+                         "--predictions", str(normalized_and), "--output", str(score_path_and)]
+        score_proc_and = subprocess.run(score_cmd_and, capture_output=True, text=True, check=False)
+        if score_proc_and.returncode == 0:
+            score_data_and = json.loads(score_path_and.read_text(encoding="utf-8"))
+            overall_and = score_data_and["results"]["ALL"]
+            combined_and = {
+                "policy": "fixed AND: flag a case only if both analyzers report at least one finding",
+                "flagged_cases": len(intersection_ids),
+                "wall_seconds_sum_of_tool_runs": sum(r["wall_seconds"] for r in valid_tools),
+                "scoring_return_code": score_proc_and.returncode,
+                "score_path": str(score_path_and),
+                "metrics": {key: overall_and[key] for key in ("cases", "evaluated", "coverage", "tp", "fp", "tn", "fn", "precision", "recall", "f1", "recall_lower_bound", "false_positive_rate_upper_bound")},
+            }
+        else:
+            combined_and = {"scoring_return_code": score_proc_and.returncode, "scoring_stderr": score_proc_and.stderr[-4000:]}
+
     report = {
         "schema_version": 1,
         "benchmark_commit": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
@@ -181,6 +209,7 @@ def main() -> int:
         ],
         "tools": results,
         "combined_all_tools_baseline": combined,
+        "combined_and_tools_baseline": combined_and,
     }
     report_path = output_dir / "summary.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -188,7 +217,7 @@ def main() -> int:
         {k: v for k, v in r.items() if k in {"name", "return_code", "wall_seconds",
           "output_valid_json", "finding_count", "distinct_case_files_flagged",
           "non_case_findings", "scoring_return_code", "metrics"}} for r in results],
-        "combined_all_tools_baseline": combined}, indent=2))
+        "combined_all_tools_baseline": combined, "combined_and_tools_baseline": combined_and}, indent=2))
     return 0 if all(r.get("output_valid_json") and r.get("scoring_return_code") == 0
                     for r in results) else 1
 
