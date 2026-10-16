@@ -38,6 +38,8 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 
 - [Core specification](docs/core.md)
 - [SCM → PRISM roadmap](docs/scm-roadmap.md)
+- [SCM phase tracker](docs/scm-phase-status.md)
+- [Phase 1 theoretical audit](docs/scm-phase1-theory-audit.md)
 - [Initial research decision log](journal/2026-10-10.md)
 - [Adaptive finite runner](prism/adaptive.py)
 - [Adaptive runner tests](tests/test_adaptive.py)
