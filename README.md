@@ -47,6 +47,8 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 - [Phase 3 measured results (2026-10-16)](reports/phase-3-controlled-dominance-2026-10-16.md)
 - [Phase 4 defensive cybersecurity protocol](docs/scm-phase4-cyber-protocol.md)
 - [Phase 4 decision log](journal/2026-10-16-phase4-decision.md)
+- [Phase 4 defensive cybersecurity protocol](docs/scm-phase4-cyber-protocol.md)
+- [Phase 4 decision log](journal/2026-10-16-phase4-decision.md)
 - [Initial research decision log](journal/2026-10-10.md)
 - [Adaptive finite runner](prism/adaptive.py)
 - [Adaptive runner tests](tests/test_adaptive.py)
