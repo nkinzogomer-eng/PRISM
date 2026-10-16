@@ -1,6 +1,8 @@
 name: Phase 4 CodeQL strong baseline
 
 on:
+  push:
+    branches: ["research/phase-4-cyber-benchmark-protocol"]
   pull_request:
     branches: [main]
     paths:
