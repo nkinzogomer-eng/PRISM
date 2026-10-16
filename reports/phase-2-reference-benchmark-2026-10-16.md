@@ -4,12 +4,13 @@
 
 - Repository: nkinzogomer-eng/PRISM
 - Pull request: #11 (Phase 2 benchmark suite)
-- CI run: https://github.com/nkinzogomer-eng/PRISM/actions/runs/38967359906
+- Primary measurement CI run: https://github.com/nkinzogomer-eng/PRISM/actions/runs/38967359906
+- Final regression rerun after recording the report and phase status: https://github.com/nkinzogomer-eng/PRISM/actions/runs/38967580574
 - Environment: Ubuntu hosted runner, Python 3.12.15, Linux x86_64
 - Protocol version: 1
 - Seeded run range: integers 0–99, 100 instances per seeded family
 - Controls: one fixed parity instance (not a 100-instance estimate)
-- Suite result: PASS; 52 unit tests passed, including the new Phase 2 subprocess gate; existing comparison and transformation benchmark steps passed.
+- Suite result: PASS; 52 tests ran, 51 passed and 1 pre-existing, explicitly marked expected-failure test remained expected-failing (`test_KNOWN_FAILURE_misspecified_world_must_not_be_certified_wrongly`). The new Phase 2 subprocess gate passed; existing comparison and transformation benchmark steps passed.
 
 This report records the actual CI output. Correctness/cost results are reproducible for fixed seeds; wall-clock timings are runner-dependent diagnostics.
 
