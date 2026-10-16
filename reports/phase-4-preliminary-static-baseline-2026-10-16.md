@@ -37,10 +37,29 @@ The scanner did not produce valid JSON because its startup failed with `ModuleNo
 
 The workflow now pins `setuptools==80.9.0` to restore the dependency expected by this Semgrep version. The retry must succeed before any two-tool comparison is reported.
 
+## Fixed all-tools baseline (OR policy)
+
+The reproducible runner was extended to flag a case if either Bandit or Semgrep reports at least one finding.
+
+| Metric | Bandit | Semgrep | Fixed OR (both tools) |
+|---|---:|---:|---:|
+| Wall time in this run | 5.47 s | 18.11 s | 23.58 s total |
+| Cases flagged | 352 | 153 | 358 |
+| TP | 224 | 89 | 227 |
+| FP | 128 | 64 | 131 |
+| TN | 650 | 714 | 647 |
+| FN | 228 | 363 | 225 |
+| Precision | 63.64% | 58.17% | 63.41% |
+| Recall | 49.56% | 19.69% | 50.22% |
+| F1 | 55.72% | 29.42% | 56.05% |
+| False-positive rate | 16.45% | 8.23% | 16.84% |
+
+The fixed OR policy finds only **3 additional positive cases** over Bandit alone, while adding 3 false positives and increasing the measured tool runtime from 5.47 s to 23.58 s (about 4.3× in this single run). F1 increases by only 0.33 percentage points and the false-positive rate worsens slightly. This is evidence that naively running both tools and OR-ing their outputs has poor marginal value on this coarse benchmark mapping. It is not yet a statistical claim: timing is a single shared-runner measurement, and category/CWE relevance has not been adjudicated.
+
 ## CI evidence
 
-- [Scoring tests and first successful two-tool pilot](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38971933848): workflow succeeded, both analyzers emitted valid JSON, and the scorer evaluated all 1,230 cases for each tool.
-- A subsequent runner change adds an explicit fixed all-tools OR baseline; its output is pending and will be reported separately.
+- [Scoring tests and two-tool plus fixed-OR pilot](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38972068969): workflow succeeded, both analyzers emitted valid JSON, and the scorer evaluated all 1,230 cases for each tool and the combined policy.
+- The earlier Semgrep failure was a startup dependency issue; pinning `setuptools==80.9.0` resolved it.
 
 ## Interpretation and next gates
 
