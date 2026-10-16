@@ -17,17 +17,20 @@ This report records the actual CI output. Correctness/cost results are reproduci
 
 All percentages below are rates over each family. Execution cost is the generator's abstract operation-cost unit.
 
-| Family | Policy | Runs | Model-relative certificates | Correct certificates | Wrong certificates | Abstentions | Mean execution cost |
-|---|---|---:|---:|---:|---:|---:|---:|
-| Sparse binary | Fixed-cost | 100 | 100% | 100% | 0% | 0% | 8.51 |
-| Sparse binary | Seeded random | 100 | 100% | 100% | 0% | 0% | 10.25 |
-| Sparse binary | Decision-disagreement | 100 | 100% | 100% | 0% | 0% | 12.21 |
-| Sparse binary | Adaptive greedy | 100 | 100% | 100% | 0% | 0% | 11.72 |
-| Misspecified | Fixed-cost | 100 | 100% | 48% | 52% | 0% | 4.91 |
-| Misspecified | Seeded random | 100 | 100% | 29% | 71% | 0% | 6.74 |
-| Misspecified | Decision-disagreement | 100 | 100% | 0% | 100% | 0% | 5.38 |
-| Misspecified | Adaptive greedy | 100 | 100% | 14% | 86% | 0% | 5.07 |
-| Parity control | Each policy | 1 | 100% | 100% | 0% | 0% | 4.00 |
+| Family | Policy | Runs | Certificates | Correct | Wrong certificate | Abstention | Mean execution cost | Mean planning (s, diagnostic) | Mean elapsed (s, diagnostic) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Sparse binary | Fixed-cost | 100 | 100% | 100% | 0% | 0% | 8.51 | 0.000002 | 0.000202 |
+| Sparse binary | Seeded random | 100 | 100% | 100% | 0% | 0% | 10.25 | 0.000011 | 0.000195 |
+| Sparse binary | Decision-disagreement | 100 | 100% | 100% | 0% | 0% | 12.21 | 0.000041 | 0.000232 |
+| Sparse binary | Adaptive greedy | 100 | 100% | 100% | 0% | 0% | 11.72 | 0.000032 | 0.000091 |
+| Misspecified | Fixed-cost | 100 | 100% | 48% | 52% | 0% | 4.91 | 0.000002 | 0.000119 |
+| Misspecified | Seeded random | 100 | 100% | 29% | 71% | 0% | 6.74 | 0.000011 | 0.000119 |
+| Misspecified | Decision-disagreement | 100 | 100% | 0% | 100% | 0% | 5.38 | 0.000021 | 0.000124 |
+| Misspecified | Adaptive greedy | 100 | 100% | 14% | 86% | 0% | 5.07 | 0.000013 | 0.000046 |
+| Parity control | Fixed-cost | 1 | 100% | 100% | 0% | 0% | 4.00 | 0.000002 | 0.000189 |
+| Parity control | Seeded random | 1 | 100% | 100% | 0% | 0% | 4.00 | 0.000010 | 0.000192 |
+| Parity control | Decision-disagreement | 1 | 100% | 100% | 0% | 0% | 4.00 | 0.000041 | 0.000218 |
+| Parity control | Adaptive greedy | 1 | 100% | 100% | 0% | 0% | 4.00 | 0.000029 | 0.000084 |
 
 ### Exact expected-cost reference
 
