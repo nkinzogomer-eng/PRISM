@@ -18,9 +18,9 @@ A null or negative result is valid. Freeze the protocol before inspecting held-o
 
 ## Candidate benchmark
 
-Primary candidate: OWASP Benchmark for Java, pinned to a release/commit and archive SHA-256. Before adoption, verify the source, license, labels, build requirements, and compatibility with the selected analyzers.
+Primary pilot candidate: OWASP Benchmark for Python v0.1, pinned to a commit and archive SHA-256. It is explicitly preliminary and must not be treated as broad coverage. The current feasibility note records its 1,230 labeled cases, GPL-3.0 license, and a known upstream label concern requiring audit. These facts make it a practical pilot candidate, not ground truth beyond criticism.
 
-Fallback/replication candidate: a pinned subset of NIST SARD/Juliet, only if its licensing, labels, reproducibility, and tool compatibility are documented. Report datasets separately.
+Replication candidate: OWASP Benchmark for Java v1.2, after a separate Java/Maven environment is pinned. A subset of NIST SARD/Juliet may provide a later independent replication if licensing, labels, buildability, and tool compatibility are documented. Report each dataset separately. See [Phase 4 feasibility note](scm-phase4-feasibility.md).
 
 The first task is narrow: classify labeled cases for declared categories using static analysis, then evaluate outputs against benchmark labels. Labels are an imperfect reference, not proof of real-world exploitability.
 
