@@ -10,7 +10,6 @@ on:
       - ".github/workflows/phase4-baseline.yml"
       - "docs/scm-phase4-cyber-protocol.md"
       - "docs/scm-phase4-strong-baselines.md"
-      - "docs/scm-phase4-strong-baselines.md"
   workflow_dispatch:
 
 permissions:
@@ -55,7 +54,7 @@ jobs:
           python scripts/run_phase4_static_baseline.py \
             --labels benchmark/expectedresults-0.1.csv \
             --source-dir benchmark/testcode \
-            --output-dir reports/phase4-static-baseline \\
+            --output-dir reports/phase4-static-baseline \
             --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python"
 
       - name: Upload raw results and summary
