@@ -45,7 +45,7 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 
 - [x] Protocol and falsifiable acceptance gates documented in [Phase 2 protocol](scm-phase2-protocol.md).
 - [x] Reproducible runner added; 100 fixed seeds for each seeded family (seeds 0–99), plus one parity control.
-- [x] 52 standard-library unit tests passed, including the new subprocess test that executes the 100-seed suite; existing 20-seed comparison and transformation benchmark steps passed.
+- [x] 52 tests ran: 51 passed and one pre-existing, explicitly marked expected-failure test remained expected-failing; the new subprocess test executed the 100-seed suite successfully. Existing 20-seed comparison and transformation benchmark steps passed.
 - [x] Decision-equivalence quotient independent verifier: 100/100 checks passed; mean hypothesis count 10 → 8 (20% reduction).
 - [x] Dominated-observation pruning independent verifier: 100/100 checks passed; mean observation count 2 → 1 (50% reduction); exact expected execution cost remained 1.00 before and after in all runs.
 - [x] Outputs reviewed and limitations/negative results recorded in [Phase 2 benchmark report](../reports/phase-2-reference-benchmark-2026-10-16.md).
