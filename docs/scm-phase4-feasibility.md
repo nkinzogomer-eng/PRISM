@@ -15,7 +15,7 @@ Sources reviewed on 2026-10-16:
 
 The initial candidate review found a better first fit than Java for the prototype's current environment:
 
-- **OWASP Benchmark for Python v0.1** is the preferred pilot candidate because the current PRISM repository and first evaluator can remain Python-only.
+- **OWASP Benchmark for Python v0.1** is the preferred pilot candidate because the repository contains 1,230 individual `testcode/BenchmarkTestNNNNN.py` modules that can be mapped directly to expected-result IDs. The app can also be run locally, but the initial baseline will scan the modules offline rather than expose a web service.
 - The candidate is pinned for evaluation to upstream commit `f1291485808b66e20ddb6b01b10dc71b3df8c8ba` (resolved from `main` during this check). The `expectedresults-0.1.csv` Git blob SHA reported by the connector is `f38bbc821529b21476cae68953edb6c95a23ad0e`; record a SHA-256 archive checksum when the data is actually downloaded.
 - The upstream README calls v0.1 preliminary. A direct parse of the pinned expected-results file found **1,230 rows, 1,230 unique test IDs, zero duplicate IDs, zero malformed label rows, 452 positive labels, 778 negative labels, and 14 distinct category values**. This differs from a summary count of 13 categories on the OWASP page; use the actual CSV and report the discrepancy rather than silently resolving it.
 - The upstream repository declares GPL-3.0. The expected-results CSV contains test ID, category, expected boolean, and CWE.
@@ -51,10 +51,10 @@ At the time of this check, the available execution container reports Python 3.13
 ## Revised proposed order
 
 1. Pin OWASP Benchmark for Python v0.1 to a commit and checksum; audit license, label CSV, and known label issues.
-2. Identify two compatible local static analyzers and pin their versions/configurations. Do not assume they are installed.
-3. Build and test a tool-agnostic evaluator for normalized per-case outputs, including unknown/error/unsupported statuses and conservative coverage bounds.
-4. Establish individual-tool baselines before implementing any PRISM selector.
-5. Only after the baseline is reproducible, define a fair fixed/cost-aware/PRISM comparison and lock the held-out split.
+2. Run Bandit 1.8.6 and Semgrep 1.127.1 against only the pinned `testcode/` modules in CI; preserve raw outputs and command timings. Semgrep's ruleset is not yet pinned, so these runs are pilot diagnostics only.
+3. Validate the scorer on all 1,230 labels and audit the flagged case IDs against the benchmark's expected categories/CWEs.
+4. Establish per-tool baselines and inspect false positives, false negatives, and coverage before implementing any PRISM selector.
+5. Pin the Semgrep ruleset and freeze source-family development/held-out groups before any final comparison.
 
 ## Limits
 
