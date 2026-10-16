@@ -43,6 +43,10 @@ Because OWASP Benchmark for Python is a runnable web application, DAST/IAST resu
 - Use paired per-case comparisons and confidence intervals clustered by source/template family. Repeat timings in clean runs; report median and p90/p95, cold and warm costs, CPU, peak memory, setup/preprocessing, planning, normalization, verification, and tool invocation counts.
 - Keep all raw outputs and machine-readable per-case predictions. Report scanner failures, unsupported cases, timeouts, and parsing errors explicitly.
 
+## Implemented automation (initial)
+
+A separate GitHub Actions workflow, `.github/workflows/phase4-codeql.yml`, now attempts CodeQL Python `default` and `security-extended` analyses on the pinned OWASP Benchmark revision, preserves SARIF, normalizes case-level predictions, scores the coarse metric, and uploads artifacts. The SARIF normalizer has regression tests. These jobs must pass and their outputs must be reviewed; adding the workflow is not evidence of scanner quality. The coarse mapping is retained only for continuity and must not be treated as CWE-relevant detection.
+
 ## PRISM comparison arms
 
 At minimum compare:
