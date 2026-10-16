@@ -130,6 +130,35 @@ def main() -> int:
         if score_proc.returncode != 0:
             result["scoring_stderr"] = score_proc.stderr[-4000:]
 
+    combined = None
+    valid_tools = [r for r in results if r.get("output_valid_json") and r.get("scoring_return_code") == 0]
+    if len(valid_tools) == 2:
+        union_ids = sorted(set(valid_tools[0]["flagged_case_ids"]) | set(valid_tools[1]["flagged_case_ids"]))
+        normalized = output_dir / "all-tools-predictions.csv"
+        with normalized.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["test_id", "category", "detected", "status"])
+            for test_id, category in sorted(labels.items()):
+                writer.writerow([test_id, category, str(test_id in set(union_ids)).lower(), "ok"])
+        score_path = output_dir / "all-tools-score.json"
+        score_cmd = [sys.executable, str(Path(__file__).with_name("score_phase4.py")),
+                     "--labels", str(args.labels.resolve()),
+                     "--predictions", str(normalized), "--output", str(score_path)]
+        score_proc = subprocess.run(score_cmd, capture_output=True, text=True, check=False)
+        if score_proc.returncode == 0:
+            score_data = json.loads(score_path.read_text(encoding="utf-8"))
+            overall = score_data["results"]["ALL"]
+            combined = {
+                "policy": "fixed OR: flag a case if either analyzer reports at least one finding",
+                "flagged_cases": len(union_ids),
+                "wall_seconds_sum_of_tool_runs": sum(r["wall_seconds"] for r in valid_tools),
+                "scoring_return_code": score_proc.returncode,
+                "score_path": str(score_path),
+                "metrics": {key: overall[key] for key in ("cases", "evaluated", "coverage", "tp", "fp", "tn", "fn", "precision", "recall", "f1", "recall_lower_bound", "false_positive_rate_upper_bound")},
+            }
+        else:
+            combined = {"scoring_return_code": score_proc.returncode, "scoring_stderr": score_proc.stderr[-4000:]}
+
     report = {
         "schema_version": 1,
         "benchmark_commit": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
@@ -144,13 +173,15 @@ def main() -> int:
             "No PRISM orchestration or optimization is evaluated by this runner.",
         ],
         "tools": results,
+        "combined_all_tools_baseline": combined,
     }
     report_path = output_dir / "summary.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"summary": str(report_path), "tools": [
         {k: v for k, v in r.items() if k in {"name", "return_code", "wall_seconds",
           "output_valid_json", "finding_count", "distinct_case_files_flagged",
-          "non_case_findings", "scoring_return_code", "metrics"}} for r in results]}, indent=2))
+          "non_case_findings", "scoring_return_code", "metrics"}} for r in results],
+        "combined_all_tools_baseline": combined}, indent=2))
     return 0 if all(r.get("output_valid_json") and r.get("scoring_return_code") == 0
                     for r in results) else 1
 
