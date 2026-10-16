@@ -10,6 +10,7 @@ on:
       - ".github/workflows/phase4-baseline.yml"
       - "docs/scm-phase4-cyber-protocol.md"
       - "docs/scm-phase4-strong-baselines.md"
+      - "docs/scm-phase4-strong-baselines.md"
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,13 @@ jobs:
           ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
           path: benchmark
 
+      - name: Check out pinned Semgrep Community rules
+        uses: actions/checkout@v4
+        with:
+          repository: semgrep/semgrep-rules
+          ref: 17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9
+          path: semgrep-rules
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -47,7 +55,8 @@ jobs:
           python scripts/run_phase4_static_baseline.py \
             --labels benchmark/expectedresults-0.1.csv \
             --source-dir benchmark/testcode \
-            --output-dir reports/phase4-static-baseline
+            --output-dir reports/phase4-static-baseline \\
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python"
 
       - name: Upload raw results and summary
         if: always()
