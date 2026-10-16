@@ -9,6 +9,7 @@ on:
       - "tests/test_phase4_scoring.py"
       - ".github/workflows/phase4-baseline.yml"
       - "docs/scm-phase4-cyber-protocol.md"
+      - "docs/scm-phase4-strong-baselines.md"
   workflow_dispatch:
 
 permissions:
