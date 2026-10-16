@@ -1,6 +1,6 @@
 # SCM-PRISM Phase 3: controlled structural-computation experiment
 
-**Status:** proposed implementation; Phase 3 remains unchecked until CI passes and measured results are reviewed.  
+**Status:** completed and reviewed on 2026-10-16; the engineering gate passed. The scientific superiority hypothesis remains unproven.  
 **Protocol version:** 1
 
 ## Research question
