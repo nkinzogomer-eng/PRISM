@@ -67,7 +67,7 @@ jobs:
         run: |
           python scripts/normalize_codeql_sarif.py \
             --labels benchmark/expectedresults-0.1.csv \
-            --sarif reports/codeql-${{ matrix.suite_name }}.sarif \
+            --sarif reports/codeql-${{ matrix.suite_name }}.sarif/python.sarif \
             --predictions reports/codeql-${{ matrix.suite_name }}-predictions.csv \
             --summary reports/codeql-${{ matrix.suite_name }}-summary.json
           python scripts/score_phase4.py \
