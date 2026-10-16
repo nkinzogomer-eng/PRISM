@@ -10,7 +10,7 @@
 - [x] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit reviewed; H-SCM-1 and Phase 2 protocol documented; repository CI passed on 2026-10-16.
 - [x] **Phase 2 — Baselines and reproducible reference measurements.** 100 fixed seeds per seeded family; all independent checks and exact-cost preservation gates passed; detailed results recorded in the Phase 2 report.
 - [x] **Phase 3 — Controlled structural-computation experiments.** 500 controlled synthetic instances across five regimes passed the semantic, verifier, and exact-cost gates; see the Phase 3 report. General SCM superiority remains unproven.
-- [ ] **Phase 4 — Cybersecurity application: authorized Red Team + Blue Team, repair, and independent verification.**
+- [ ] **Phase 4 — Defensive cybersecurity benchmark, remediation, and independent verification (in progress; protocol drafted, no empirical gate passed).** See [protocol](scm-phase4-cyber-protocol.md) and [decision log](../journal/2026-10-16-phase4-decision.md).
 - [ ] **Phase 5 — Optional Ciel orchestration integration, only after measured core value.**
 - [ ] **Phase 6 — Generalization to separate domains, including financial-flow analysis and astronomy.**
 
@@ -67,6 +67,21 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] GitHub Actions run [38969083638](https://github.com/nkinzogomer-eng/PRISM/actions/runs/38969083638) succeeded.
 
 **Scientific conclusion:** the existing dominated-observation rule passed its narrow finite-model safety tests. Abstract optimal execution cost remained unchanged; only representation size decreased in eligible regimes. Timing diagnostics are preliminary and do not establish portable speedup. H-SCM-1 and general SCM superiority remain unproven.
+
+## Phase 4 — in progress, protocol only
+
+- [x] Bounded offline defensive evaluation scope selected.
+- [x] Candidate labeled benchmark and fallback identified, pending source/license/toolchain verification.
+- [x] Fair comparison arms, metrics, cost accounting, held-out evaluation, and falsification gates specified in [Phase 4 protocol](scm-phase4-cyber-protocol.md).
+- [x] Initial scope decision recorded in [Phase 4 decision log](../journal/2026-10-16-phase4-decision.md).
+- [ ] Verify dataset source, license, checksum, labels, and toolchain compatibility.
+- [ ] Build a reproducible per-case baseline and independent evaluator.
+- [ ] Freeze split manifest and run development-only pilot.
+- [ ] Run locked held-out comparison, uncertainty analysis, and negative controls.
+- [ ] Evaluate remediation separately with independent verification.
+- [ ] Review evidence and only then decide whether Phase 4 exits.
+
+**Current conclusion:** no empirical cybersecurity result exists yet. Protocol/documentation work is not evidence of PRISM efficacy; Phase 4 remains unchecked.
 
 ## Change control
 
