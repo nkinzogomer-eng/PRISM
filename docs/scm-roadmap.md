@@ -7,7 +7,7 @@
 
 - [x] **Phase 0 — scientific contract:** approved by the project owner on 2026-10-16. The core must operate without an external AI model; correctness and verifiability cannot be traded away for speed; all costs and strong baselines must be counted.
 - [x] **Phase 1 — theoretical audit:** source-backed audit, falsifiable candidate hypothesis, Phase 2 protocol, documentation checks, and repository CI completed. H-SCM-1 itself remains unproven.
-- [ ] **Phase 2 — baselines and reference measurements.**
+- [x] **Phase 2 — baselines and reference measurements.** 100-seed synthetic reference suite passed; see [Phase 2 report](../reports/phase-2-reference-benchmark-2026-10-16.md) and [protocol](scm-phase2-protocol.md). Scientific superiority remains unproven.
 - [ ] **Phase 3 — controlled structural-computation experiments.**
 - [ ] **Phase 4 — authorized cyber Red Team + Blue Team, repair, and independent verification.**
 - [ ] **Phase 5 — optional Ciel orchestration, only after core value is measured.**
