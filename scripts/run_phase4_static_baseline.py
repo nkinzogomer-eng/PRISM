@@ -39,7 +39,7 @@ def load_labels(path: Path) -> dict[str, str]:
     return labels
 
 
-def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path) -> dict:
+def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path, labels: dict[str, str]) -> dict:
     started = time.perf_counter()
     with raw_path.open("w", encoding="utf-8") as output:
         proc = subprocess.run(command, cwd=source_root.parent, stdout=output,
@@ -62,7 +62,7 @@ def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path) -
         non_case_findings = 0
         for file_name in files:
             match = TEST_ID_RE.search(file_name.replace("\\", "/"))
-            if match and match.group(1) in labels_placeholder:
+            if match and match.group(1) in labels:
                 case_ids.add(match.group(1))
             else:
                 non_case_findings += 1
@@ -86,8 +86,7 @@ def main() -> int:
                         help="pinned benchmark testcode directory")
     parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args()
-    global labels_placeholder
-    labels_placeholder = load_labels(args.labels)
+    labels = load_labels(args.labels)
     source_root = args.source_dir.resolve()
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -104,7 +103,7 @@ def main() -> int:
     results = []
     for name, command in commands.items():
         raw_path = output_dir / f"{name}-raw.json"
-        result = run_tool(name, command, raw_path, source_root)
+        result = run_tool(name, command, raw_path, source_root, labels)
         result["source_files"] = len(source_files)
         results.append(result)
         if not result["output_valid_json"]:
@@ -115,7 +114,7 @@ def main() -> int:
         with normalized.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             writer.writerow(["test_id", "category", "detected", "status"])
-            for test_id, category in sorted(labels_placeholder.items()):
+            for test_id, category in sorted(labels.items()):
                 writer.writerow([test_id, category, str(test_id in flagged).lower(), "ok"])
         score_path = output_dir / f"{name}-score.json"
         score_cmd = [sys.executable, str(Path(__file__).with_name("score_phase4.py")),
@@ -130,7 +129,7 @@ def main() -> int:
     report = {
         "schema_version": 1,
         "benchmark_commit": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
-        "label_count": len(labels_placeholder),
+        "label_count": len(labels),
         "source_file_count": len(source_files),
         "method": "binary case-level classification: at least one finding in the case's test module",
         "limitations": [
