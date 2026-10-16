@@ -74,8 +74,11 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [x] Candidate labeled benchmark and fallback identified, pending source/license/toolchain verification.
 - [x] Fair comparison arms, metrics, cost accounting, held-out evaluation, and falsification gates specified in [Phase 4 protocol](scm-phase4-cyber-protocol.md).
 - [x] Initial scope decision recorded in [Phase 4 decision log](../journal/2026-10-16-phase4-decision.md).
-- [ ] Verify dataset source, license, checksum, labels, and toolchain compatibility.
-- [ ] Build a reproducible per-case baseline and independent evaluator.
+- [x] Candidate dataset and local toolchain checked; Python benchmark v0.1 selected as a pilot candidate with its limitations recorded in [feasibility note](scm-phase4-feasibility.md).
+- [x] Standard-library scoring utility and unit tests added for normalized per-case outputs, unknown cases, coverage, and conservative bounds ([script](../scripts/score_phase4.py), [tests](../tests/test_phase4_scoring.py)).
+- [ ] Pin dataset commit/checksum and audit labels, including known upstream issues; identify compatible analyzer versions.
+- [ ] Run the scoring tests in CI and validate the evaluator against the full upstream label CSV.
+- [ ] Build a reproducible per-case analyzer baseline.
 - [ ] Freeze split manifest and run development-only pilot.
 - [ ] Run locked held-out comparison, uncertainty analysis, and negative controls.
 - [ ] Evaluate remediation separately with independent verification.
