@@ -1,5 +1,26 @@
 # SCM → PRISM: staged research and implementation roadmap
 
+**Plan version:** 1.0  
+**Last reviewed:** 2026-10-16
+
+## Phase tracker
+
+- [x] **Phase 0 — scientific contract:** approved by the project owner on 2026-10-16. The core must operate without an external AI model; correctness and verifiability cannot be traded away for speed; all costs and strong baselines must be counted.
+- [x] **Phase 1 — theoretical audit:** source-backed audit, falsifiable candidate hypothesis, Phase 2 protocol, documentation checks, and repository CI completed. H-SCM-1 itself remains unproven.
+- [ ] **Phase 2 — baselines and reference measurements.**
+- [ ] **Phase 3 — controlled structural-computation experiments.**
+- [ ] **Phase 4 — authorized cyber Red Team + Blue Team, repair, and independent verification.**
+- [ ] **Phase 5 — optional Ciel orchestration, only after core value is measured.**
+- [ ] **Phase 6 — generalization to other domains, including finance and astronomy.**
+
+Detailed status: [SCM phase register](scm-phase-status.md).  
+Phase 1 deliverable: [theoretical audit](scm-phase1-theory-audit.md).
+
+**A checked phase means its planning/engineering exit criteria were met; it does not mean that a research hypothesis has been proven.** The current SCM advantage hypothesis remains unproven.
+
+---
+
+
 Status: research plan. This document records intended gates; it is not evidence that the gates have passed.
 
 ## Preserve before changing
