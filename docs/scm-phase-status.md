@@ -1,7 +1,7 @@
 # SCM → PRISM phase register
 
 **Plan version:** 1.0 (working baseline)  
-**Last reviewed:** 2026-10-16  
+**Last reviewed:** 2026-10-17  
 **Rule:** A phase is checked only when its stated exit criteria have been reviewed and met. A checked research-planning phase does not imply that the scientific hypotheses it defines have been proven.
 
 ## Status
@@ -10,7 +10,7 @@
 - [x] **Phase 1 — Theoretical audit and falsifiable research hypothesis.** Audit reviewed; H-SCM-1 and Phase 2 protocol documented; repository CI passed on 2026-10-16.
 - [x] **Phase 2 — Baselines and reproducible reference measurements.** 100 fixed seeds per seeded family; all independent checks and exact-cost preservation gates passed; detailed results recorded in the Phase 2 report.
 - [x] **Phase 3 — Controlled structural-computation experiments.** 500 controlled synthetic instances across five regimes passed the semantic, verifier, and exact-cost gates; see the Phase 3 report. General SCM superiority remains unproven.
-- [ ] **Phase 4 — Defensive cybersecurity benchmark, remediation, and independent verification (in progress; protocol drafted, no empirical gate passed).** See [protocol](scm-phase4-cyber-protocol.md) and [decision log](../journal/2026-10-16-phase4-decision.md).
+- [ ] **Phase 4 — Defensive cybersecurity benchmark, remediation, and independent verification (in progress; initial pilot baselines exist, competitive gates not passed).** Strong-baseline addendum now requires pinned Bandit, Semgrep CE rules, CodeQL `default` and `security-extended` where supported, and separately tiered paid/modal baselines. The existing 1,230-case “any finding in module” results remain smoke-test diagnostics only. See [protocol](scm-phase4-cyber-protocol.md), [strong-baseline addendum](scm-phase4-strong-baselines.md), and [decision log](../journal/2026-10-16-phase4-decision.md).
 - [ ] **Phase 5 — Optional Ciel orchestration integration, only after measured core value.**
 - [ ] **Phase 6 — Generalization to separate domains, including financial-flow analysis and astronomy.**
 
