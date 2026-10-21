@@ -98,6 +98,20 @@ jobs:
             --labels benchmark/expectedresults-0.1.csv \
             --output reports/phase44-goal-ci/replay-development-evaluation.json
 
+      - name: Ablation - choose target modules solely from code-derived sink signals
+        run: |
+          python scripts/phase44_replay.py \
+            --source-dir benchmark/testcode \
+            --discovery reports/phase44-goal-ci/discovery.json \
+            --output reports/phase44-goal-ci/replay-code-derived.json
+
+      - name: Evaluate code-selected replay only after all executions
+        run: |
+          python scripts/phase44_replay_evaluate.py \
+            --replay reports/phase44-goal-ci/replay-code-derived.json \
+            --labels benchmark/expectedresults-0.1.csv \
+            --output reports/phase44-goal-ci/code-derived-evaluation.json
+
       - name: Preserve source-to-sink candidate ledger and negative results
         if: always()
         uses: actions/upload-artifact@v4
