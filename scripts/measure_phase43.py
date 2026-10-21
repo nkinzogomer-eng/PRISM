@@ -31,7 +31,8 @@ except ModuleNotFoundError:
     from scripts.score_phase4 import read_labels, calculate
 
 CASE_RE = re.compile(r"^BenchmarkTest\d{5}\.py$")
-PINNED_MANIFEST_SHA256 = "fe0ec67dcc328feb33d592b790563add38c721af4b89abcf839e56bc9e3b9b9d"\n# GitHub Actions Linux checkout; Phase 4.2 used a Windows checkout with different bytes.
+PINNED_MANIFEST_SHA256 = "fe0ec67dcc328feb33d592b790563add38c721af4b89abcf839e56bc9e3b9b9d"
+# GitHub Actions Linux checkout; Phase 4.2 used a Windows checkout with different bytes.
 
 
 def file_id(value: str) -> str | None:
