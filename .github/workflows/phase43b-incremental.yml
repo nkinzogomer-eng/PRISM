@@ -1,0 +1,87 @@
+name: Phase 4.3B full-finding incremental vs strong hash baseline
+
+on:
+  push:
+    branches:
+      - research/phase-4-3b-verified-incremental
+    paths:
+      - "prism/incremental.py"
+      - "scripts/measure_phase43b.py"
+      - "tests/test_phase43b_incremental.py"
+      - "docs/scm-phase43b-protocol.md"
+      - ".github/workflows/phase43b-incremental.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-finding-preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out PRISM research branch
+        uses: actions/checkout@v4
+      - name: Check out immutable OWASP Python development benchmark
+        uses: actions/checkout@v4
+        with:
+          repository: OWASP-Benchmark/BenchmarkPython
+          ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
+          path: benchmark
+      - name: Check out immutable Semgrep community rules
+        uses: actions/checkout@v4
+        with:
+          repository: semgrep/semgrep-rules
+          ref: 17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9
+          path: semgrep-rules
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test byte/cache/config/alert invariants
+        run: |
+          python -m unittest discover -s tests -p 'test_phase43b_incremental.py' -v
+          python -m unittest discover -s tests -p 'test_phase43_cost_policy.py' -v
+      - name: Install frozen scanner versions
+        run: python -m pip install setuptools==80.9.0 bandit==1.8.6 semgrep==1.181.0
+      - name: Measure full vs hash cache vs deterministic PRISM planner
+        run: |
+          python scripts/measure_phase43b.py \
+            --source-dir benchmark/testcode \
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/lang/security" \
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/flask/security" \
+            --output reports/phase43b-ci \
+            --repeats 2
+      - name: Print auditable scorecard
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          from pathlib import Path
+          import statistics
+          d = json.loads(Path("reports/phase43b-ci/measurement.json").read_text())
+          print("STATUS:", d["status"])
+          print("COLD CACHE BUILD:", {k: round(v["wall_seconds"], 3)
+                for k,v in d["cold_cache_build"].items()})
+          rows = defaultdict(list)
+          for x in d["runs"]:
+              t=x["wall_seconds_including_read_hash_plan_merge_cleanup"]
+              rows[(x["scenario"], x["policy"])].append(t)
+              print("ROW", x["scenario"], x["repeat"], x["policy"],
+                    round(t,3), "sec",
+                    {k: v["plan"]["executed"] for k,v in x["tools"].items()},
+                    {k: v["total_finding_count"] for k,v in x["tools"].items()})
+          for (scenario, policy), values in sorted(rows.items()):
+              print("MEDIAN", scenario, policy, round(statistics.median(values), 3))
+          print("EXACT PRESERVATION CHECKS:", len(d["checks"]),
+                "ALL PASS:", all(x["exact_equal"] for x in d["checks"]))
+          PY
+      - name: Archive full raw findings, snapshots and timing report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase43b-exact-incremental-evidence
+          path: reports/phase43b-ci
+          if-no-files-found: warn
+          retention-days: 30
