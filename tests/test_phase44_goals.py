@@ -81,6 +81,19 @@ def route():
         self.assertEqual(d["findings"][0]["status"], "unknown")
         self.assertIn("unmodeled_transform", " ".join(d["findings"][0]["uncertainties"]))
 
+    def test_conditional_filesystem_sink_is_not_missed(self):
+        d = check('''
+def route():
+    from pathlib import Path
+    supplied = request.cookies.get("filename")
+    p = Path("/tmp/staging") / supplied
+    if p.exists():
+        return "present"
+    return "not present"
+''')
+        self.assertEqual(d["candidate_count"], 1)
+        self.assertEqual(d["findings"][0]["sink"], "p.exists")
+
     def test_known_local_helper_is_followed(self):
         d = check('''
 def identity(x):
