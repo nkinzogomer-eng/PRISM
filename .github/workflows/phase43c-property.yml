@@ -1,0 +1,84 @@
+name: Phase 4.3C B307 property-sufficiency experiment
+
+on:
+  push:
+    branches:
+      - research/phase-4-3c-property-sufficiency
+    paths:
+      - "prism/property_certificate.py"
+      - "scripts/measure_phase43c.py"
+      - "tests/test_phase43c_property_certificate.py"
+      - "docs/scm-phase43c-protocol.md"
+      - ".github/workflows/phase43c-property.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  property-reuse:
+    name: Actual Bandit B307 vs byte and AST caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out experimental PRISM branch
+        uses: actions/checkout@v4
+
+      - name: Check out immutable OWASP Python development snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: OWASP-Benchmark/BenchmarkPython
+          ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
+          path: benchmark
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unit and adversarial certificate tests
+        run: |
+          python -m unittest discover -s tests -p 'test_phase43c_property_certificate.py' -v
+          python -m unittest discover -s tests -p 'test_phase43b_incremental.py' -v
+
+      - name: Install pinned Bandit scanner
+        run: python -m pip install setuptools==80.9.0 bandit==1.8.6
+
+      - name: Run fresh Bandit B307 comparisons
+        run: |
+          python scripts/measure_phase43c.py \
+            --source-dir benchmark/testcode \
+            --output reports/phase43c-ci \
+            --repeats 2
+
+      - name: Summarize measured time and exact preservation
+        if: success()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from collections import defaultdict
+          import json
+          import statistics
+          data=json.loads(Path("reports/phase43c-ci/measurement.json").read_text())
+          print("STATUS", data["status"])
+          print("COLD CACHE", data["cold_cache"])
+          print("CHECKS",len(data["checks"]),"ALL_PASS",all(c["identical"] for c in data["checks"]))
+          grouped=defaultdict(list)
+          for x in data["runs"]:
+              grouped[(x["scenario"],x["policy"])].append(x["total_seconds"])
+              print("ROW",x["scenario"],x["repeat"],x["policy"],
+                    "selected",x["scanned"],"finding_count",x["finding_count"],
+                    "proof_sec",round(x["selection_seconds"],4),
+                    "total_sec",round(x["total_seconds"],4))
+          for (scenario,policy),values in sorted(grouped.items()):
+              print("MEDIAN",scenario,policy,round(statistics.median(values),4))
+          PY
+
+      - name: Archive raw B307 scanner output and evidence ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase43c-b307-property-evidence
+          path: reports/phase43c-ci
+          if-no-files-found: warn
+          retention-days: 30
