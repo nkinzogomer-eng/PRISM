@@ -52,6 +52,7 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 - [Phase 4 scoring tests](tests/test_phase4_scoring.py)
 - [Phase 4 static baseline runner](scripts/run_phase4_static_baseline.py)
 - [Phase 4 preliminary static baseline report](reports/phase-4-preliminary-static-baseline-2026-10-16.md)
+- [Phase 4 evidence audit, complete CodeQL and structural prototype (2026-10-21)](reports/phase-4-evidence-audit-2026-10-21.md)
 - [Initial research decision log](journal/2026-10-10.md)
 - [Adaptive finite runner](prism/adaptive.py)
 - [Adaptive runner tests](tests/test_adaptive.py)

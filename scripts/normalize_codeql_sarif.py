@@ -12,6 +12,10 @@ import csv
 import json
 import re
 from pathlib import Path
+try:
+    from .phase4_evidence import case_from_uri
+except ImportError:
+    from phase4_evidence import case_from_uri
 
 CASE_RE = re.compile(r"(BenchmarkTest\d{5})\.py$")
 
@@ -41,10 +45,32 @@ def main() -> int:
     parser.add_argument("--sarif", required=True, type=Path)
     parser.add_argument("--predictions", required=True, type=Path)
     parser.add_argument("--summary", required=True, type=Path)
+    parser.add_argument('--verified-full-scan', action='store_true',
+                        help='Caller verified successful full, non-diff analysis; SARIF alone cannot prove coverage')
     args = parser.parse_args()
 
     labels = load_labels(args.labels)
     sarif = json.loads(args.sarif.read_text(encoding="utf-8"))
+    if not sarif.get('runs'):
+        raise ValueError('SARIF has no runs; cannot score a successful analysis')
+    extracted = set()
+    for run in sarif['runs']:
+        if 'results' not in run:
+            raise ValueError('SARIF missing results')
+        for invocation in run.get('invocations', []):
+            if invocation.get('executionSuccessful') is False:
+                raise ValueError('SARIF reports failed invocation')
+            if any(n.get('level') == 'error' for n in invocation.get('toolExecutionNotifications', [])):
+                raise ValueError('SARIF reports execution errors')
+            for notification in invocation.get('toolExecutionNotifications', []):
+                if notification.get('descriptor', {}).get('id') == 'py/diagnostics/successfully-extracted-files':
+                    for loc in notification.get('locations', []):
+                        uri = loc.get('physicalLocation', {}).get('artifactLocation', {}).get('uri', '')
+                        case = case_from_uri(uri)
+                        if case in labels:
+                            extracted.add(case)
+    if args.verified_full_scan and extracted != set(labels):
+        raise ValueError('full scan requires extraction diagnostics for every labeled module')
     flagged: set[str] = set()
     unmapped = 0
     alert_count = 0
@@ -56,10 +82,9 @@ def main() -> int:
             for location in locations:
                 physical = location.get("physicalLocation", {})
                 uri = physical.get("artifactLocation", {}).get("uri", "")
-                normalized = uri.replace("\\", "/")
-                match = CASE_RE.search(normalized)
-                if match and match.group(1) in labels:
-                    flagged.add(match.group(1))
+                case = case_from_uri(uri)
+                if case in labels:
+                    flagged.add(case)
                     mapped = True
             if not mapped:
                 unmapped += 1
@@ -69,10 +94,13 @@ def main() -> int:
         writer = csv.writer(handle)
         writer.writerow(["test_id", "category", "detected", "status"])
         for case_id, category in sorted(labels.items()):
-            writer.writerow([case_id, category, str(case_id in flagged).lower(), "ok"])
+            known = case_id in flagged or args.verified_full_scan
+            writer.writerow([case_id, category, str(case_id in flagged).lower() if known else '', 'ok' if known else 'unsupported'])
 
     summary = {
         "schema_version": 1,
+        "full_scan_verified_by_caller": args.verified_full_scan,
+        "extracted_labeled_modules": len(extracted),
         "alerts": alert_count,
         "unique_cases_flagged": len(flagged),
         "unmapped_alerts": unmapped,

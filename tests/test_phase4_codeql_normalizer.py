@@ -9,6 +9,33 @@ from scripts.normalize_codeql_sarif import main
 
 
 class CodeQLSarifNormalizerTests(unittest.TestCase):
+    def normalize_fixture(self, data, full=False):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            sarif = root / 'r.json'
+            sarif.write_text(json.dumps(data), encoding='utf-8')
+            argv = ['normalizer', '--labels', 'unused', '--sarif', str(sarif),
+                    '--predictions', str(root / 'p.csv'), '--summary', str(root / 's.json')]
+            if full:
+                argv.append('--verified-full-scan')
+            with patch('scripts.normalize_codeql_sarif.load_labels', return_value={'BenchmarkTest00001': 'cat'}), patch('sys.argv', argv):
+                main()
+            with (root / 'p.csv').open() as handle:
+                return list(csv.DictReader(handle))
+
+    def test_empty_and_failed_sarif_rejected(self):
+        for data in [{}, {'runs': [{'results': [], 'invocations': [{'executionSuccessful': False}]}]}]:
+            with self.assertRaises(ValueError):
+                self.normalize_fixture(data)
+
+    def test_full_scan_requires_all_modules_extracted(self):
+        with self.assertRaises(ValueError):
+            self.normalize_fixture({'runs': [{'results': []}]}, full=True)
+        data = {'runs': [{'results': [], 'invocations': [{'executionSuccessful': True,
+            'toolExecutionNotifications': [{'descriptor': {'id': 'py/diagnostics/successfully-extracted-files'},
+                'locations': [{'physicalLocation': {'artifactLocation': {'uri': 'testcode/BenchmarkTest00001.py'}}}]}]}]}]}
+        self.assertEqual(self.normalize_fixture(data, full=True)[0]['detected'], 'false')
+
     def test_maps_alert_to_case_and_emits_all_labels(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -49,7 +76,7 @@ class CodeQLSarifNormalizerTests(unittest.TestCase):
             self.assertEqual(len(rows), 1230)
             by_id = {row["test_id"]: row for row in rows}
             self.assertEqual(by_id["BenchmarkTest00001"]["detected"], "true")
-            self.assertEqual(by_id["BenchmarkTest00002"]["detected"], "false")
+            self.assertEqual(by_id["BenchmarkTest00002"]["status"], "unsupported")
             self.assertEqual(json.loads(summary.read_text())["unique_cases_flagged"], 1)
 
     def test_unmapped_alert_is_counted_not_silently_dropped(self):

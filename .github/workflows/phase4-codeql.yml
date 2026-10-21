@@ -6,6 +6,9 @@ on:
     paths:
       - "scripts/normalize_codeql_sarif.py"
       - "scripts/score_phase4.py"
+      - "scripts/phase4_evidence.py"
+      - "scripts/audit_phase4.py"
+      - "tests/test_phase4_evidence.py"
       - "tests/test_phase4_scoring.py"
       - "tests/test_phase4_codeql_normalizer.py"
       - ".github/workflows/phase4-codeql.yml"
@@ -67,6 +70,7 @@ jobs:
       - name: Normalize CodeQL SARIF and score coarse pilot metric
         run: |
           python scripts/normalize_codeql_sarif.py \
+            --verified-full-scan \
             --labels benchmark/expectedresults-0.1.csv \
             --sarif reports/codeql-${{ matrix.suite_name }}.sarif/python.sarif \
             --predictions reports/codeql-${{ matrix.suite_name }}-predictions.csv \

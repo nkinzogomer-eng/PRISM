@@ -15,6 +15,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+try:
+    from .phase4_evidence import validate_scan
+except ImportError:
+    from phase4_evidence import validate_scan
 
 
 TEST_ID_RE = re.compile(r"(BenchmarkTest\d{5})\.py$")
@@ -39,7 +43,7 @@ def load_labels(path: Path) -> dict[str, str]:
     return labels
 
 
-def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path, labels: dict[str, str]) -> dict:
+def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path, labels: dict[str, str], expected_ids=None) -> dict:
     started = time.perf_counter()
     with raw_path.open("w", encoding="utf-8") as output:
         proc = subprocess.run(command, cwd=source_root.parent, stdout=output,
@@ -52,6 +56,18 @@ def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path, l
     }
     try:
         data = json.loads(raw_path.read_text(encoding="utf-8"))
+        problems = validate_scan(name, proc.returncode, data)
+        scanned = data.get('metrics', {}).keys() if name == 'bandit' else data.get('paths', {}).get('scanned', [])
+        scanned_ids = set()
+        for path in scanned:
+            match = TEST_ID_RE.search(path.replace('\\', '/'))
+            if match:
+                scanned_ids.add(match.group(1))
+        if expected_ids is not None and not set(expected_ids).issubset(scanned_ids):
+            problems.append('missing_scanned_modules')
+        result['completion_problems'] = problems
+        if problems:
+            raise ValueError('scan incomplete: ' + ', '.join(problems))
         if name == "bandit":
             findings = data.get("results", [])
             files = [item.get("filename", "") for item in findings]
@@ -73,7 +89,7 @@ def run_tool(name: str, command: list[str], raw_path: Path, source_root: Path, l
             "non_case_findings": non_case_findings,
             "flagged_case_ids": sorted(case_ids),
         })
-    except (OSError, json.JSONDecodeError, AttributeError, TypeError) as exc:
+    except (OSError, ValueError, AttributeError, TypeError) as exc:
         result.update({"output_valid_json": False, "parse_error": str(exc),
                        "finding_count": None, "flagged_case_ids": []})
     return result
@@ -110,7 +126,7 @@ def main() -> int:
     results = []
     for name, command in commands.items():
         raw_path = output_dir / f"{name}-raw.json"
-        result = run_tool(name, command, raw_path, source_root, labels)
+        result = run_tool(name, command, raw_path, source_root, labels, expected_ids=set(labels))
         result["source_files"] = len(source_files)
         results.append(result)
         if not result["output_valid_json"]:
@@ -210,7 +226,8 @@ def main() -> int:
                 "--no-git-ignore", "--json", *[str(path) for path in remaining_files],
             ]
             sequential_result = run_tool(
-                "semgrep-sequential", sequential_command, sequential_raw, source_root, labels
+                "semgrep-sequential", sequential_command, sequential_raw, source_root, labels,
+                expected_ids={path.stem for path in remaining_files}
             )
             sequential_result["source_files"] = len(remaining_files)
             sequential_result["policy_note"] = "Semgrep runs only on cases not flagged by Bandit; labels are not used for selection"
