@@ -472,6 +472,12 @@ class _Analyzer:
             elif isinstance(stmt, (ast.For, ast.While, ast.With, ast.AsyncWith)):
                 if isinstance(stmt, ast.While):
                     self.expression(stmt.test, env, constants, func, depth)
+                if isinstance(stmt, (ast.With, ast.AsyncWith)):
+                    # Security sinks frequently occur in WITH resources:
+                    # with open(tainted_name) as fd. The previous goal
+                    # selector silently skipped these context expressions.
+                    for item in stmt.items:
+                        self.expression(item.context_expr, env, constants, func, depth)
                 # Unknown loop/mgr semantics: analyze body but do not
                 # announce absence of flow as a safety guarantee.
                 body = getattr(stmt, "body", ())
