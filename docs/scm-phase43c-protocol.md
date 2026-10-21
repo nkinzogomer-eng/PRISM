@@ -13,14 +13,14 @@ The suffix proof consists of exact byte-prefix equality, terminal-newline check 
 
 This is a **restricted known edit family**, not arbitrary Python changes. Do not claim novel computation: a conventional diff/incremental editor or a purpose-built prefix cache can implement the same rule. The scientific result can at most establish a bounded reduction with the cost of the justification included.
 
-## Four fair comparison arms
+## Five fair comparison arms
 
 1. **Full B307 scan:** reanalyze all 1,230 files after each update.
 2. **Exact-byte cache:** reuse only unchanged source bytes; reanalyze every changed file. This is a strong baseline.
 3. **Conventional AST + scanner-directive cache:** reanalyze changed files unless the full AST including node locations and the line/contents of scanner-sensitive comments are unchanged. Cost of AST/tokenization counts in full update time.
-4. **SCM restricted suffix certificate:** check exact-prefix and known inert comment extension; if not proven, scan whole file. Count checking every file, all I/O, staging, invocation, validation and merging.
+4. **Conventional prefix-diff cache:** independently coded, ordinary byte-prefix plus allowlisted-comment check. This is the essential negative comparator for any claim of distinct SCM value.\n5. **SCM restricted suffix certificate:** check exact-prefix and known inert comment extension; if not proven, scan whole file. Count checking every file, all I/O, staging, invocation, validation and merging.
 
-An ordinary edit-aware suffix detector should be expected to match arm 4. We will not market arm 4's advantage over arm 2 or 3 as a new principle without a genuine stronger native comparator.
+A conventional edit-aware suffix detector is now tested as arm 4 and should be expected to match SCM arm 5. We will not market arm 4's advantage over arm 2 or 3 as a new principle without a genuine stronger native comparator.
 
 ## Benchmark controls and adversarial changes
 
@@ -40,7 +40,7 @@ Every mode is measured twice in rotated order. Cold B307 cache creation is separ
 
 Wall time includes reading the 1,230 originals, constructing the edit in memory, inspecting/checking every module (including the proof), source staging, launching real Bandit when necessary, parsing/verifying full coverage, merging normalized results, and cleanup. Report selected/scanned files, certified reuse, evidence hashes, scanner seconds and total time. Does not include installation/network or serialization of the full JSON report; unmeasured RSS/energy/money are not zero.
 
-A >10% total-cost improvement over the full scan is merely an engineering signal. A >10% improvement over the strong AST-reference cache at equal alerts, replicated on independent realistic edits and compared to native incremental scanners, would justify deeper investigation. On this synthetic workload, even that is not enough to claim state-of-the-art superiority. We must publish negative results and leave the holdout unopened.
+A >10% total-cost improvement over the full scan is merely an engineering signal. A >10% improvement over a strong AST-reference cache alone does not prove novelty: the conventional prefix-diff arm now tests the same precondition. A SCM-specific gain would have to surpass that direct counterpart (and native incremental scanners) on independent realistic updates. On this synthetic workload, even that is not enough to claim state-of-the-art superiority. We must publish negative results and leave the holdout unopened.
 
 Reference evidence: pinned Bandit call blacklist B307 and `# nosec` behavior in Bandit upstream. No findings from the development synthetic corpus count as verified zero-days.
 
@@ -53,3 +53,7 @@ python scripts/measure_phase43c.py --source-dir benchmark/testcode \
 ```
 
 Protocol verdict remains **NOT VALIDATED** until CI evidence is reviewed, new scanner findings on edited modules are counted, and all exact-identity preservation gates pass.
+
+## Predeclared-comparator amendment (after first initial CI result)
+
+The original four-arm exploratory run succeeded on 2026-10-21. After seeing the large speed differential, a **fifth, independently coded ordinary prefix-diff baseline** was added specifically to falsify a tempting but invalid novelty claim. Because this comparator was added after seeing results, it is an explicitly labeled post-hoc adversarial control, not a secretly prespecified benchmark. Scientific superiority claims require fresh and independently validated workloads.
