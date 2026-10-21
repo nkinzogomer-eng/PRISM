@@ -34,8 +34,19 @@ def evaluate(replay: dict, labels_path: Path) -> dict:
         proof = result["status"] == "verified_sandbox_path_escape"
         if proof and not result["verified_outside_root"]:
             raise ValueError("unjustified verification")
-        if proof and not result.get("operations"):
-            raise ValueError("missing runtime operations for a claimed proof")
+        if proof:
+            evidence = result.get("operations") or []
+            allowed = {"builtin_open", "codecs_open", "pathlib_open",
+                       "pathlib_exists", "os_path_exists", "synthetic_sentinel_changed"}
+            if not any(
+                item.get("operation") in allowed
+                and item.get("completed") is True
+                and item.get("outside_allowed") is True
+                and item.get("inside_temporary_sandbox") is True
+                and str(item.get("path", "")).startswith("<TEMP>/SCM44_WITNESS_")
+                for item in evidence
+            ):
+                raise ValueError("insufficient controlled filesystem evidence for claimed proof")
         if proof:
             if truth:
                 tp += 1
