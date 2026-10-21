@@ -117,6 +117,48 @@ def route():
 ''')
         self.assertEqual(d["candidate_count"], 1)
 
+    def test_precise_literal_dictionary_key_propagation(self):
+        d = check('''
+def route():
+    supplied = request.form.get("filename")
+    mapping = {}
+    mapping["public"] = "safe"
+    mapping["requested"] = supplied
+    selected = mapping["requested"]
+    return open(selected)
+''')
+        self.assertEqual(d["candidate_count"], 1)
+        self.assertEqual(d["unknown_count"], 0)
+
+    def test_dictionary_safe_key_is_not_tainted_by_another_value(self):
+        d = check('''
+def route():
+    supplied = request.form.get("filename")
+    mapping = {"a": supplied, "b": "/safe/file.txt"}
+    return open(mapping["b"])
+''')
+        self.assertEqual(d["candidate_count"], 0)
+
+    def test_configparser_explicit_write_read_flow(self):
+        d = check('''
+def route():
+    supplied = request.form.get("filename")
+    conf = configparser.ConfigParser()
+    conf.set("section", "key", supplied)
+    filename = conf.get("section", "key")
+    return open(filename)
+''')
+        self.assertEqual(d["candidate_count"], 1)
+
+    def test_request_wrapper_as_opaque_but_declared_entry_point(self):
+        d = check('''
+def route():
+    wrapper = helpers.separate_request.request_wrapper(request)
+    supplied = wrapper.get_form_parameter("name")
+    return open(supplied)
+''')
+        self.assertEqual(d["candidate_count"], 1)
+
     def test_information_disclosure_sink(self):
         d = check('''
 def route():
