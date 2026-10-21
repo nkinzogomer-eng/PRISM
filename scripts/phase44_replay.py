@@ -48,7 +48,8 @@ def select_routes(source_dir: Path) -> list[str]:
     return out
 
 
-def replay_one(source_dir: Path, case_id: str) -> dict:
+def replay_one(source_dir: Path, case_id: str,
+               require_path_route: bool = True) -> dict:
     """Perform one sandboxed synthetic path-escape probe in a test client."""
     if not CASE_PATTERN.fullmatch(case_id):
         raise ValueError("invalid benchmark case ID")
@@ -58,8 +59,8 @@ def replay_one(source_dir: Path, case_id: str) -> dict:
     module_path = (source_dir / (case_id + ".py")).resolve()
     if module_path.parent != source_dir.resolve() or not module_path.is_file():
         raise ValueError("case must be an existing direct benchmark module")
-    if b"/benchmark/pathtraver-" not in module_path.read_bytes():
-        raise ValueError("refuse replay outside path traversal benchmark route")
+    if require_path_route and b"/benchmark/pathtraver-" not in module_path.read_bytes():
+        raise ValueError("category-specific route guard (use code-selected mode to omit hint)")
     t0 = time.perf_counter()
     result = {
         "case_id": case_id, "status": "unknown",
@@ -189,19 +190,37 @@ def replay_one(source_dir: Path, case_id: str) -> dict:
     return result
 
 
-def replay(source_dir: Path, limit: int | None = None) -> dict:
+def replay(source_dir: Path, limit: int | None = None,
+           discovery: Path | None = None) -> dict:
     benchmark_root = source_dir.resolve().parent
     if str(benchmark_root) not in sys.path:
         sys.path.insert(0, str(benchmark_root))
-    routes = select_routes(source_dir)
+    if discovery is None:
+        routes = select_routes(source_dir)
+        selection_mode = "known_category_route_prefix"
+    else:
+        # No route names, labels or CWE category strings are consulted here.
+        # The independent static hypothesis engine evaluated all 1230 files.
+        dataset = json.loads(discovery.read_text(encoding="utf-8"))
+        if dataset.get("case_count") != 1230 or set(dataset.get("cases", {})) != set(source_inventory(source_dir)):
+            raise ValueError("untrusted or incomplete code-derived inventory")
+        routes = sorted(
+            case for case, entry in dataset["cases"].items()
+            if entry.get("explored_sinks", 0) > 0
+            or entry.get("candidate_count", 0) > 0
+            or entry.get("unknown_count", 0) > 0
+        )
+        selection_mode = "code_derived_filesystem_sink_inventory"
+    total_selected = len(routes)
     if limit is not None:
-        if not 1 <= limit <= 168:
-            raise ValueError("limit must be between 1 and 168")
+        if not 1 <= limit <= total_selected:
+            raise ValueError("limit must be within selected test cases")
         routes = routes[:limit]
     all_cases = {}
     t0 = time.perf_counter()
     for case in routes:
-        all_cases[case] = replay_one(source_dir, case)
+        all_cases[case] = replay_one(source_dir, case,
+                                      require_path_route=discovery is None)
     values = list(all_cases.values())
     types = Counter(
         op["operation"] for row in values if row["verified_outside_root"]
@@ -225,6 +244,9 @@ def replay(source_dir: Path, limit: int | None = None) -> dict:
     ]
     return {
         "schema_version": 1,
+        "selection_mode": selection_mode,
+        "selection_uses_benchmark_category_hint": discovery is None,
+        "selected_before_optional_limit": total_selected,
         "phase": "4.4B",
         "target": "CWE-22 actual path escaping synthetic sandbox allowed root",
         "dataset": "OWASP Python v0.1 developer corpus, no labels in selection or execution",
@@ -260,11 +282,15 @@ def main():
     parser.add_argument("--source-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--discovery", type=Path,
+                        help="Use only static code-derived sink inventory, no route category hints")
     args = parser.parse_args()
-    result = replay(args.source_dir, args.limit)
+    result = replay(args.source_dir, args.limit, args.discovery)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True)+"\n",
                            encoding="utf-8")
+    print("SELECTION", result["selection_mode"],
+          "candidates", result["selected_before_optional_limit"])
     print("CWE22 controlled execution:", result["tested"], "tested",
           result["verified_sandbox_escapes"], "observed sandbox path escape",
           result["unknown"], "runtime errors",
