@@ -7,6 +7,8 @@ on:
       - "prism/goal_discovery.py"
       - "scripts/phase44_discover.py"
       - "scripts/phase44_evaluate.py"
+      - "scripts/phase44_replay.py"
+      - "scripts/phase44_replay_evaluate.py"
       - "tests/test_phase44_goals.py"
       - "tests/test_phase44_replay.py"
       - "docs/scm-phase44-goal-protocol.md"
@@ -72,6 +74,29 @@ jobs:
           print('No labels during search; no verified vulnerability claims.')
           print('CWE22 development results',e['pathtraver'])
           PY
+
+      - name: Install local-only Flask replay dependency
+        run: python -m pip install Flask==3.1.2
+
+      - name: Smoke test 10 route-specific synthetic sentinel replays
+        run: |
+          python scripts/phase44_replay.py \
+            --source-dir benchmark/testcode \
+            --output reports/phase44-goal-ci/replay-smoke.json \
+            --limit 10
+
+      - name: Run path traversal replay on all route-selected cases without labels
+        run: |
+          python scripts/phase44_replay.py \
+            --source-dir benchmark/testcode \
+            --output reports/phase44-goal-ci/replay-full.json
+
+      - name: Compare replay to labels only AFTER executing all probes
+        run: |
+          python scripts/phase44_replay_evaluate.py \
+            --replay reports/phase44-goal-ci/replay-full.json \
+            --labels benchmark/expectedresults-0.1.csv \
+            --output reports/phase44-goal-ci/replay-development-evaluation.json
 
       - name: Preserve source-to-sink candidate ledger and negative results
         if: always()
