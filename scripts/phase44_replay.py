@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import builtins
+from collections import Counter
 from contextlib import ExitStack
 import codecs
 import hashlib
@@ -202,6 +203,26 @@ def replay(source_dir: Path, limit: int | None = None) -> dict:
     for case in routes:
         all_cases[case] = replay_one(source_dir, case)
     values = list(all_cases.values())
+    types = Counter(
+        op["operation"] for row in values if row["verified_outside_root"]
+        for op in row.get("operations", []) if op["completed"]
+    )
+    errors = Counter(
+        (row["reason"] or "").split(":", 1)[0]
+        for row in values if row["status"] == "unknown"
+    )
+    file_open_cases = [
+        row["case_id"] for row in values
+        if any(op["operation"] in {"builtin_open", "codecs_open", "pathlib_open"}
+               and op["completed"] for op in row.get("operations", []))
+    ]
+    metadata_only = [
+        row["case_id"] for row in values
+        if row["verified_outside_root"] and
+        row["case_id"] not in file_open_cases and
+        not any(op["operation"] == "synthetic_sentinel_changed"
+                for op in row["operations"])
+    ]
     return {
         "schema_version": 1,
         "phase": "4.4B",
@@ -209,6 +230,14 @@ def replay(source_dir: Path, limit: int | None = None) -> dict:
         "dataset": "OWASP Python v0.1 developer corpus, no labels in selection or execution",
         "tested": len(values),
         "verified_sandbox_escapes": sum(x["verified_outside_root"] for x in values),
+        "file_open_case_count": len(file_open_cases),
+        "file_open_case_ids": file_open_cases,
+        "metadata_only_case_count": len(metadata_only),
+        "metadata_only_case_ids": metadata_only,
+        "operation_type_counts": dict(sorted(types.items())),
+        "runtime_error_types": dict(sorted(errors.items())),
+        "observed_case_ids": sorted(row["case_id"] for row in values
+                                    if row["verified_outside_root"]),
         "unknown": sum(x["status"] == "unknown" for x in values),
         "not_observed": sum(x["status"] == "no_escape_observed" for x in values),
         "elapsed_wall_seconds": time.perf_counter() - t0,
@@ -241,6 +270,10 @@ def main():
           result["unknown"], "runtime errors",
           result["not_observed"], "not observed",
           round(result["elapsed_wall_seconds"], 2), "wall seconds")
+    print("Observed file-op cases", result["file_open_case_count"],
+          "metadata-only", result["metadata_only_case_count"])
+    print("Operation types", result["operation_type_counts"])
+    print("Runtime error types", result["runtime_error_types"])
     print("sample cases", {
         k: result["cases"][k]["status"]
         for k in list(result["cases"])[:10]
