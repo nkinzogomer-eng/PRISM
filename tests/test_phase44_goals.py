@@ -117,6 +117,17 @@ def route():
 ''')
         self.assertEqual(d["candidate_count"], 1)
 
+    def test_with_open_context_manager_is_a_security_sink(self):
+        d = check('''
+def route():
+    filename = request.form.get("filename")
+    with open("/tmp/root/" + filename, "rb") as fd:
+        return fd.read(4)
+''')
+        self.assertEqual(d["candidate_count"], 1)
+        self.assertEqual(d["findings"][0]["sink"], "open")
+        self.assertEqual(d["verified_count"], 0)
+
     def test_precise_literal_dictionary_key_propagation(self):
         d = check('''
 def route():
