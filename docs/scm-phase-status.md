@@ -68,7 +68,9 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 
 **Scientific conclusion:** the existing dominated-observation rule passed its narrow finite-model safety tests. Abstract optimal execution cost remained unchanged; only representation size decreased in eligible regimes. Timing diagnostics are preliminary and do not establish portable speedup. H-SCM-1 and general SCM superiority remain unproven.
 
-## Phase 4 — in progress, protocol only
+## Phase 4 — in progress, development evidence only
+
+**2026-10-21 update:** the [evidence audit](../reports/phase-4-evidence-audit-2026-10-21.md) supersedes earlier statements that full push CodeQL outputs were unavailable. Both suites' successful extraction of all 1,230 modules is verified. Archived-output CWE/location ablations and an explanatory AST context prototype are now available. OWASP Python v0.1 is development-only; no independent evaluation or SCM advantage has been demonstrated. Historical checklist items below are not evidence of pristine holdout status.
 
 - [x] Bounded offline defensive evaluation scope selected.
 - [x] Candidate labeled benchmark and fallback identified, pending source/license/toolchain verification.
@@ -86,7 +88,7 @@ See [Phase 1 theory audit](scm-phase1-theory-audit.md) for the source-backed rev
 - [ ] Evaluate remediation separately with independent verification.
 - [ ] Review evidence and only then decide whether Phase 4 exits.
 
-**Current conclusion:** no empirical cybersecurity result exists yet. Protocol/documentation work is not evidence of PRISM efficacy; Phase 4 remains unchecked.
+**Current conclusion:** development-only scanner results and exploratory ablations exist. PRISM detection efficacy, independent generalization and full end-to-end cost advantage remain unproven; Phase 4 remains unchecked.
 
 ## Change control
 

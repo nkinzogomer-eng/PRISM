@@ -65,7 +65,9 @@ Le registre [findings.json](phase4-audit-2026-10-21/findings.json) contient outi
 
 ## Validation et reproduction
 
-Suite locale : **66 tests, succès avec 1 échec attendu préexistant**, Python Windows avec `PYTHONUTF8=1`. Sans UTF-8, un test Phase 3 échoue déjà avant les modifications sur l'affichage d'une flèche ; c'est une contrainte de console, pas une régression scientifique. Contrôle de diff sans erreur. La CI GitHub doit être vérifiée séparément après publication.
+Suite locale : **66 tests, succès avec 1 échec attendu préexistant**, Python Windows avec `PYTHONUTF8=1`. Sans UTF-8, un test Phase 3 échoue déjà avant les modifications sur l'affichage d'une flèche ; c'est une contrainte de console, pas une régression scientifique. Contrôle de diff sans erreur.
+
+Validation GitHub du commit de code `2fb2b736ce3db7d5a5c6a5b05fb306e841a5ad78` : [CI générale réussie](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39554485746), [baseline statique réussie](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39554485703), [deux suites CodeQL réussies](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39554479274), y compris la nouvelle porte d'extraction complète. Ces nouveaux jobs valident l'intégration ; les tableaux scientifiques ci-dessus sont le rejeu identifié des artefacts historiques, sans mélange des mesures.
 
 ```text
 python -m unittest discover -s tests -v
