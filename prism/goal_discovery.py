@@ -351,6 +351,10 @@ class _Analyzer:
                 # remaining statements when this is an unconditional return.
                 break
             elif isinstance(stmt, ast.If):
+                # Condition expressions can themselves perform a filesystem
+                # access (e.g. user_controlled_path.exists()). The first
+                # benchmark run exposed this exact omitted-sink false negative.
+                self.expression(stmt.test, env, constants, func, depth)
                 truth = _const(stmt.test, constants)
                 if truth is not _UNKN:
                     branch = stmt.body if truth else stmt.orelse
@@ -388,6 +392,8 @@ class _Analyzer:
                 returned = returned.plus(
                     self._walk(stmt.finalbody, env, constants, func, depth))
             elif isinstance(stmt, (ast.For, ast.While, ast.With, ast.AsyncWith)):
+                if isinstance(stmt, ast.While):
+                    self.expression(stmt.test, env, constants, func, depth)
                 # Unknown loop/mgr semantics: analyze body but do not
                 # announce absence of flow as a safety guarantee.
                 body = getattr(stmt, "body", ())
