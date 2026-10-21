@@ -182,16 +182,16 @@ def route():
         self.assertEqual(d["unknown_count"], 1)
         self.assertIn("unproven_path_guard", " ".join(d["findings"][0]["uncertainties"]))
 
-    def test_unsupported_dict_flow_explicit_uncertainty(self):
+    def test_literal_dictionary_key_is_now_precisely_tracked(self):
         d = check('''
 def route():
     user = request.args.get("f")
     values = {"some": "safe", "f": user}
     return open(values["f"])
 ''')
-        self.assertEqual(d["candidate_count"], 0)
-        self.assertEqual(d["unknown_count"], 1)
-        self.assertIn("dictionary_key_not_tracked", " ".join(d["findings"][0]["uncertainties"]))
+        self.assertEqual(d["candidate_count"], 1)
+        self.assertEqual(d["unknown_count"], 0)
+        self.assertEqual(d["verified_count"], 0)
 
     def test_syntax_errors_unknown_never_negative(self):
         d = check("def broken(:\n  return open(request.cookies.get('name'))\n")
