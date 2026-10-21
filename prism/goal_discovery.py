@@ -210,7 +210,7 @@ class _Analyzer:
         # not prevent triage, although it requires later reachability proof.
         # Unresolved transformations, containers and guards DO prevent
         # a high-confidence candidate and remain unknown.
-        blocking = flow.uncertainties - {"unknown_branch"}
+        blocking = flow.uncertainties - {"unknown_branch", "bounded_slice", "request_collection_element"}
         state = "unknown" if blocking else "candidate"
         key = (function, node.lineno, sink)
         if key not in self._seen:
@@ -254,6 +254,17 @@ class _Analyzer:
                         if -len(items) <= idx < len(items):
                             return items[idx]
             flow = self.expression(node.value, env, constants, func, depth)
+            if flow.sources and isinstance(node.slice, ast.Slice):
+                # Fixed slicing remains a source-dependent candidate but the
+                # precise surviving bytes require independent validation.
+                return flow.unknown("bounded_slice")
+            if flow.sources and isinstance(node.slice, ast.Constant) and type(node.slice.value) is int:
+                # A request's getlist()[i] element is still user supplied.
+                # Other aggregates stay unresolved unless modeled exactly.
+                if isinstance(node.value, ast.Name) and any(
+                    "request." in src and "getlist" in src for src in flow.sources
+                ):
+                    return flow.unknown("request_collection_element")
             return flow.unknown("unresolved_container_access") if flow.sources else flow
         if isinstance(node, ast.BinOp):
             return (self.expression(node.left, env, constants, func, depth)
