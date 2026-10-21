@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Phase 4.3C: fresh Bandit 1.8.6 B307 scanner experiment.
 
-Compare full, an exact-byte cache, conventional AST+directive cache, and
+Compare full, an exact-byte cache, conventional AST+directive cache, a conventional suffix diff, and
 a narrow sufficient-change certificate with actual normalized alert equality.
 
 Do not interpret B307 alert retention as broad cybersecurity capability.
@@ -31,7 +31,7 @@ from scripts.measure_phase43b import (
     source_inventory, normalized_finding, decode_scan, diff_finding_counts,
 )
 
-MODES = ("full", "hash", "ast_reference", "scm_suffix")
+MODES = ("full", "hash", "ast_reference", "diff_reference", "scm_suffix")
 
 
 def mutate(previous: dict[str, bytes], scenario: str) -> tuple[dict[str, bytes], dict]:
