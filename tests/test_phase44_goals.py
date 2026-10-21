@@ -69,6 +69,18 @@ def route():
 ''')
         self.assertEqual(d["candidate_count"], 1)
 
+    def test_optional_user_input_branch_creates_candidate_not_proof(self):
+        d = check('''
+def route():
+    supplied = request.form.get("filename")
+    if not supplied:
+        supplied = ""
+    return open("/testfiles/" + supplied)
+''')
+        self.assertEqual(d["candidate_count"], 1)
+        self.assertEqual(d["verified_count"], 0)
+        self.assertIn("unknown_branch", d["findings"][0]["uncertainties"])
+
     def test_unknown_external_helper_not_promoted_to_high_confidence(self):
         d = check('''
 def route():
