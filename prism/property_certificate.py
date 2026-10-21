@@ -53,6 +53,23 @@ def suffix_certificate(previous: bytes, candidate: bytes) -> Decision:
     return Decision(True, "exact_prefix_and_single_inert_comment")
 
 
+def conventional_suffix_diff(previous: bytes, candidate: bytes) -> Decision:
+    """Ordinary independently-coded byte-prefix diff comparator.
+
+    Uses exactly the same preconditions and rule-restricted edit family as the
+    SCM-labelled certificate, but has no SCM planning or graph machinery.
+    A comparable result falsifies any claim of a distinctive SCM speedup.
+    """
+    size = len(previous)
+    if not previous.endswith(b"\\n"):
+        return Decision(False, "diff_no_previous_newline")
+    if len(candidate) < size or candidate[:size] != previous:
+        return Decision(False, "diff_original_prefix_modified")
+    if MARKER.fullmatch(candidate[size:]) is None:
+        return Decision(False, "diff_not_prescribed_comment")
+    return Decision(True, "conventional_prefix_diff_certificate")
+
+
 def _nosec_fingerprint(raw: bytes) -> tuple:
     """Extract all lines with scanner-sensitive comment control words."""
     candidates = []
@@ -90,7 +107,7 @@ def ast_reference_certificate(previous: bytes, candidate: bytes) -> Decision:
 def select_reanalysis(mode: str, before: dict[str, bytes],
                       after: dict[str, bytes]) -> tuple[set[str], dict[str, int]]:
     """Every unknown or changed-source non-certified module is reanalyzed."""
-    if mode not in {"full", "hash", "ast_reference", "scm_suffix"}:
+    if mode not in {"full", "hash", "ast_reference", "diff_reference", "scm_suffix"}:
         raise ValueError("invalid mode")
     if not set(after) <= set(before):
         raise ValueError("new modules require separate cache-entry bootstrapping")
@@ -106,6 +123,8 @@ def select_reanalysis(mode: str, before: dict[str, bytes],
             result = Decision(False, "changed_bytes")
         elif mode == "ast_reference":
             result = ast_reference_certificate(original, raw)
+        elif mode == "diff_reference":
+            result = conventional_suffix_diff(original, raw)
         else:
             result = suffix_certificate(original, raw)
         reasons[result.reason] = reasons.get(result.reason, 0) + 1
