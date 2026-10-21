@@ -40,7 +40,10 @@ class ReplayEvidenceTests(unittest.TestCase):
             "BenchmarkTest00001": {
                 "status": "verified_sandbox_path_escape",
                 "verified_outside_root": True,
-                "operations": [{"operation": "codecs_open", "completed": True}]
+                "operations": [{"operation": "codecs_open", "completed": True,
+                                "outside_allowed": True,
+                                "inside_temporary_sandbox": True,
+                                "path": "<TEMP>/SCM44_WITNESS_BenchmarkTest00001.txt"}]
             }
         }}
         with tempfile.TemporaryDirectory() as tmp:
