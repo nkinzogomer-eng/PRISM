@@ -61,7 +61,7 @@ def conventional_suffix_diff(previous: bytes, candidate: bytes) -> Decision:
     A comparable result falsifies any claim of a distinctive SCM speedup.
     """
     size = len(previous)
-    if not previous.endswith(b"\\n"):
+    if not previous.endswith(b"\n"):
         return Decision(False, "diff_no_previous_newline")
     if len(candidate) < size or candidate[:size] != previous:
         return Decision(False, "diff_original_prefix_modified")
