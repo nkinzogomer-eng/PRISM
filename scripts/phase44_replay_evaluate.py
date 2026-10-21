@@ -22,14 +22,14 @@ def evaluate(replay: dict, labels_path: Path) -> dict:
     if replay.get("tested") != len(replay.get("cases", {})):
         raise ValueError("partial replay ledger")
     tp = label_disagreement = unknown = not_observed = 0
+    outside_target_scope = 0
+    outside_scope_observed = 0
     categories = set()
     per_case = {}
     for case, result in replay["cases"].items():
         if case not in labels:
             raise ValueError("unlabelled test case")
         category, truth = labels[case]
-        if category != "pathtraver":
-            raise ValueError("non-pathtraver test entered path-specific probe")
         categories.add(category)
         proof = result["status"] == "verified_sandbox_path_escape"
         if proof and not result["verified_outside_root"]:
@@ -47,7 +47,11 @@ def evaluate(replay: dict, labels_path: Path) -> dict:
                 for item in evidence
             ):
                 raise ValueError("insufficient controlled filesystem evidence for claimed proof")
-        if proof:
+        if category != "pathtraver":
+            outside_target_scope += 1
+            if proof:
+                outside_scope_observed += 1
+        elif proof:
             if truth:
                 tp += 1
             else:
@@ -67,6 +71,11 @@ def evaluate(replay: dict, labels_path: Path) -> dict:
         "phase": "4.4B",
         "scope": "CWE-22 controlled sentinel path escape, not full security proof",
         "evaluated_replay_count": len(replay["cases"]),
+        "selection_mode": replay.get("selection_mode", "legacy_route_hint"),
+        "selection_uses_benchmark_category_hint": replay.get(
+            "selection_uses_benchmark_category_hint", True),
+        "selected_outside_CWE22_category": outside_target_scope,
+        "sandbox_escapes_outside_CWE22_category": outside_scope_observed,
         "pathtraver_expected_positive_count": total_true,
         "matched_positive_replay_count": tp,
         "replayed_but_labelled_negative": label_disagreement,
@@ -98,7 +107,10 @@ def main() -> None:
                            encoding="utf-8")
     print("CONTROLLED REPLAY LABEL AGREEMENT (development, disputed reference):")
     print({k: summary[k] for k in (
-        "evaluated_replay_count", "pathtraver_expected_positive_count",
+        "evaluated_replay_count", "selection_mode",
+        "selected_outside_CWE22_category",
+        "sandbox_escapes_outside_CWE22_category",
+        "pathtraver_expected_positive_count",
         "matched_positive_replay_count", "replayed_but_labelled_negative",
         "runtime_unknown", "single_probe_no_escape_observed",
         "developer_label_positive_capture_lower_bound")})
