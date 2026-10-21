@@ -243,8 +243,18 @@ class _Analyzer:
                 result = result.plus(self.expression(value, env, constants, func, depth))
             return result.unknown("dictionary_key_not_tracked") if result.sources else result
         if isinstance(node, ast.Subscript):
+            if isinstance(node.value, ast.Name):
+                idx = _const(node.slice, constants)
+                if idx is not _UNKN:
+                    key = "@map:" + node.value.id + ":" + repr(idx)
+                    if key in env:
+                        return env[key]
+                    items = constants.get("@list:" + node.value.id)
+                    if isinstance(items, list) and type(idx) is int:
+                        if -len(items) <= idx < len(items):
+                            return items[idx]
             flow = self.expression(node.value, env, constants, func, depth)
-            return flow
+            return flow.unknown("unresolved_container_access") if flow.sources else flow
         if isinstance(node, ast.BinOp):
             return (self.expression(node.left, env, constants, func, depth)
                     .plus(self.expression(node.right, env, constants, func, depth)))
@@ -258,6 +268,34 @@ class _Analyzer:
             return a.plus(b).unknown("unknown_branch") if a != b else a
         if isinstance(node, ast.Call):
             path = dotted(node.func)
+            # Precisely model a small subset of ordinary mutable containers.
+            # Unknown keys or aliasing still invalidate these summaries.
+            if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+                owner, method = node.func.value.id, node.func.attr
+                values = constants.get("@list:" + owner)
+                if isinstance(values, list) and method == "append" and len(node.args) == 1:
+                    values.append(self.expression(node.args[0], env, constants, func, depth))
+                    return EMPTY
+                if isinstance(values, list) and method == "pop":
+                    idx = _const(node.args[0], constants) if node.args else -1
+                    if type(idx) is int and -len(values) <= idx < len(values):
+                        return values.pop(idx)
+                    return Flow().unknown("unknown_pop_index")
+                if method == "set" and len(node.args) == 3:
+                    sect, key = _const(node.args[0], constants), _const(node.args[1], constants)
+                    if sect is not _UNKN and key is not _UNKN:
+                        value = self.expression(node.args[2], env, constants, func, depth)
+                        env["@config:" + owner + ":" + repr((sect,key))] = value
+                        return EMPTY
+                if method == "get" and len(node.args) >= 2:
+                    sect, key = _const(node.args[0], constants), _const(node.args[1], constants)
+                    synthetic = "@config:" + owner + ":" + repr((sect,key))
+                    if sect is not _UNKN and key is not _UNKN and synthetic in env:
+                        return env[synthetic]
+                if method == "get_form_parameter" and constants.get("@requestproxy:" + owner):
+                    return Flow(frozenset({f"request_wrapper.get_form_parameter@{node.lineno}"}))
+            if path == "helpers.separate_request.request_wrapper":
+                return EMPTY
             if path in {"request.args.get", "request.form.get",
                         "request.cookies.get", "request.values.get",
                         "request.headers.get", "request.files.get",
@@ -330,16 +368,40 @@ class _Analyzer:
                 targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
                 for target in targets:
                     if isinstance(target, ast.Name):
-                        env[target.id] = flow
+                        name = target.id
+                        # Assignment replaces the container identity and must
+                        # invalidate stale key/element summaries.
+                        for existing in tuple(env):
+                            if existing.startswith("@map:" + name + ":") or existing.startswith("@config:" + name + ":"):
+                                del env[existing]
+                        constants.pop("@list:" + name, None)
+                        constants.pop("@requestproxy:" + name, None)
+                        env[name] = flow
                         if value is _UNKN:
-                            constants.pop(target.id, None)
+                            constants.pop(name, None)
                         else:
-                            constants[target.id] = value
+                            constants[name] = value
+                        if isinstance(expr, ast.Dict):
+                            for key_ast, val_ast in zip(expr.keys, expr.values):
+                                key = _const(key_ast, constants) if key_ast else _UNKN
+                                if key is not _UNKN:
+                                    env["@map:" + name + ":" + repr(key)] = self.expression(
+                                        val_ast, env, constants, func, depth)
+                        elif isinstance(expr, ast.List):
+                            constants["@list:" + name] = [
+                                self.expression(x, env, constants, func, depth)
+                                for x in expr.elts]
+                        elif isinstance(expr, ast.Call) and dotted(expr.func) == "helpers.separate_request.request_wrapper":
+                            constants["@requestproxy:" + name] = True
                     elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):
                         name = target.value.id
-                        env[name] = env.get(name, EMPTY).plus(flow)
-                        if env[name].sources:
-                            env[name] = env[name].unknown("container_element_precision")
+                        key = _const(target.slice, constants)
+                        if key is not _UNKN:
+                            env["@map:" + name + ":" + repr(key)] = flow
+                            env[name] = env.get(name, EMPTY).plus(flow)
+                        else:
+                            env[name] = env.get(name, EMPTY).plus(
+                                flow.unknown("container_dynamic_key"))
             elif isinstance(stmt, ast.AugAssign):
                 add = self.expression(stmt.value, env, constants, func, depth)
                 if isinstance(stmt.target, ast.Name):
@@ -403,6 +465,10 @@ class _Analyzer:
                 # announce absence of flow as a safety guarantee.
                 body = getattr(stmt, "body", ())
                 env_copy = dict(env)
+                if isinstance(stmt, ast.For) and isinstance(stmt.target, ast.Name):
+                    iteration_flow = self.expression(stmt.iter, env, constants, func, depth)
+                    if iteration_flow.sources:
+                        env_copy[stmt.target.id] = iteration_flow.unknown("loop_iteration_unverified")
                 returned = returned.plus(
                     self._walk(list(body), env_copy, dict(constants), func, depth))
                 for name, flow in env_copy.items():
