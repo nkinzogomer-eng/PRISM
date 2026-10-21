@@ -2,7 +2,7 @@
 import unittest
 
 from prism.property_certificate import (
-    ast_reference_certificate, merge_or_fail, select_reanalysis, suffix_certificate,
+    ast_reference_certificate, conventional_suffix_diff, merge_or_fail, select_reanalysis, suffix_certificate,
 )
 from scripts.measure_phase43c import mutate
 
@@ -42,6 +42,19 @@ class SuffixCertificateTests(unittest.TestCase):
     def test_missing_terminal_newline_denied(self):
         self.assertFalse(suffix_certificate(b"eval('x')",
                          b"eval('x')# SCM43C-INERT-1\n").reusable)
+
+    def test_independent_conventional_diff_matches_bounded_scm_rule(self):
+        samples = [
+            (b"x=1\n", b"x=1\n# SCM43C-INERT-25\n"),
+            (b"x=1\n", b"x=1\neval('1')\n"),
+            (b"x=1\n", b"x=1\n# nosec B307\n"),
+            (b"x=1\n", b"\nx=1\n"),
+            (b"x=1", b"x=1# SCM43C-INERT-3\n"),
+        ]
+        for old, updated in samples:
+            with self.subTest(updated=updated):
+                self.assertEqual(conventional_suffix_diff(old, updated).reusable,
+                                 suffix_certificate(old, updated).reusable)
 
     def test_safe_inert_extension_does_not_authorize_arbitrary_comments(self):
         original = b"eval('x')\n"
