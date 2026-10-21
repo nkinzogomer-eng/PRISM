@@ -206,7 +206,12 @@ class _Analyzer:
             return
         if guard:
             flow = flow.unknown("unproven_path_guard")
-        state = "unknown" if flow.uncertainties else "candidate"
+        # A candidate is a *hypothesis*: a conditional branch alone does
+        # not prevent triage, although it requires later reachability proof.
+        # Unresolved transformations, containers and guards DO prevent
+        # a high-confidence candidate and remain unknown.
+        blocking = flow.uncertainties - {"unknown_branch"}
+        state = "unknown" if blocking else "candidate"
         key = (function, node.lineno, sink)
         if key not in self._seen:
             self._seen.add(key)
