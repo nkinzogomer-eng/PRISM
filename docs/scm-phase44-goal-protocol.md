@@ -75,3 +75,11 @@ python scripts/phase44_replay_evaluate.py \
 ```
 
 The first phase provides **verified sandbox behaviors** in a *known category*, not verified critical vulnerabilities in unknown software.
+
+## Addendum: category-blind code selection and resource-sink correction (2026-10-21)
+
+After the initial benchmark run, an adversarial control removed the route-name selection rule. **The initial code-only selector selected 426 files but replayed only 44/65 positive-labelled cases**, materially weakening the initial 83.1% targeted-harness result. Investigation identified a missed general AST sink category: `with open(...)` context resources were not visited. After correction and a regression test, the code-selected target inventory expanded to 448/1,230 modules and **replayed the same 54/65 labelled-positive sandbox escapes** as the category-informed suite. This is a *development-only* result and the correction was made after observing the first failure; it must never be advertised as independent holdout recall.
+
+The final [successful run 39647947430](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39647947430) includes 24 Phase 4.4 tests and 15 historical tests; [raw output](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39647947430/artifacts/12367358459). The static engine has 36 candidate cases (33 matching positive labels, 3 negative), 39 unknowns among 168 `pathtraver` entries; diagnostic evaluated-label recall 33/49 = 67.3%, NOT verified-replay recall. The dynamic suite has 54 sentinel observations (42 successful file opens, 12 metadata-only) in 448 code-selected modules, with 148 runtime errors and 246 nonobservations. A module lacking a sink recognized by the current AST rules may still be erroneously omitted.
+
+Full interpretation, explicit negative result, and follow-up requirements are in [Phase 4.4 scientific report](../reports/phase44-goal-first-2026-10-21.md). The criterion of verified real-world critical vulnerability discovery remains **UNMET**. No product, benchmark-independent recall, or superiority claim is authorized.
