@@ -1,0 +1,33 @@
+name: Phase 4.2 development structure
+on:
+  pull_request:
+    paths:
+      - 'scripts/phase42_structure.py'
+      - 'scripts/measure_phase42.py'
+      - 'tests/test_phase42_structure.py'
+      - '.github/workflows/phase42-structure.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: OWASP-Benchmark/BenchmarkPython
+          ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
+          path: benchmark
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install bandit==1.8.6
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/measure_phase42.py --source-dir benchmark/testcode --labels benchmark/expectedresults-0.1.csv --output reports/phase42-ci --repeats 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase42-development
+          path: reports/phase42-ci
