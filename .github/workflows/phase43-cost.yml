@@ -1,0 +1,86 @@
+name: Phase 4.3A real cost and preservation experiment
+
+on:
+  push:
+    branches:
+      - research/phase-4-3-cost-aware-execution
+    paths:
+      - "prism/cost_policy.py"
+      - "scripts/measure_phase43.py"
+      - "tests/test_phase43_cost_policy.py"
+      - ".github/workflows/phase43-cost.yml"
+      - "docs/scm-phase43-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: Real Bandit + Semgrep binary OR comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out PRISM
+        uses: actions/checkout@v4
+
+      - name: Check out immutable development benchmark
+        uses: actions/checkout@v4
+        with:
+          repository: OWASP-Benchmark/BenchmarkPython
+          ref: f1291485808b66e20ddb6b01b10dc71b3df8c8ba
+          path: benchmark
+
+      - name: Check out immutable community rules
+        uses: actions/checkout@v4
+        with:
+          repository: semgrep/semgrep-rules
+          ref: 17e31e11ebac99fb7dfe1cd288f7a32151b6f3f9
+          path: semgrep-rules
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Phase 4.3 contract tests
+        run: python -m unittest discover -s tests -p 'test_phase43_cost_policy.py' -v
+
+      - name: Install frozen scanners
+        run: python -m pip install setuptools==80.9.0 bandit==1.8.6 semgrep==1.181.0
+
+      - name: Execute fresh paired scans and write evidence
+        run: |
+          python scripts/measure_phase43.py \
+            --source-dir benchmark/testcode \
+            --labels benchmark/expectedresults-0.1.csv \
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/lang/security" \
+            --semgrep-config "$GITHUB_WORKSPACE/semgrep-rules/python/flask/security" \
+            --output reports/phase43-development \
+            --repeats 2
+
+      - name: Print paired cost/preservation summary
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path("reports/phase43-development/measurement.json").read_text())
+          print("Validation:", d["validation"])
+          print("Frozen estimator:", d["plan"])
+          for row in d["runs"]:
+              print(row["repeat"], row["policy"], row["effective_mode"],
+                    "wall", round(row["total_seconds"], 3),
+                    "CPU", round(row["child_cpu_seconds"], 3),
+                    "Semgrep cases", row["second_scanned"],
+                    "positive", len(row["positive_case_ids"]))
+          PY
+
+      - name: Archive all raw scanner reports and cost trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase43-development-paired-scans
+          path: reports/phase43-development/
+          if-no-files-found: warn
+          retention-days: 30
