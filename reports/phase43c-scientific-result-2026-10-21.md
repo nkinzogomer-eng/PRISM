@@ -47,3 +47,18 @@ Médianes **deux répétitions** en secondes. Chaque ligne est un benchmark avec
 - Comparer impérativement des optimisations déjà connues : AST diff, caches de fonction/règle, analyse incrémentale native et filtrage par dépendances, avec une baseline de diff ayant accès aux mêmes modifications et informations.
 - Seule une amélioration end-to-end **au-delà de ces baselines** à garanties égales, sur données gelées hors développement et après répétitions suffisantes, justifierait de parler de progrès distinctif SCM.
 - Ne pas ouvrir le holdout indépendant avant gel de l'algorithme, de l'évaluateur et du protocole.
+
+## Réplication CI finale après ajout du contrôle contradictoire
+
+[CI finale réussie 39640954990](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39640954990) (15 tests de certificat + 14 tests incrémentaux, 32/32 contrôles exacts), [artefacts bruts](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39640954990/artifacts/12364223159). L'empreinte des 26 alertes du cache initial reste `a73d00f0a8afaadf4d1723a2a1b49d99987eca384131053392b707bc0ca84a13`. La construction initiale coûte **3,1795 s** sur ce passage, contre 2,0243 s sur l'autre ; c'est une variation d'environnement, pas une régression prouvée.
+
+Médianes propres à **ce** passage Linux (secondes), sans combiner les exécutions :
+
+| Scénario | Complet | Cache exact | AST+directives | Diff conventionnel | SCM suffixe |
+|---|---:|---:|---:|---:|---:|
+| Commentaires | 3,2092 | 3,7282 | 2,9372 | 0,0310 | 0,0297 |
+| Mixte | 3,1982 | 3,1828 | 3,4087 | 0,5062 | 0,5006 |
+| Adversarial | 3,2075 | 3,1906 | 3,7221 | 0,8187 | 0,8204 |
+| Décalage de lignes | 3,1442 | 0,4826 | 0,7738 | 0,4841 | 0,4809 |
+
+La conclusion négative sur la nouveauté est reproduite : **le diff conventionnel et le certificat SCM aboutissent aux mêmes choix de réanalyse, préservent les mêmes alertes, et ont des durées indiscernables à ce niveau de bruit**. Deux répétitions de chaque scénario et deux passages CI ne justifient aucune inférence statistique forte.
