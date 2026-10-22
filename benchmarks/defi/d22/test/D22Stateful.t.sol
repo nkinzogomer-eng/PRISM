@@ -101,34 +101,33 @@ abstract contract D22StatefulBase {
                 "D22_LOAN_CONSERVATION");
     }
 
-    function invariant_OracleOwnerOnly() public view {
+    function checkOracle() internal view {
         require(oracle.price() == 2, "D22_ORACLE_AUTH_WITNESS");
     }
-
-    function invariant_CollateralSolvent() public view {
+    function checkWithdraw() internal view {
         require(market.debt(address(actor)) <= market.limit(address(actor)),
                 "D22_WITHDRAW_SOLVENCY_WITNESS");
     }
-
-    function invariant_RepaymentFunded() public view {
+    function checkRepay() internal view {
         require(!handler.everUnfunded(), "D22_UNFUNDED_REPAY_WITNESS");
     }
 }
 
-// Each deliberate failure test exposes only the relevant invariant, alongside
-// conservation. This avoids cross-label contamination among vulnerabilities.
 contract D22OracleBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(1); }
-    function invariant_OracleOwnerOnly() public view override {
-        super.invariant_OracleOwnerOnly();
-    }
+    function invariant_OracleOwnerOnly() public view { checkOracle(); }
 }
 contract D22WithdrawBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(2); }
+    function invariant_CollateralSolvent() public view { checkWithdraw(); }
 }
 contract D22RepayBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(3); }
+    function invariant_RepaymentFunded() public view { checkRepay(); }
 }
 contract D22AllSafeStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(0); }
+    function invariant_OracleOwnerOnly() public view { checkOracle(); }
+    function invariant_CollateralSolvent() public view { checkWithdraw(); }
+    function invariant_RepaymentFunded() public view { checkRepay(); }
 }
