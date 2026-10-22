@@ -1,0 +1,32 @@
+{
+  "schema": "prism-d24-external-corpus-v1",
+  "status": "PUBLIC_DEVELOPMENT_ONLY",
+  "source_repository": "https://github.com/SunWeb3Sec/DeFiVulnLabs",
+  "commit": "f61f6ee5c3f89eb7685030647f8df19997596f8b",
+  "license_status": "VERIFY_REUSE_TERMS_BEFORE_REDISTRIBUTION",
+  "cases": [
+    {
+      "id": "external_a",
+      "path": "src/test/first-deposit.sol",
+      "git_blob_sha1": "7c69d15fffcb43e2eb49feda45367c5be11a38ff"
+    },
+    {
+      "id": "external_b",
+      "path": "src/test/Price_manipulation.sol",
+      "git_blob_sha1": "2b0062a3ffcb3a2703863039d7680f48800b22af"
+    },
+    {
+      "id": "external_c",
+      "path": "src/test/Oracle-stale.sol",
+      "git_blob_sha1": "c716716cd37f1c1cfe0490fd3a6527772f744d51"
+    }
+  ],
+  "rules": {
+    "holdout": false,
+    "do_not_show_labeled_fixtures_to_detector": true,
+    "labels_must_be_independently_adjudicated": true,
+    "network_only_during_acquisition": true,
+    "readme_and_training_comments_are_leakage_risks": true,
+    "requires_external_evm_verification": true
+  }
+}
