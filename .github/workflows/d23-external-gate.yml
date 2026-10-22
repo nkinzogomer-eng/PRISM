@@ -1,0 +1,69 @@
+name: D2.3 independent DeFi benchmark provenance and ground-truth gate
+
+on:
+  push:
+    branches:
+      - research/defi-d23-source-derived-properties
+    paths:
+      - "scripts/d23_external_gate.py"
+      - "tests/test_d23_external_gate.py"
+      - ".github/workflows/d23-external-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-reality:
+    name: Pin real Origin Dollar/SCFuzzBench labels before claiming discovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout experimental PRISM
+        uses: actions/checkout@v4
+      - name: Checkout immutable external SCFuzzBench catalog
+        uses: actions/checkout@v4
+        with:
+          repository: scfuzzbench/scfuzzbench
+          ref: de70065957a32fc5dd5fba3e53bb60f8564c722c
+          path: external/scfuzzbench-catalog
+          sparse-checkout: |
+            benchmarks/targets.json
+            benchmarks/known_bugs.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Checkout immutable external Origin Dollar contract
+        uses: actions/checkout@v4
+        with:
+          repository: scfuzzbench/origin-dollar-scfuzzbench
+          ref: 299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          path: external/origin-dollar
+          sparse-checkout: |
+            contracts/contracts/token/OUSD.sol
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit pinned upstream source revision
+        run: |
+          test "$(git -C external/scfuzzbench-catalog rev-parse HEAD)" = "de70065957a32fc5dd5fba3e53bb60f8564c722c"
+          test "$(git -C external/origin-dollar rev-parse HEAD)" = "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
+      - name: Ground-truth adversarial and label hygiene tests
+        run: python -m unittest discover -s tests -p 'test_d23_external_gate.py' -v
+      - name: Verify real protocol source and benchmark target
+        run: |
+          python -m scripts.d23_external_gate \
+            --catalog external/scfuzzbench-catalog/benchmarks/targets.json \
+            --known-bugs external/scfuzzbench-catalog/benchmarks/known_bugs.json \
+            --target-source external/origin-dollar/contracts/contracts/token/OUSD.sol \
+            --output reports/d23-external-gate/readiness.json
+      - name: Preserve ground-truth audit WITHOUT claiming a detector score
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d23-external-target-readiness
+          path: reports/d23-external-gate/
+          if-no-files-found: warn
+          retention-days: 30
