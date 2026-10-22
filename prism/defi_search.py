@@ -111,19 +111,22 @@ def violated(s: State) -> bool:
             and s.victim_wallet < INITIAL)
 
 
-def _relevance(s: State) -> tuple[int, int, int, int]:
-    """Researcher-authored heuristic, evaluated only on detector-visible state.
+def _relevance(s: State) -> tuple[int, int, int, int, int]:
+    """Goal-relevance ordering, not a completeness claim or learned policy.
 
-    No oracle labels, vulnerabilities in source files, or known exploit trace.
-    This is an optimistic ranking, not sound exclusion of low-ranked states.
+    Researcher-defined stages derive from the financial property: share supply,
+    asset/share imbalance, zero-share victim deposit, and measurable loss.
+    No paths are pruned by this heuristic; the search still has an explicit cap.
     """
     has_shares = s.attacker_shares > 0
     ratio_high = s.share_supply > 0 and s.vault_assets > s.share_supply
+    dilution = (s.vault_assets - s.share_supply) if ratio_high else 0
     return (
-        1 if s.zero_share_victim_deposit else 0,
-        1 if ratio_high else 0,
-        1 if has_shares else 0,
-        s.attacker_wallet - INITIAL,
+        int(violated(s)),
+        int(s.zero_share_victim_deposit),
+        int(ratio_high and has_shares),
+        int(has_shares),
+        dilution,
     )
 
 
@@ -143,7 +146,7 @@ def search(*, policy: str = "goal_first", protected: bool = False,
         frontier = deque([(origin, ())])
     else:
         frontier = []
-        heappush(frontier, (0, (0, 0, 0, 0), next(serial), origin, ()))
+        heappush(frontier, (tuple(-x for x in _relevance(origin)), 0, next(serial), origin, ()))
     expanded = generated = attempted = 0
     while frontier and expanded < state_budget:
         if policy == "breadth_first":
@@ -172,9 +175,9 @@ def search(*, policy: str = "goal_first", protected: bool = False,
             else:
                 goodness = _relevance(successor)
                 heappush(frontier, (
-                    # Prefer fewer steps, but within each layer prioritize
-                    # states with promising goal-related facts.
-                    len(sequence), tuple(-x for x in goodness),
+                    # Best-first property relevance (not necessarily shortest path).
+                    # The same finite action alphabet and depth apply to BFS.
+                    tuple(-x for x in goodness), len(sequence),
                     next(serial), successor, sequence,
                 ))
     return SearchResult(policy, protected, False, (), expanded, attempted,
