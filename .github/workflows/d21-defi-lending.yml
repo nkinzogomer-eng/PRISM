@@ -1,0 +1,136 @@
+name: DeFi D2.1 multi-contract credit property discovery
+
+on:
+  push:
+    branches:
+      - research/defi-d21-multicontract-lending
+    paths:
+      - "benchmarks/defi/d21/**"
+      - "prism/defi_d21_search.py"
+      - "scripts/d21_explore.py"
+      - "tests/test_d21_*.py"
+      - "docs/scm-defi-d21-protocol.md"
+      - ".github/workflows/d21-defi-lending.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  credit-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pinned Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+
+      - name: Set up evidence location
+        run: |
+          mkdir -p reports/d21-ci
+          forge --version | tee reports/d21-ci/forge-version.txt
+          python --version | tee reports/d21-ci/python-version.txt
+
+      - name: Adversarial model and generator tests
+        run: |
+          /usr/bin/time -f 'python_test_wall=%e user=%U system=%S max_rss_kb=%M' \
+            -o reports/d21-ci/python-unit-resources.txt \
+            python -m unittest discover -s tests -p 'test_d21_*.py' -v
+
+      - name: Generate candidate without running oracle
+        run: |
+          /usr/bin/time -f 'planner_wall=%e user=%U system=%S max_rss_kb=%M' \
+            -o reports/d21-ci/planner-resources.txt \
+            python -m scripts.d21_explore \
+            --root benchmarks/defi/d21 \
+            --output reports/d21-ci \
+            --budget 30000 --depth 4
+
+      - name: Independent EVM proof, patched regression, and guarded baselines
+        run: |
+          cd benchmarks/defi/d21
+          /usr/bin/time -f 'evm_control_wall=%e user=%U system=%S max_rss_kb=%M' \
+            -o ../../../reports/d21-ci/evm-control-resources.txt \
+            forge test --match-contract 'D21BehaviorTest|D21GeneratedTest|D21FuzzGuardedTest|D21StatefulGuardedTest' -vv --json \
+            > ../../../reports/d21-ci/evm-controls.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          raw=json.loads(Path("../../../reports/d21-ci/evm-controls.json").read_text())
+          results=[(name,x) for value in raw.values() if isinstance(value,dict)
+                   for name,x in value.get("test_results",{}).items()]
+          failures=[(n,x) for n,x in results if x.get("status") != "Success"]
+          print("D21_EVM_CONTROLS", len(results), "FAILURES",len(failures))
+          if failures or len(results)<9:
+              raise SystemExit("independent EVM or control baseline failed: " + str(failures))
+          PY
+
+      - name: Conventional parameter fuzz independently hunts the same defect
+        run: |
+          cd benchmarks/defi/d21
+          set +e
+          /usr/bin/time -f 'fuzz_wall=%e user=%U system=%S max_rss_kb=%M' \
+            -o ../../../reports/d21-ci/parameter-fuzz-resources.txt \
+            forge test --match-contract D21FuzzVulnerableTest -vv --json \
+            > ../../../reports/d21-ci/parameter-fuzz.json
+          rc=$?
+          set -e
+          python - "$rc" <<'PY'
+          import json,sys
+          from pathlib import Path
+          rc=int(sys.argv[1])
+          raw=json.loads(Path("../../../reports/d21-ci/parameter-fuzz.json").read_text())
+          results=[x for group in raw.values() if isinstance(group,dict)
+                   for x in group.get("test_results",{}).values()]
+          print("PARAMETER_FUZZ",rc,[(x.get("status"),x.get("reason")) for x in results])
+          if rc == 0 or len(results)!=1 or results[0].get("status")!="Failure":
+              raise SystemExit("conventional fuzz failed to refute unsafe credit")
+          if "D21_FAIR_LTV_WITNESS" not in str(results[0].get("reason")):
+              raise SystemExit("conventional fuzz failed for the wrong reason")
+          PY
+
+      - name: Independent handler-based stateful invariant must find the defect
+        run: |
+          cd benchmarks/defi/d21
+          set +e
+          /usr/bin/time -f 'stateful_wall=%e user=%U system=%S max_rss_kb=%M' \
+            -o ../../../reports/d21-ci/stateful-fuzz-resources.txt \
+            forge test --match-contract D21StatefulVulnerableTest -vv --json \
+            > ../../../reports/d21-ci/stateful-fuzz.json
+          rc=$?
+          set -e
+          python - "$rc" <<'PY'
+          import json,sys
+          from pathlib import Path
+          rc=int(sys.argv[1])
+          raw=json.loads(Path("../../../reports/d21-ci/stateful-fuzz.json").read_text())
+          results=[(name,x) for group in raw.values() if isinstance(group,dict)
+                   for name,x in group.get("test_results",{}).items()]
+          errors=[(name, x.get("reason")) for name,x in results
+                  if x.get("status")=="Failure"]
+          print("STATEFUL_INVARIANT",rc,"RESULTS",len(results),"FAILURES",errors)
+          if rc==0 or len(results)<2 or not errors:
+              raise SystemExit("handler fuzz did not detect the violation")
+          if not any("D21_FAIR_LTV_WITNESS" in str(reason) for _,reason in errors):
+              raise SystemExit("stateful fuzz failed for unrelated cause")
+          PY
+
+      - name: Archive raw model, generated Solidity, EVM and resource records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d21-cross-contract-discovery-evidence
+          path: |
+            reports/d21-ci
+            benchmarks/defi/d21/test/D21Generated.t.sol
+          retention-days: 30
+          if-no-files-found: warn
