@@ -1,0 +1,109 @@
+name: D2.4B actual OUSD source ABI to EVM properties vs native stateful
+
+on:
+  push:
+    branches:
+      - research/defi-d24b-external-metaproperties
+    paths:
+      - "benchmarks/defi/d24b/**"
+      - "scripts/d24b_*.py"
+      - "tests/test_d24b_*.py"
+      - ".github/workflows/d24b-external-evm.yml"
+      - "docs/scm-defi-d24b-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-source-properties:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout PRISM experimental research
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pinned Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Test ABI compiler and contamination/adversarial guards
+        run: |
+          python -m unittest discover -s tests -p 'test_d24b_*.py' -v
+          python --version
+          forge --version
+      - name: Clone exact independent OUSD project and submodules
+        run: |
+          mkdir -p external/origin-dollar
+          git -C external/origin-dollar init
+          git -C external/origin-dollar remote add origin \
+            https://github.com/scfuzzbench/origin-dollar-scfuzzbench.git
+          git -C external/origin-dollar fetch --depth 1 origin \
+            299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          git -C external/origin-dollar checkout --detach FETCH_HEAD
+          test "$(git -C external/origin-dollar rev-parse HEAD)" = \
+            "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
+          git -C external/origin-dollar submodule update --init --recursive --depth 1
+          git -C external/origin-dollar rev-parse HEAD
+      - name: Compile real ERC20 ABI; do not read known-bug labels
+        run: |
+          mkdir -p reports/d24b-ci
+          cd external/origin-dollar
+          /usr/bin/time -v -o ../../reports/d24b-ci/real-abi-compilation-resources.txt \
+            forge inspect OUSD abi --json > ../../reports/d24b-ci/ousd-compiled-abi.json
+          test -s ../../reports/d24b-ci/ousd-compiled-abi.json
+      - name: Compile two generic candidate properties and create EVM probes
+        run: |
+          /usr/bin/time -v -o reports/d24b-ci/property-compilation-resources.txt \
+            python -m scripts.d24b_erc20_properties \
+              --abi reports/d24b-ci/ousd-compiled-abi.json \
+              --root external/origin-dollar \
+              --output reports/d24b-ci
+          cp benchmarks/defi/d24b/D24BReference.t.sol \
+             external/origin-dollar/test/recon/D24BReference.t.sol
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("reports/d24b-ci/proposals.json").read_text())
+          assert d["status"]=="CANDIDATES_GENERATED_NOT_VERIFIED"
+          assert d["candidate_count"]==2 and not d["unknown"]
+          assert d["verified_vulnerabilities"] is None
+          print("CANDIDATE_PROPERTIES", [c["id"] for c in d["candidates"]])
+          print("NO_LABELED_DETECTOR_INPUTS",True)
+          PY
+      - name: Execute independent real contract EVM tests and native stateful baseline
+        run: |
+          /usr/bin/time -v -o reports/d24b-ci/real-evaluation-resources.txt \
+            python -m scripts.d24b_external_evm \
+              --root external/origin-dollar \
+              --abi reports/d24b-ci/ousd-compiled-abi.json \
+              --properties reports/d24b-ci/proposals.json \
+              --output reports/d24b-ci
+      - name: Enforce measured interpretation and no invented historical bugs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path("reports/d24b-ci/real-evm-evaluation.json").read_text())
+          print("D24B_STATUS",d["status"])
+          assert d["status"]=="REAL_EVM_PROPERTY_RUNS_COMPLETE_UNADJUDICATED"
+          assert d["real_external_source"] and not d["holdout_blind"]
+          assert d["historical_root_cause_findings"] is None
+          assert d["precision_or_recall"] is None
+          assert len(d["runs"])==4
+          for run in d["runs"]:
+              print("D24B_EVIDENCE",run["experiment"],run["repeat"],
+                    run["wall_seconds"],run["child_cpu_seconds"],
+                    [(x["test"],x["status"]) for x in run["outcomes"]])
+          PY
+      - name: Archive raw source-ABI checks and EVM results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d24b-external-ousd-reproducible-evm-properties
+          path: reports/d24b-ci/
+          retention-days: 30
+          if-no-files-found: warn
