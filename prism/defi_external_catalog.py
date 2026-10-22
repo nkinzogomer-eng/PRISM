@@ -70,7 +70,7 @@ def ingest(targets: dict, known: dict, *, catalog_commit: str) -> CatalogResult:
                              "properties_path": path,
                              "source_kind": "independent_public_scfuzzbench_target"})
     refs = {}
-    total_bugs = total_canaries = 0
+    total_bugs = total_canaries = indirect_evidence = 0
     for entry in klist:
         ident, commit = entry["target_id"], entry["target_commit"]
         if ident not in by_id or ident in refs:
@@ -93,10 +93,24 @@ def ingest(targets: dict, known: dict, *, catalog_commit: str) -> CatalogResult:
                 evidence = item.get("evidence")
                 if not isinstance(evidence,list) or not evidence:
                     raise ValueError("missing reviewed root-cause evidence")
+                # One upstream documented Drips issue uses a GitHub PR as evidence,
+                # not a commit-anchored code URL. Treat it as WEAKER evidence
+                # requiring human review, never promote to pinned proof.
+                direct_evidence = False
+                indirect_pr = False
+                root = by_id[ident]["repo"]
                 for proof in evidence:
                     u=proof["url"]
-                    if not isinstance(u,str) or not u.startswith("https://github.com/scfuzzbench/") or "/blob/" + commit + "/" not in u:
+                    if not isinstance(u,str):
                         raise ValueError("unpinned external evidence")
+                    if u.startswith(root + "/blob/" + commit + "/"):
+                        direct_evidence = True
+                    elif re.fullmatch(re.escape(root) + r"/pull/[1-9][0-9]*",u):
+                        indirect_pr = True
+                    else:
+                        raise ValueError("unpinned external evidence")
+                if indirect_pr:
+                    indirect_evidence += 1
                 aliases = item.get("aliases")
                 if not isinstance(aliases,list) or not aliases:
                     raise ValueError("missing event aliases")
@@ -110,7 +124,9 @@ def ingest(targets: dict, known: dict, *, catalog_commit: str) -> CatalogResult:
                             raise ValueError("ambiguous alias or fuzzer")
                         alias_keys.add((fuzzer,event))
                     events.append({"event":event, "fuzzers":sorted(fuzzers)})
-                destination.append({"bug_id":bug_id, "aliases":events, "class":kind})
+                destination.append({"bug_id":bug_id, "aliases":events, "class":kind,
+                                    "evidence_direct_commit_anchor":direct_evidence,
+                                    "evidence_requires_human_review":indirect_pr})
         refs[ident] = {
             "target_id":ident, "target_commit":commit,
             "known_bugs":normalized_bugs, "canaries":normalized_canaries,
@@ -135,6 +151,11 @@ def ingest(targets: dict, known: dict, *, catalog_commit: str) -> CatalogResult:
         "target_count":len(public_cases),
         "externally_documented_issue_count":total_bugs,
         "canary_count":total_canaries,
+        "indirect_pr_evidence_count":indirect_evidence,
+        "catalogued_issues_needing_evidence_review":sum(
+            int(x["evidence_requires_human_review"]) for record in refs.values()
+            for x in record["known_bugs"]
+        ),
         "execution_status":"NOT_RUN",
         "confirmed_prism_discoveries":None,
         "baseline_comparison":"NOT_RUN",
