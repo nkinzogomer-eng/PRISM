@@ -8,6 +8,7 @@ on:
       - "prism/defi_property_compiler.py"
       - "scripts/d23_*.py"
       - "docs/scm-defi-d23-protocol.md"
+      - "benchmarks/defi/d23/**"
       - "tests/test_d23_*.py"
       - ".github/workflows/d23-abi-properties.yml"
   workflow_dispatch:
@@ -46,6 +47,13 @@ jobs:
             --root benchmarks/defi/d22 \
             --output reports/d23-ci
           cp reports-d23-compile-resource.txt reports/d23-ci/compile-resource.txt
+      - name: Generate black-box EVM property probes from ABI hypotheses only
+        run: |
+          python -m scripts.d23_generate_probes \
+            --root benchmarks/defi/d22 \
+            --manifest benchmarks/defi/d23/deployments.json \
+            --properties reports/d23-ci/compiled-hypotheses.json \
+            --output reports/d23-ci
       - name: Generate bounded model candidates independently of EVM outcomes
         run: |
           /usr/bin/time -v -o reports/d23-ci/search-resource.txt \
@@ -59,6 +67,20 @@ jobs:
             --root benchmarks/defi/d22 \
             --candidate reports/d23-ci/candidate-and-model.json \
             --output reports/d23-ci
+      - name: Independently execute and score all ABI-generated EVM probes
+        run: |
+          python -m scripts.d23_probe_score \
+            --root benchmarks/defi/d22 \
+            --generation-ledger reports/d23-ci/d23-probe-generation.json \
+            --output reports/d23-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("reports/d23-ci/d23-generated-probes-score.json").read_text())
+          print("GENERATED_PROBE_METRICS",data["metrics"])
+          if data["metrics"]!={"tp":3,"fp":0,"fn":0,"tn":9}:
+              raise SystemExit("D2.3 dynamically-generated property evidence differs from truth")
+          PY
       - name: Audit compiled hypotheses against 12-cell EVM evidence
         run: |
           python -m scripts.d23_audit \
@@ -90,5 +112,6 @@ jobs:
           path: |
             reports/d23-ci/
             benchmarks/defi/d22/test/D22GeneratedWitness.t.sol
+            benchmarks/defi/d22/test/D23AutoProperty.t.sol
           if-no-files-found: warn
           retention-days: 30
