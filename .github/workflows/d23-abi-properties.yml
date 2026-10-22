@@ -78,7 +78,7 @@ jobs:
           from pathlib import Path
           data=json.loads(Path("reports/d23-ci/d23-generated-probes-score.json").read_text())
           print("GENERATED_PROBE_METRICS",data["metrics"])
-          if data["metrics"]!={"tp":3,"fp":0,"fn":0,"tn":9}:
+          if {k:data["metrics"][k] for k in ("tp","fp","fn","tn")}!={"tp":3,"fp":0,"fn":0,"tn":9}:
               raise SystemExit("D2.3 dynamically-generated property evidence differs from truth")
           PY
       - name: Audit compiled hypotheses against 12-cell EVM evidence
