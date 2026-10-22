@@ -1,0 +1,81 @@
+name: D1.0 verified vulnerability-oracle foundation
+
+on:
+  push:
+    branches:
+      - research/phase-5-goal-driven-vulnerability-discovery
+    paths:
+      - "benchmarks/d10_dev/**"
+      - "prism/discovery_oracle.py"
+      - "prism/discovery_scoring.py"
+      - "scripts/d10_*.py"
+      - "tests/test_d10_oracle_and_scoring.py"
+      - ".github/workflows/d10-oracle.yml"
+      - "docs/scm-goal-driven-vulnerability-discovery.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout pinned PRISM research revision
+        uses: actions/checkout@v4
+      - name: Use Python standard library only
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run adversarial reference and scorer tests
+        run: python -m unittest discover -s tests -p 'test_d10_oracle_and_scoring.py' -v
+      - name: Materialize development fixtures and independent truth ledger
+        run: |
+          python -m scripts.d10_build --out reports/d10-dev/corpus
+      - name: Verify source fingerprints and run all behavioral witnesses
+        run: |
+          python -m scripts.d10_verify \
+            --corpus reports/d10-dev/corpus \
+            --output reports/d10-dev/oracle-validation.json
+      - name: Verify empty prediction submission through public evaluator
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path("reports/d10-dev/empty-predictions.json")
+          out.write_text(json.dumps({"schema":"d10-predictions-v1","findings":[]})+"\n")
+          PY
+          python -m scripts.d10_score \
+            --corpus reports/d10-dev/corpus \
+            --predictions reports/d10-dev/empty-predictions.json \
+            --output reports/d10-dev/empty-score.json
+      - name: Strict evidence gate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/d10-dev")
+          v=json.loads((root/"oracle-validation.json").read_text())
+          e=json.loads((root/"empty-score.json").read_text())
+          assert v["validation"]["case_count"]==24
+          assert v["validation"]["positive_count"]==12
+          assert v["validation"]["negative_count"]==12
+          assert all(x["positive"]==6 and x["negative"]==6
+                     for x in v["validation"]["family_counts"].values())
+          assert (e["tp"],e["fp"],e["fn"],e["tn"])==(0,0,12,12)
+          assert e["recall"]==0
+          assert v["detector_executed"] is False
+          print("D1.0 ORACLE PASS: 24 cases, 12 property violations, 12 paired fixes")
+          print("D1.0 DETECTOR RESULT: none implemented, no performance claim")
+          print("D1.0 MANIFEST SHA256:",
+                v["validation"]["public_manifest_sha256"])
+          PY
+      - name: Archive reproducible sources and witness ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d10-development-oracle-evidence
+          path: reports/d10-dev
+          if-no-files-found: warn
+          retention-days: 30
