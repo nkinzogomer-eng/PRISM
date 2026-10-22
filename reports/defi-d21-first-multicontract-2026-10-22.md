@@ -62,3 +62,15 @@ Le classement est hand-crafted à partir de la propriété/du mécanisme attendu
 **GO restreint** pour conserver le pipeline multi-contrats vérifié comme infrastructure expérimentale. **NO-GO** pour prétendre que PRISM dépasse les outils existants.
 
 **D2.2 :** préparer plusieurs familles de violations indépendantes (oracle, comptabilité de parts, contrôle d'accès, précision/arrondis, liquidation), contrats hétérogènes vulnérables/corrigés, propriétés cachées au moteur lorsqu'elles doivent être inférées, et un holdout historique gelé. Évaluer alors des **vulnérabilités distinctes confirmées par budget total** avec des baselines natives stateful et, lorsque possible, symboliques. L'heuristique doit être gelée avant consultation de cas hors développement et le coût de vérification compté.
+
+## Revalidation indépendante du rapport (seconde exécution CI)
+
+La CI a été relancée **sans modification de l'algorithme ou du protocole**, uniquement après ajout de l'affichage des ressources dans les journaux : [run 39839785798 — succès](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39839785798), [artefacts détaillés](https://github.com/nkinzogomer-eng/PRISM/actions/runs/39839785798/artifacts/12453220748).
+
+- 15 tests Python réussis, 9 contrôles EVM réussis, deux baselines vulnérables déclenchant explicitement `D21_FAIR_LTV_WITNESS`. Candidat identique : `pledge(10) → pump(100) → borrow(20) → unwind(50)`.
+- Reproduction du nombre d'états : **463 vs 14** sur le vulnérable et **693 vs 693** sur le protégé. Transitions identiques à la première CI (**2 222 vs 66**, **2 101 vs 2 101**). Aucun gain de couverture des défauts démontré.
+- Délais de parcours *sur cette seconde machine* : BFS vulnérable **0,006134 s**, recherche orientée **0,000241 s** ; contrôle BFS **0,004866 s**, classement orienté **0,005911 s**. Les différences sous la milliseconde ne prouvent pas une accélération robuste.
+- Mesures wall/CPU/RSS de processus (même runner, outils chauds et compilation incluse dans la première commande EVM) : génération candidate **0,04 s / ~18,5 MiB RSS** ; EVM contrôles avec compilation **1,26 s / ~105 MiB RSS** ; fuzz paramétrique en échec attendu **0,02 s / ~59 MiB RSS** ; fuzz stateful en échec attendu **0,18 s / ~67 MiB RSS**. **Ces durées ne sont pas une comparaison de performance équitable entre moteurs** : compilation, tests, objectifs et caches diffèrent. Pas de mesure du coût humain ni du temps de dérivation de l'invariant.
+- Résultat final reste **NO-GO pour avantage distinctif SCM**, **GO pour infrastructure multi-contrats candidate→EVM**.
+
+Note méthodologique : les résultats de Foundry sur l'invariant pris isolément ne prouvent pas le profit financier ; seule une violation de l'hypothèse de couverture de référence est attestée. Le scénario de défaut et le coût d'une liquidation ne sont pas exécutés.
