@@ -1,0 +1,81 @@
+name: D2.1 multi-contract lending solvency research (local EVM)
+
+on:
+  push:
+    branches:
+      - research/defi-d21-cross-contract-lending
+    paths:
+      - "benchmarks/defi/d21/**"
+      - "prism/defi_lending.py"
+      - "scripts/d21_explore.py"
+      - "tests/test_d21_*.py"
+      - ".github/workflows/d21-defi-lending.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-lending:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Unit regression checks and source model conservation
+        run: |
+          python -m unittest discover -s tests -p 'test_d21_*.py' -v
+          python -m unittest discover -s tests -p 'test_d20_*.py' -v
+      - name: Produce search trace before reading EVM outcomes
+        run: |
+          python -m scripts.d21_explore --root benchmarks/defi/d21 --output reports/d21-ci
+      - name: Independently execute generated candidate and guarded controls on EVM
+        run: |
+          cd benchmarks/defi/d21
+          forge test --match-contract D21GeneratedReplayTest --json > ../../../reports/d21-ci/evm-replay.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("../../../reports/d21-ci/evm-replay.json").read_text())
+          tests=[(name,x) for group in d.values() if isinstance(group,dict)
+                 for name,x in group.get("test_results",{}).items()]
+          print("EVM_REPLAY",[(n,v.get("status")) for n,v in tests])
+          if len(tests)!=2 or any(x.get("status")!="Success" for _,x in tests):
+              raise SystemExit("incomplete or invalid EVM proof")
+          PY
+      - name: Independent standard Foundry fuzz must find same problem
+        run: |
+          cd benchmarks/defi/d21
+          forge test --match-contract D21GuardedFuzzControlTest --json > ../../../reports/d21-ci/fuzz-guarded.json
+          set +e
+          forge test --match-contract D21ConventionalFuzzBaselineTest --json > ../../../reports/d21-ci/fuzz-vulnerable.json
+          code=$?
+          set -e
+          python - "$code" <<'PY'
+          import json,sys
+          from pathlib import Path
+          code=int(sys.argv[1])
+          d=json.loads(Path("../../../reports/d21-ci/fuzz-vulnerable.json").read_text())
+          hits=[x for group in d.values() if isinstance(group,dict)
+                for x in group.get("test_results",{}).values()]
+          print("NATIVE_FUZZ_BASELINE",code,[(x.get("status"),x.get("reason")) for x in hits])
+          if code==0 or len(hits)!=1 or hits[0].get("status")!="Failure":
+              raise SystemExit("baseline fuzz must independently find violation")
+          if "D21_UNDERCOLLATERALIZED" not in str(hits[0].get("reason")):
+              raise SystemExit("baseline failed for wrong reason")
+          PY
+      - name: Archive raw EVM and model evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d21-local-multicontract-evidence
+          path: |
+            reports/d21-ci/
+            benchmarks/defi/d21/test/D21GeneratedReplay.t.sol
+          retention-days: 30
+          if-no-files-found: warn
