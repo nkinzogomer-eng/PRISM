@@ -1,0 +1,80 @@
+name: D2.2 multi-property DeFi vs native stateful fuzz
+
+on:
+  push:
+    branches:
+      - research/defi-d22-multi-property-stateful
+    paths:
+      - "benchmarks/defi/d22/**"
+      - "prism/defi_multi.py"
+      - "scripts/d22_*.py"
+      - "tests/test_d22_*.py"
+      - ".github/workflows/d22-multiproperty-stateful.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  property-matrix:
+    name: Three properties across four local lending variants
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout experimental branch
+        uses: actions/checkout@v4
+      - name: Use Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Record tool versions
+        run: |
+          python --version
+          forge --version
+      - name: Adversarial unit tests and prior D2.1 regressions
+        run: |
+          python -m unittest discover -s tests -p 'test_d22_*.py' -v
+          python -m unittest discover -s tests -p 'test_d21_*.py' -v
+          python -m unittest discover -s tests -p 'test_d20_*.py' -v
+      - name: Generate all model comparisons before external EVM checks
+        run: |
+          python -m scripts.d22_explore --root benchmarks/defi/d22 --output reports/d22-ci
+      - name: Execute 6 candidate and patched EVM tests plus native handler fuzz
+        run: |
+          python -m scripts.d22_ci_eval \
+            --root benchmarks/defi/d22 \
+            --candidate reports/d22-ci/candidate-and-model.json \
+            --output reports/d22-ci
+      - name: Summarize full label grid and native findings
+        if: success()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          result=json.loads(Path("reports/d22-ci/evaluation.json").read_text())
+          assert len(result["comparisons"])==12
+          print("D22_SCIENTIFIC_STATUS",result["status"])
+          for x in result["comparisons"]:
+              print("CASE",x["case"],x["property"],"truth",x["positive_truth"],
+                    "PRISM",x["model_guided_found"],
+                    "BFS",x["model_bfs_found"],
+                    "STATEFUL",x["native_stateful_found"])
+          print("METRICS",result["metrics"])
+          print("TIME_AND_CPU")
+          for name,v in result["native_runs"].items():
+              print(name,round(v["wall_seconds"],5),round(v["child_cpu_seconds"],5))
+          PY
+      - name: Publish complete raw property-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d22-native-stateful-matrix
+          path: |
+            reports/d22-ci/
+            benchmarks/defi/d22/test/D22GeneratedWitness.t.sol
+          retention-days: 30
+          if-no-files-found: warn
