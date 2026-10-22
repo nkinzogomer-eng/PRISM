@@ -1,0 +1,31 @@
+{
+  "schema": "prism-d23-local-deployments-v1",
+  "contract": "D22Oracle+D22Credit+D22Coin",
+  "variations": [
+    {
+      "id": "c0",
+      "oracle_owner_only": true,
+      "withdraw_debt_check": true,
+      "repay_transfers_asset": true
+    },
+    {
+      "id": "c1",
+      "oracle_owner_only": false,
+      "withdraw_debt_check": true,
+      "repay_transfers_asset": true
+    },
+    {
+      "id": "c2",
+      "oracle_owner_only": true,
+      "withdraw_debt_check": false,
+      "repay_transfers_asset": true
+    },
+    {
+      "id": "c3",
+      "oracle_owner_only": true,
+      "withdraw_debt_check": true,
+      "repay_transfers_asset": false
+    }
+  ],
+  "disclaimer": "Deployment configurations are nonblind and researcher-defined. No vulnerability labels or exploit traces are provided to the test generator, but the booleans disclose the controls to human readers."
+}

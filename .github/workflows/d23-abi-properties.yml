@@ -1,0 +1,117 @@
+name: D2.3 source ABI to audited local property hypotheses
+
+on:
+  push:
+    branches:
+      - research/defi-d23-source-derived-properties
+    paths:
+      - "prism/defi_property_compiler.py"
+      - "scripts/d23_*.py"
+      - "docs/scm-defi-d23-protocol.md"
+      - "benchmarks/defi/d23/**"
+      - "tests/test_d23_*.py"
+      - ".github/workflows/d23-abi-properties.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  abi-hypotheses:
+    name: ABI-only property selection vs EVM evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated research branch
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pinned Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Verify versions
+        run: |
+          python --version
+          forge --version
+      - name: Pure Python adversarial ABI and old EVM model tests
+        run: |
+          python -m unittest discover -s tests -p 'test_d23_*.py' -v
+          python -m unittest discover -s tests -p 'test_d22_*.py' -v
+      - name: Compile property hypotheses from ABI ONLY
+        run: |
+          /usr/bin/time -v -o reports-d23-compile-resource.txt \
+            python -m scripts.d23_compile \
+            --root benchmarks/defi/d22 \
+            --output reports/d23-ci
+          cp reports-d23-compile-resource.txt reports/d23-ci/compile-resource.txt
+      - name: Generate black-box EVM property probes from ABI hypotheses only
+        run: |
+          python -m scripts.d23_generate_probes \
+            --root benchmarks/defi/d22 \
+            --manifest benchmarks/defi/d23/deployments.json \
+            --properties reports/d23-ci/compiled-hypotheses.json \
+            --output reports/d23-ci
+      - name: Generate bounded model candidates independently of EVM outcomes
+        run: |
+          /usr/bin/time -v -o reports/d23-ci/search-resource.txt \
+            python -m scripts.d22_explore \
+            --root benchmarks/defi/d22 \
+            --output reports/d23-ci
+      - name: Independently verify EVM witnesses and native handler fuzz
+        run: |
+          /usr/bin/time -v -o reports/d23-ci/verify-resource.txt \
+            python -m scripts.d22_ci_eval \
+            --root benchmarks/defi/d22 \
+            --candidate reports/d23-ci/candidate-and-model.json \
+            --output reports/d23-ci
+      - name: Independently execute and score all ABI-generated EVM probes
+        run: |
+          python -m scripts.d23_probe_score \
+            --root benchmarks/defi/d22 \
+            --generation-ledger reports/d23-ci/d23-probe-generation.json \
+            --output reports/d23-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("reports/d23-ci/d23-generated-probes-score.json").read_text())
+          print("GENERATED_PROBE_METRICS",data["metrics"])
+          if {k:data["metrics"][k] for k in ("tp","fp","fn","tn")}!={"tp":3,"fp":0,"fn":0,"tn":9}:
+              raise SystemExit("D2.3 dynamically-generated property evidence differs from truth")
+          PY
+      - name: Audit compiled hypotheses against 12-cell EVM evidence
+        run: |
+          python -m scripts.d23_audit \
+            --properties reports/d23-ci/compiled-hypotheses.json \
+            --model reports/d23-ci/candidate-and-model.json \
+            --evm reports/d23-ci/evaluation.json \
+            --output reports/d23-ci/d23-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/d23-ci")
+          c=json.loads((root/"compiled-hypotheses.json").read_text())
+          a=json.loads((root/"d23-audit.json").read_text())
+          print("COMPILED", [x["identifier"] for x in c["hypotheses"]])
+          print("UNKNOWN",c["unknown"])
+          print("EVM",a["model"],a["foundry"])
+          if len(c["hypotheses"])!=3 or c["unknown"] or a["cells_evaluated"]!=12:
+              raise SystemExit("D2.3 property compiler incomplete")
+          if a["model"]!={"tp":3,"fp":0,"fn":0,"tn":9}:
+              raise SystemExit("model labels inconsistent with EVM evidence")
+          if a["foundry"]!={"tp":3,"fp":0,"fn":0,"tn":9}:
+              raise SystemExit("native baseline discrepancy")
+          PY
+      - name: Archive source evidence, raw EVM output and resource ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d23-source-abi-property-evidence
+          path: |
+            reports/d23-ci/
+            benchmarks/defi/d22/test/D22GeneratedWitness.t.sol
+            benchmarks/defi/d22/test/D23AutoProperty.t.sol
+          if-no-files-found: warn
+          retention-days: 30
