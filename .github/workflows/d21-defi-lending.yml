@@ -124,6 +124,22 @@ jobs:
               raise SystemExit("stateful fuzz failed for unrelated cause")
           PY
 
+      - name: Publish per-stage process resource measurements
+        if: success()
+        run: |
+          for f in reports/d21-ci/*resources.txt; do echo "$f: $(cat "$f")"; done
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          data=json.loads(Path("reports/d21-ci/candidate.json").read_text())
+          print("GENERATED_PLAN",data["plan"])
+          for x in data["comparisons"]:
+              print("SEARCH_METRIC", x["policy"], "guarded",x["guarded"],
+                    "expanded",x["expanded"],"attempted",x["attempted"],
+                    "found",x["found"],"budget_exhausted",x["exhausted"],
+                    "runtime",round(x["elapsed_seconds"],6))
+          PY
+
       - name: Archive raw model, generated Solidity, EVM and resource records
         if: always()
         uses: actions/upload-artifact@v4
