@@ -9,7 +9,24 @@ import copy
 import unittest
 
 from prism.defi_property_compiler import freeze_input
-from tests.test_d23_property_compiler import complete
+def complete():
+    def abi(*signatures):
+        out = []
+        for signature in signatures:
+            name, arguments = signature.split("(")
+            args = arguments[:-1].split(",") if arguments[:-1] else []
+            out.append({"type": "function", "name": name,
+                        "inputs": [{"type": item, "name": f"x{i}"}
+                                   for i,item in enumerate(args)],
+                        "outputs": []})
+        return out
+    return {
+        "oracle": abi("owner()", "price()", "update(uint256)"),
+        "lender": abi("borrow(uint256)", "debt(address)", "deposit(uint256)",
+                      "limit(address)", "locked(address)", "withdraw(uint256)",
+                      "loanAsset()", "repay(uint256)"),
+        "asset": abi("balanceOf(address)", "transferFrom(address,address,uint256)")
+    }
 
 
 class D23IndistinguishabilityTests(unittest.TestCase):
