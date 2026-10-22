@@ -107,6 +107,20 @@ jobs:
           print("D23_COMPATIBILITY",[(x["template"],x["decision"]) for x in d["d23_template_decisions"]])
           print("NO_SECURITY_FINDING_CLAIM",True)
           PY
+      - name: Execute independently authored OUSD invariant harness (smoke only)
+        run: |
+          python -m scripts.d24_real_foundry_smoke \
+            --root external/origin-dollar \
+            --output reports/d24-real-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("reports/d24-real-ci/origin-native-smoke.json").read_text())
+          print("REAL_NATIVE_HARNESS_STATUS",d["status"])
+          print("REAL_NATIVE_CONFIRMED_FINDINGS",d["confirmed_findings"])
+          assert d["status"]=="EXTERNAL_EVM_HARNESS_EXECUTED"
+          assert d["confirmed_findings"] is None
+          PY
       - name: Archive real source provenance and compilation outputs
         if: always()
         uses: actions/upload-artifact@v4
