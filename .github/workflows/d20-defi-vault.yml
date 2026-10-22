@@ -1,0 +1,82 @@
+name: D2.0 DeFi goal-directed vault discovery (local EVM)
+
+on:
+  push:
+    branches:
+      - research/defi-d20-vault-property-discovery
+    paths:
+      - "benchmarks/defi/d20/**"
+      - "prism/defi_search.py"
+      - "scripts/d20_*.py"
+      - "tests/test_d20_*.py"
+      - ".github/workflows/d20-defi-vault.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discovery:
+    name: Local Solidity oracle and property-driven trace
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout experimental PRISM branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+
+      - name: Record versions
+        run: |
+          forge --version | tee /tmp/prism-forge-version.txt
+          python --version
+
+      - name: Deterministic Python search regression tests
+        run: python -m unittest discover -s tests -p 'test_d20_*.py' -v
+
+      - name: Generate candidate traces WITHOUT consulting oracle labels
+        run: |
+          python -m scripts.d20_explore \
+            --output reports/d20-ci \
+            --root benchmarks/defi/d20
+
+      - name: Execute plan and controls in real local Solidity EVM
+        run: |
+          cd benchmarks/defi/d20
+          forge test -vv --json > ../../../reports/d20-ci/forge-output.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          raw=json.loads(Path("../../../reports/d20-ci/forge-output.json").read_text())
+          count=0
+          failures=[]
+          for group in raw.values():
+              if not isinstance(group,dict):
+                  continue
+              for name,item in group.get("test_results",{}).items():
+                  count+=1
+                  if item.get("status") != "Success":
+                      failures.append((name,item))
+          print("EVM_TESTS",count,"FAILURES",len(failures))
+          if failures or count<4:
+              raise SystemExit(f"insufficient or failed EVM evidence: {failures}")
+          PY
+
+      - name: Preserve executable evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d20-local-vault-discovery-evidence
+          path: |
+            reports/d20-ci/
+            benchmarks/defi/d20/test/GeneratedDiscovery.t.sol
+          retention-days: 30
+          if-no-files-found: warn
