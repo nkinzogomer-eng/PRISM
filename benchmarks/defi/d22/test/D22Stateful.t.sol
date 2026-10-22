@@ -12,6 +12,8 @@ contract D22StatefulHandler {
     D22Credit public immutable market;
     D22Actor public immutable actor;
     bool public everUnfunded;
+    bool public everUnauthorizedOracleUpdate;
+    bool public everUnsafeWithdrawal;
     uint256 public attempts;
     uint256 public successes;
 
@@ -38,7 +40,12 @@ contract D22StatefulHandler {
     function withdraw(uint8 seed) external {
         ++attempts;
         uint256 amount = seed % 2 == 0 ? 10 : 20;
-        try actor.withdraw(market, amount) { ++successes; } catch {}
+        try actor.withdraw(market, amount) {
+            ++successes;
+            if (market.debt(address(actor)) > market.limit(address(actor))) {
+                everUnsafeWithdrawal = true;
+            }
+        } catch {}
     }
 
     function repay(uint8 seed) external {
@@ -60,7 +67,13 @@ contract D22StatefulHandler {
     function changePrice(uint8 seed) external {
         ++attempts;
         uint256 value = seed % 2 == 0 ? 20 : 3;
-        try actor.changePrice(oracle, value) { ++successes; } catch {}
+        uint256 beforePrice = oracle.price();
+        try actor.changePrice(oracle, value) {
+            ++successes;
+            if (oracle.price() != beforePrice && oracle.owner() != address(actor)) {
+                everUnauthorizedOracleUpdate = true;
+            }
+        } catch {}
     }
 }
 
@@ -102,10 +115,10 @@ abstract contract D22StatefulBase {
     }
 
     function checkOracle() internal view {
-        require(oracle.price() == 2, "D22_ORACLE_AUTH_WITNESS");
+        require(!handler.everUnauthorizedOracleUpdate(), "D22_ORACLE_AUTH_WITNESS");
     }
     function checkWithdraw() internal view {
-        require(market.debt(address(actor)) <= market.limit(address(actor)),
+        require(!handler.everUnsafeWithdrawal(),
                 "D22_WITHDRAW_SOLVENCY_WITNESS");
     }
     function checkRepay() internal view {
@@ -116,13 +129,19 @@ abstract contract D22StatefulBase {
 contract D22OracleBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(1); }
     function invariant_OracleOwnerOnly() public view { checkOracle(); }
+    function invariant_CollateralSolvent() public view { checkWithdraw(); }
+    function invariant_RepaymentFunded() public view { checkRepay(); }
 }
 contract D22WithdrawBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(2); }
+    function invariant_OracleOwnerOnly() public view { checkOracle(); }
     function invariant_CollateralSolvent() public view { checkWithdraw(); }
+    function invariant_RepaymentFunded() public view { checkRepay(); }
 }
 contract D22RepayBugStatefulTest is D22StatefulBase {
     function setUp() public { setupVariant(3); }
+    function invariant_OracleOwnerOnly() public view { checkOracle(); }
+    function invariant_CollateralSolvent() public view { checkWithdraw(); }
     function invariant_RepaymentFunded() public view { checkRepay(); }
 }
 contract D22AllSafeStatefulTest is D22StatefulBase {
