@@ -1,0 +1,131 @@
+name: D2.4 external pinned DeFi benchmark preflight
+
+on:
+  push:
+    branches:
+      - research/defi-d24-external-ground-truth
+    paths:
+      - "prism/defi_external_catalog.py"
+      - "scripts/d24_*.py"
+      - "tests/test_d24_*.py"
+      - "docs/scm-defi-d24-protocol.md"
+      - ".github/workflows/d24-external-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-ground-truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Adversarial canary/label separation tests
+        run: python -m unittest discover -s tests -p 'test_d24_*.py' -v
+      - name: Download ONLY immutable independent target/bug catalogs
+        run: |
+          python -m scripts.d24_external_prepare --output reports/d24-ci
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          base=Path("reports/d24-ci")
+          report=json.loads((base/"readiness.json").read_text())
+          public=json.loads((base/"detector-public-targets.json").read_text())
+          judge=json.loads((base/"judge-only-known-bugs.json").read_text())
+          assert report["inventory"]["target_count"]==5
+          assert report["inventory"]["externally_documented_issue_count"]==13
+          assert report["inventory"]["canary_count"]==10
+          assert report["inventory"]["execution_status"]=="NOT_RUN"
+          assert report["no_discovery_claim"]
+          assert len(public["cases"])==5
+          assert len(judge["entries"])==5
+          # Explicitly distinguish catalog preparation from actual detector run.
+          print("EXTERNAL_BENCHMARK_STATUS",report["status"])
+          print("INDEPENDENT_KNOWN_ISSUES",report["inventory"]["externally_documented_issue_count"])
+          print("PROVEN_PRISM_DISCOVERIES",report["inventory"]["confirmed_prism_discoveries"])
+          PY
+      - name: Archive pinned target catalogs and reproducibility hashes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d24-independent-catalog-preflight
+          path: reports/d24-ci/
+          retention-days: 30
+          if-no-files-found: warn
+
+  origin-dollar-real-source:
+    runs-on: ubuntu-latest
+    needs: independent-ground-truth
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Clone a specific public third-party target commit
+        run: |
+          mkdir -p external/origin-dollar
+          git -C external/origin-dollar init
+          git -C external/origin-dollar remote add origin \
+            https://github.com/scfuzzbench/origin-dollar-scfuzzbench.git
+          git -C external/origin-dollar fetch --depth 1 origin \
+            299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          git -C external/origin-dollar checkout --detach FETCH_HEAD
+          test "$(git -C external/origin-dollar rev-parse HEAD)" = \
+            "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
+          git -C external/origin-dollar submodule update --init --recursive --depth 1
+          git -C external/origin-dollar rev-parse HEAD | tee /tmp/d24-target-revision.txt
+      - name: Compile actual Origin Dollar contract ABI, no exploit labels passed
+        run: |
+          mkdir -p reports/d24-real-ci
+          cd external/origin-dollar
+          /usr/bin/time -v -o ../../reports/d24-real-ci/forge-inspect-resources.txt \
+            forge inspect OUSD abi --json > ../../reports/d24-real-ci/ousd-compiled-abi.json
+          test -s ../../reports/d24-real-ci/ousd-compiled-abi.json
+      - name: Check whether earlier D2.3 property compiler generalizes
+        run: |
+          python -m scripts.d24_origin_surface \
+            --root external/origin-dollar \
+            --abi reports/d24-real-ci/ousd-compiled-abi.json \
+            --commit 299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4 \
+            --output reports/d24-real-ci/origin-source-compatibility.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("reports/d24-real-ci/origin-source-compatibility.json").read_text())
+          assert d["detection_executed"] is False
+          assert d["confirmed_prism_findings"] is None
+          assert d["public_function_count"]>0
+          print("THIRD_PARTY_FUNCTIONS",d["public_function_count"])
+          print("D23_COMPATIBILITY",[(x["template"],x["decision"]) for x in d["d23_template_decisions"]])
+          print("NO_SECURITY_FINDING_CLAIM",True)
+          PY
+      - name: Execute independently authored OUSD invariant harness (smoke only)
+        run: |
+          python -m scripts.d24_real_foundry_smoke \
+            --root external/origin-dollar \
+            --output reports/d24-real-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("reports/d24-real-ci/origin-native-smoke.json").read_text())
+          print("REAL_NATIVE_HARNESS_STATUS",d["status"])
+          print("REAL_NATIVE_CONFIRMED_FINDINGS",d["confirmed_findings"])
+          assert d["status"]=="EXTERNAL_EVM_HARNESS_EXECUTED"
+          assert d["confirmed_findings"] is None
+          PY
+      - name: Archive real source provenance and compilation outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d24-origin-dollar-real-contract-preflight
+          path: reports/d24-real-ci/
+          retention-days: 30
+          if-no-files-found: warn
