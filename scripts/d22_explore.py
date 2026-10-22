@@ -85,12 +85,13 @@ def create_test(case: str, goal: str, trace: tuple[tuple[str,int],...]) -> str:
         {trace_code}
         {state_assertions(safe, "safe")}'''
 
+    variant = {"oracle_bug": 1, "withdraw_bug": 2, "repay_bug": 3}[case]
     id_name = {"oracle_bug": "Oracle", "withdraw_bug": "Withdraw",
                "repay_bug": "Repay"}[case]
     return f'''
     function testGenerated{id_name}BugWitness() external {{
         (D22Coin collateral, D22Coin loan, D22Oracle oracle,
-            D22Credit market, D22Actor actor) = deploy({{"oracle_bug":1,"withdraw_bug":2,"repay_bug":3}[case]});
+            D22Credit market, D22Actor actor) = deploy({variant});
         {trace_code}
         {state_assertions(positive, "unsafe")}
         {predicate}
