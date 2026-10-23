@@ -1,0 +1,92 @@
+name: D2.4C external OUSD economic multistep hypotheses and independent EVM comparator
+
+on:
+  push:
+    branches:
+      - research/defi-d24c-economic-stateful
+    paths:
+      - "scripts/d24c_*.py"
+      - "tests/test_d24c_*.py"
+      - "benchmarks/defi/d24c/**"
+      - ".github/workflows/d24c-economic-external.yml"
+      - "docs/scm-defi-d24c-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-economic-properties:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout PRISM research branch
+        uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Run source and adversarial integrity tests
+        run: |
+          python -m unittest discover -s tests -p 'test_d24c_*.py' -v
+          python -m unittest discover -s tests -p 'test_d24b_*.py' -v
+      - name: Pin and checkout independently authored OUSD target
+        run: |
+          mkdir -p external/origin-dollar
+          git -C external/origin-dollar init
+          git -C external/origin-dollar remote add origin https://github.com/scfuzzbench/origin-dollar-scfuzzbench.git
+          git -C external/origin-dollar fetch --depth 1 origin 299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          git -C external/origin-dollar checkout --detach FETCH_HEAD
+          test "$(git -C external/origin-dollar rev-parse HEAD)" = "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
+          git -C external/origin-dollar submodule update --init --recursive --depth 1
+      - name: Compile third-party ABI with pinned real code
+        run: |
+          mkdir -p reports/d24c-ci
+          cd external/origin-dollar
+          /usr/bin/time -v -o ../../reports/d24c-ci/abi-resources.txt forge inspect OUSD abi --json > ../../reports/d24c-ci/ousd-abi.json
+          test -s ../../reports/d24c-ci/ousd-abi.json
+      - name: Generate D2.4B adapter and independent D2.4C candidates
+        run: |
+          python -m scripts.d24b_erc20_properties --abi reports/d24c-ci/ousd-abi.json --root external/origin-dollar --output reports/d24c-ci
+          python -m scripts.d24c_economic_properties --abi reports/d24c-ci/ousd-abi.json --root external/origin-dollar --output reports/d24c-ci
+          cp benchmarks/defi/d24c/D24CIndependentReference.t.sol external/origin-dollar/test/recon/D24CIndependentReference.t.sol
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24c-ci/proposals.json').read_text())
+          assert r['status']=='CANDIDATES_NOT_VERIFIED'
+          assert len(r['candidates'])==2 and not r['unknown']
+          assert r['historical_root_causes'] is None and not r['target_mutated']
+          print('D24C_CANDIDATES', [x['id'] for x in r['candidates']])
+          PY
+      - name: Execute actual economic EVM transactions against real OUSD
+        run: |
+          /usr/bin/time -v -o reports/d24c-ci/evaluation-resources.txt python -m scripts.d24c_external_evm --root external/origin-dollar --abi reports/d24c-ci/ousd-abi.json --proposals reports/d24c-ci/proposals.json --output reports/d24c-ci
+      - name: Reject invalid discovery or superiority claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24c-ci/d24c-real-evaluation.json').read_text())
+          assert r['status']=='MULTISTEP_RUNS_COMPLETE_UNADJUDICATED'
+          assert r['historical_root_causes_evaluated'] is None
+          assert r['precision'] is None and r['recall'] is None
+          assert not r['blind_holdout'] and not r['superiority_claim']
+          assert len(r['runs'])==4
+          for run in r['runs']:
+              assert len(run['outcomes'])==2
+              print('D24C_RAW_EVM_OUTCOMES', run['method'], run['repeat'],
+                    [(x['test'],x['status']) for x in run['outcomes']])
+          PY
+      - name: Archive independent external Solidity, costs and raw EVM evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d24c-real-ousd-multistep-economics
+          path: reports/d24c-ci/
+          if-no-files-found: warn
+          retention-days: 30
