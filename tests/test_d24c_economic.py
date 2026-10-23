@@ -20,6 +20,7 @@ def abi():
         "rebaseOptIn":[],
         "changeSupply":["uint256"],
         "vaultAddress":[],
+        "nonRebasingSupply":[],
         "allowance":["address","address"],
         "approve":["address","uint256"],
         "transferFrom":["address","address","uint256"],
@@ -60,7 +61,8 @@ class D24CEconomicChecks(unittest.TestCase):
         s=solidity(choose(abi()))
         for snippet in ("economic.changeSupply","economic.rebaseOptOut",
                         "economic.rebaseOptIn","economic.transferFrom",
-                        "D24C_ALLOWANCE_NOT_DEBITED","D24C_REBASING_YIELD_DRIFT"):
+                        "D24C_ALLOWANCE_NOT_DEBITED","D24C_REBASING_YIELD_DRIFT",
+                        "economic.nonRebasingSupply"):
             self.assertIn(snippet,s)
         self.assertNotIn("known_bugs",s)
     def test_only_unverified_hypotheses_accepted(self):
