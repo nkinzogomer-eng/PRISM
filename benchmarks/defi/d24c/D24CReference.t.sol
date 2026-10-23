@@ -54,7 +54,7 @@ contract D24CStatefulHandler is Test {
     ID24CAsset public token;
     uint256 public checks;
     uint256 public spends;
-    uint256 public returns;
+    uint256 public roundTrips;
     address constant A = address(0x30000);
     address constant B = address(0x40000);
     address constant S = address(0x50000);
@@ -90,7 +90,7 @@ contract D24CStatefulHandler is Test {
         vm.prank(B);
         require(token.transfer(A, balance), "D24C_STATEFUL_TRANSFER2");
         require(token.totalSupply() == total, "D24C_STATEFUL_CYCLE2");
-        ++returns;
+        ++roundTrips;
         ++checks;
     }
 }
@@ -113,6 +113,6 @@ contract D24CStatefulReferenceTest is Test {
     function afterInvariant() public view {
         require(handler.checks() > 0, "D24C_VACUOUS_STATEFUL");
         require(handler.spends() > 0, "D24C_NO_ALLOWANCE_STEPS");
-        require(handler.returns() > 0, "D24C_NO_ROUNDTRIP_STEPS");
+        require(handler.roundTrips() > 0, "D24C_NO_ROUNDTRIP_STEPS");
     }
 }
