@@ -79,6 +79,7 @@ contract D24CGeneratedEconomicTest is Test {
         vm.prank(OWNER);
         economic.rebaseOptOut();
         uint256 excludedBalance = asset.balanceOf(OWNER);
+        uint256 earningBefore = asset.balanceOf(COUNTERPARTY);
         uint256 supplyBefore = asset.totalSupply();
         uint256 gain = 1 ether + (uint256(entropy) % (100 ether));
         vm.prank(economic.vaultAddress());
@@ -87,6 +88,13 @@ contract D24CGeneratedEconomicTest is Test {
                 "D24C_REBASE_LEAK_TO_NONREBASING");
         require(asset.totalSupply() == supplyBefore + gain,
                 "D24C_SUPPLY_DELTA_MISMATCH");
+        // Only the rebasing counterparty can earn this yield; permit
+        // at most one nanounit of token rounding, fixed before mutation.
+        uint256 expectedEarning = earningBefore + gain;
+        uint256 received = asset.balanceOf(COUNTERPARTY);
+        uint256 deviation = received >= expectedEarning
+            ? received - expectedEarning : expectedEarning - received;
+        require(deviation <= 1e9, "D24C_REBASING_YIELD_DRIFT");
         vm.prank(OWNER);
         economic.rebaseOptIn();
         require(asset.balanceOf(OWNER) == excludedBalance,
