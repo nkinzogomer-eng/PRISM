@@ -5,6 +5,7 @@ import {D24BAdapter, ID24BAsset} from "./D24BAdapter.sol";
 
 interface IIndependentTokenEconomics {
     function vaultAddress() external view returns (address);
+    function nonRebasingSupply() external view returns (uint256);
     function changeSupply(uint256 supply) external;
     function rebaseOptOut() external;
     function rebaseOptIn() external;
@@ -38,13 +39,16 @@ contract D24CIndependentReferenceTest is Test {
         uint256 holderBefore = token.balanceOf(HOLDER);
         uint256 otherBefore = token.balanceOf(OTHER);
         uint256 supplyBefore = token.totalSupply();
+        uint256 excluded = rebasing.nonRebasingSupply();
+        require(supplyBefore > excluded, "D24C_REF_NO_REBASING_SUPPLY");
         uint256 yieldAmount = 1 ether + (uint256(entropy) % (100 ether));
 
         vm.prank(rebasing.vaultAddress());
         rebasing.changeSupply(supplyBefore + yieldAmount);
         require(token.balanceOf(HOLDER) == holderBefore, "D24C_REF_NONREBASE_DRIFT");
         require(token.totalSupply() == supplyBefore + yieldAmount, "D24C_REF_SUPPLY_DRIFT");
-        uint256 intended = otherBefore + yieldAmount;
+        uint256 intended = otherBefore
+            + (yieldAmount * otherBefore) / (supplyBefore - excluded);
         uint256 actual = token.balanceOf(OTHER);
         uint256 gap = intended > actual ? intended - actual : actual - intended;
         require(gap <= 1e9, "D24C_REF_YIELD_ACCOUNTING_DRIFT");
