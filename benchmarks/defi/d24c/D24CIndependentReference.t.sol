@@ -36,6 +36,7 @@ contract D24CIndependentReferenceTest is Test {
         vm.stopPrank();
 
         uint256 holderBefore = token.balanceOf(HOLDER);
+        uint256 otherBefore = token.balanceOf(OTHER);
         uint256 supplyBefore = token.totalSupply();
         uint256 yieldAmount = 1 ether + (uint256(entropy) % (100 ether));
 
@@ -43,6 +44,10 @@ contract D24CIndependentReferenceTest is Test {
         rebasing.changeSupply(supplyBefore + yieldAmount);
         require(token.balanceOf(HOLDER) == holderBefore, "D24C_REF_NONREBASE_DRIFT");
         require(token.totalSupply() == supplyBefore + yieldAmount, "D24C_REF_SUPPLY_DRIFT");
+        uint256 intended = otherBefore + yieldAmount;
+        uint256 actual = token.balanceOf(OTHER);
+        uint256 gap = intended > actual ? intended - actual : actual - intended;
+        require(gap <= 1e9, "D24C_REF_YIELD_ACCOUNTING_DRIFT");
 
         vm.prank(HOLDER);
         rebasing.rebaseOptIn();
