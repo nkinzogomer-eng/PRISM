@@ -25,8 +25,9 @@ whether PRISM finds previously unknown vulnerabilities better than fuzzers.
 
 1. `NONREBASING_HOLDER_ISOLATION`: fund rebasing counterparty, opt out one
    holder, rebase global supply through authorized vault, verify that the
-   excluded holder's balance is unchanged; opt back in and verify accounting
-   continuity. All operations must complete successfully. Fixed initial
+   excluded holder's balance is unchanged, while the sole rebasing
+   counterparty receives the full gain up to 1e9 wei of rounding tolerance;
+   opt back in and verify accounting continuity. All operations must complete successfully. Fixed initial
    mint: 1000 OUSD; transfer: 400 OUSD; yield increment 1–101 OUSD.
 2. `SPENDER_ALLOWANCE_DEBIT`: holder mints, approves a spender, spender uses
    `transferFrom`, and the remaining allowance must equal approved
