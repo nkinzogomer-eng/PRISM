@@ -50,7 +50,7 @@ def execute(root: Path, out: Path, mode: str, repeat: int) -> dict:
     try:
         raw = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"{stem}: no parseable forge JSON") from exc
+        raise RuntimeError(f"{stem}: no parseable forge JSON; exit={proc.returncode}; stderr={proc.stderr[-4000:]!r}; stdout={proc.stdout[:500]!r}") from exc
     received = {}
     for entry in raw.values():
         if isinstance(entry, dict):
