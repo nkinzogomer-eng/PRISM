@@ -13,7 +13,7 @@ from prism.defi_property_compiler import signatures
 SPECS = {
     "NONREBASING_HOLDER_ISOLATION": (
         "totalSupply()", "balanceOf(address)", "transfer(address,uint256)",
-        "rebaseOptOut()", "rebaseOptIn()", "changeSupply(uint256)", "vaultAddress()"
+        "rebaseOptOut()", "rebaseOptIn()", "changeSupply(uint256)", "vaultAddress()", "nonRebasingSupply()"
     ),
     "SPENDER_ALLOWANCE_DEBIT": (
         "balanceOf(address)", "approve(address,uint256)",
@@ -53,6 +53,7 @@ import {Test} from "forge-std/Test.sol";
 import {D24BAdapter, ID24BAsset} from "./D24BAdapter.sol";
 interface ID24CEconomic {
     function vaultAddress() external view returns (address);
+    function nonRebasingSupply() external view returns (uint256);
     function changeSupply(uint256) external;
     function rebaseOptOut() external;
     function rebaseOptIn() external;
@@ -81,6 +82,8 @@ contract D24CGeneratedEconomicTest is Test {
         uint256 excludedBalance = asset.balanceOf(OWNER);
         uint256 earningBefore = asset.balanceOf(COUNTERPARTY);
         uint256 supplyBefore = asset.totalSupply();
+        uint256 nonRebasing = economic.nonRebasingSupply();
+        require(supplyBefore > nonRebasing, "D24C_NO_REBASING_SUPPLY");
         uint256 gain = 1 ether + (uint256(entropy) % (100 ether));
         vm.prank(economic.vaultAddress());
         economic.changeSupply(supplyBefore + gain);
@@ -88,9 +91,10 @@ contract D24CGeneratedEconomicTest is Test {
                 "D24C_REBASE_LEAK_TO_NONREBASING");
         require(asset.totalSupply() == supplyBefore + gain,
                 "D24C_SUPPLY_DELTA_MISMATCH");
-        // Only the rebasing counterparty can earn this yield; permit
-        // at most one nanounit of token rounding, fixed before mutation.
-        uint256 expectedEarning = earningBefore + gain;
+        // Public-state pro-rata rebasing share. OUSD starts with other holders;
+        // no holder may be assumed to be the sole yield recipient.
+        uint256 expectedEarning = earningBefore
+            + (gain * earningBefore) / (supplyBefore - nonRebasing);
         uint256 received = asset.balanceOf(COUNTERPARTY);
         uint256 deviation = received >= expectedEarning
             ? received - expectedEarning : expectedEarning - received;
