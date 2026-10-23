@@ -54,6 +54,7 @@ jobs:
           python -m scripts.d24b_erc20_properties --abi reports/d24c-ci/ousd-abi.json --root external/origin-dollar --output reports/d24c-ci
           python -m scripts.d24c_economic_properties --abi reports/d24c-ci/ousd-abi.json --root external/origin-dollar --output reports/d24c-ci
           cp benchmarks/defi/d24c/D24CIndependentReference.t.sol external/origin-dollar/test/recon/D24CIndependentReference.t.sol
+          cp benchmarks/defi/d24c/D24CStatefulReference.t.sol external/origin-dollar/test/recon/D24CStatefulReference.t.sol
           python - <<'PY'
           import json
           from pathlib import Path
@@ -81,6 +82,18 @@ jobs:
               assert len(run['outcomes'])==2
               print('D24C_RAW_EVM_OUTCOMES', run['method'], run['repeat'],
                     [(x['test'],x['status']) for x in run['outcomes']])
+          PY
+      - name: Independent native stateful EVM chains (128 runs x depth 48)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.d24c_external_evm import execute
+          root=Path('external/origin-dollar')
+          out=Path('reports/d24c-ci')
+          for repetition in (0,1):
+              r=execute(root,out,'stateful',repetition)
+              print('D24C_STATEFUL',repetition,[(x['test'],x['status']) for x in r['outcomes']])
+              assert all(x['status']=='Success' for x in r['outcomes']), 'Stateful counterexample requires adjudication'
           PY
       - name: Verify sandbox-only seeded accounting mutants and restore original source
         run: |
