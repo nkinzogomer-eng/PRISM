@@ -60,7 +60,7 @@ class D24CEconomicChecks(unittest.TestCase):
         s=solidity(choose(abi()))
         for snippet in ("economic.changeSupply","economic.rebaseOptOut",
                         "economic.rebaseOptIn","economic.transferFrom",
-                        "D24C_ALLOWANCE_NOT_DEBITED"):
+                        "D24C_ALLOWANCE_NOT_DEBITED","D24C_REBASING_YIELD_DRIFT"):
             self.assertIn(snippet,s)
         self.assertNotIn("known_bugs",s)
     def test_only_unverified_hypotheses_accepted(self):
