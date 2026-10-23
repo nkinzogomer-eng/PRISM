@@ -82,6 +82,21 @@ jobs:
               print('D24C_RAW_EVM_OUTCOMES', run['method'], run['repeat'],
                     [(x['test'],x['status']) for x in run['outcomes']])
           PY
+      - name: Verify sandbox-only seeded accounting mutants and restore original source
+        run: |
+          /usr/bin/time -v -o reports/d24c-ci/mutation-control-resources.txt python -m scripts.d24c_mutation_controls --root external/origin-dollar --abi reports/d24c-ci/ousd-abi.json --proposals reports/d24c-ci/proposals.json --output reports/d24c-ci
+          git -C external/origin-dollar diff --exit-code -- contracts/contracts/token/OUSD.sol
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24c-ci/synthetic-controls.json').read_text())
+          assert r['real_world_vulnerabilities_discovered']==0
+          assert r['superiority_claim'] is False
+          assert len(r['mutant_controls'])==2
+          for a in r['mutant_controls']:
+              assert a['status']=='EXPECTED_SYNTHETIC_MUTATION_DETECTED_BY_BOTH'
+              print('D24C_MUTANT_CONTROL',a['mutation'],a['status'])
+          PY
       - name: Archive independent external Solidity, costs and raw EVM evidence
         if: always()
         uses: actions/upload-artifact@v4
