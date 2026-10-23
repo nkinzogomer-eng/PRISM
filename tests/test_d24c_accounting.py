@@ -100,6 +100,17 @@ class AccountingProperties(unittest.TestCase):
             with self.assertRaises(ValueError):
                 build(path, root, root / "out")
 
+    def test_mutation_witness_unique_and_non_vacuous(self):
+        from scripts.d24c_mutation_controls import mutate, NEEDLE, MUTANT
+        self.assertIn(MUTANT, mutate("begin " + NEEDLE + " end"))
+        self.assertNotIn(NEEDLE, mutate("begin " + NEEDLE + " end"))
+        with self.assertRaises(ValueError):
+            mutate("no transferFrom allowance debit")
+        with self.assertRaises(ValueError):
+            mutate(NEEDLE + " " + NEEDLE)
+        with self.assertRaises(ValueError):
+            mutate(NEEDLE + " " + MUTANT)
+
     def test_expected_inventory_and_budget_contract(self):
         self.assertEqual({k: len(v) for k, v in INVENTORY.items()},
                          {"generated": 2, "matched_reference": 2,

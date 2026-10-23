@@ -33,3 +33,17 @@ Repeat each group twice. Archive raw Foundry JSON, stderr, SHA-256, wall and CPU
 ## Next research fork, D2.4C-root-cause
 
 Develop semantic role extraction from bytecode/source (rebasing shares, vault share-price invariants, caller authorization and time dependence) without issue labels. Lock a property budget and an *external* target split **before** any CI outcome. Compare SCM's structural action planner with standard stateful fuzz and conventional search using a common oracle and equal EVM transitions/CPU budgets. Independently reproduce counterexamples and score distinct root causes. Do not claim superiority unless a predeclared primary metric and uncertainty bound support it.
+
+## Synthetic falsification / sensitivity control (separate from external truth)
+
+After the clean, independently pinned OUSD run, temporarily mutate exactly one
+source line in the same local OUSD checkout, replacing
+`allowances[_from][msg.sender] = userAllowance - _value;` with
+`allowances[_from][msg.sender] = userAllowance;` (no debit on transferFrom).
+Run the already frozen generated, matched-reference and stateful checks again.
+Require an explicit accounting-property failure in all three; restore the exact
+original source bytes in a `finally` block and record both file hashes.
+If any of the three misses this obvious artificial fault, the sensitivity
+control is **FAIL**, not an opportunity to rewrite the detection budget.
+A successful control is **not a third-party vulnerability discovery** and
+proves **no advantage over the independent baseline**.

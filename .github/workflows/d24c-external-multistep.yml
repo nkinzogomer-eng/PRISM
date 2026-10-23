@@ -74,6 +74,11 @@ jobs:
               --abi reports/d24c-ci/ousd-abi.json \
               --proposals reports/d24c-ci/proposals.json \
               --out reports/d24c-ci
+      - name: Synthetic mutation positive control on isolated OUSD source
+        run: |
+          /usr/bin/time -v -o reports/d24c-ci/mutation-resources.txt \
+            python -m scripts.d24c_mutation_controls \
+              --root external/origin-dollar --out reports/d24c-ci
       - name: Assert no fabricated root-cause outcomes
         run: |
           python - <<'PY'
@@ -84,6 +89,12 @@ jobs:
           assert len(result["runs"]) == 6
           assert result["historical_bugs_tested"] is None
           assert result["comparative_superiority"] is None
+          mutation=json.loads(Path("reports/d24c-ci/mutation-control.json").read_text())
+          assert mutation["status"] == "THREE_REFERENCES_DETECTED_SYNTHETIC_MUTANT"
+          assert mutation["source_restored"]
+          assert len(mutation["runs"]) == 3
+          assert all(x["status"] == "SYNTHETIC_MUTANT_DETECTED"
+                     for x in mutation["runs"])
           for r in result["runs"]:
               print("D24C_REPRO",r["mode"],r["repeat"],
                     r["wall_seconds"], r["child_cpu_seconds"],
