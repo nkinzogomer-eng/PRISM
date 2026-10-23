@@ -116,5 +116,25 @@ class D24CEconomicChecks(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,"not an adjudicated flaw"):
                     execute(Path(d),Path(d),"reference",0)
 
+    def test_stateful_generic_revert_remains_unadjudicated_only_when_explicitly_allowed(self):
+        tests={
+            "invariant_positiveSupply()":{
+                "status":"Failure",
+                "reason":"invariant_positiveSupply persisted failure revert"},
+            "testFuzz_CoverageSequence(uint96,uint96)":{
+                "status":"Failure",
+                "reason":"D24C_STATEFUL_ALLOWANCE"},
+        }
+        fake=subprocess.CompletedProcess([],1,json.dumps({"contracts":{"test_results":tests}}),"")
+        with tempfile.TemporaryDirectory() as d:
+            with patch("scripts.d24c_external_evm.subprocess.run",return_value=fake):
+                with self.assertRaises(RuntimeError):
+                    execute(Path(d),Path(d),"stateful",0)
+                accepted=execute(Path(d),Path(d),"stateful",0,
+                    allow_unadjudicated_handler_reverts=True)
+        evidence={v["test"]:v["interpretation"] for v in accepted["outcomes"]}
+        self.assertEqual(evidence["invariant_positiveSupply()"],
+                         "STATEFUL_HANDLER_REVERT_UNADJUDICATED")
+
 if __name__=="__main__":
     unittest.main()
