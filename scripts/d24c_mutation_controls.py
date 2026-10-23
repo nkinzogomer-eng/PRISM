@@ -9,7 +9,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import subprocess
-from scripts.d24c_external_evm import run
+from scripts.d24c_external_evm import run,execute
 
 PATH=Path("contracts/contracts/token/OUSD.sol")
 MUTATIONS={
@@ -56,6 +56,16 @@ def check_mutant(root:Path,abi:Path,proposals:Path,out:Path,name:str)->dict:
             if observed!=expected:
                 raise RuntimeError(f"mutation {name} unexpected statuses: {observed} expected {expected}")
             status[f"{kind}:repeat{row['repeat']}"]=observed
+        # Native Foundry stateful searches the same mutated source using
+        # independently authored handlers, not PRISM-generated traces.
+        stateful=[]
+        for repeat in (0,1):
+            independent=execute(root,out/name,method="stateful",repeat=repeat)
+            by_name={t["test"]:t["status"] for t in independent["outcomes"]}
+            if by_name.get("testFuzz_CoverageSequence(uint96,uint96)")!="Failure":
+                raise RuntimeError("mandatory native stateful control missed the injected mutation")
+            stateful.append({"repeat":repeat,"outcomes":by_name})
+        report["stateful"]=stateful
         report["observed"]=status
         report["status"]="EXPECTED_SYNTHETIC_MUTATION_DETECTED_BY_BOTH"
     finally:
