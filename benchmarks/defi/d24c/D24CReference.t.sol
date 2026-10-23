@@ -24,13 +24,13 @@ contract D24CIndependentReferenceTest is Test {
         uint256 total = t.totalSupply();
         vm.prank(ALICE);
         assertTrue(t.approve(DELEGATE, budget));
-        assertEq(t.allowance(ALICE, DELEGATE), budget, "D24C_REF_APPROVAL");
+        require(t.allowance(ALICE, DELEGATE) == budget, "D24C_REF_APPROVAL");
         vm.prank(DELEGATE);
         assertTrue(t.transferFrom(ALICE, BOB, n));
-        assertEq(t.allowance(ALICE, DELEGATE), budget - n, "D24C_REF_FIRST");
+        require(t.allowance(ALICE, DELEGATE) == budget - n, "D24C_REF_FIRST");
         vm.prank(DELEGATE);
         assertTrue(t.transferFrom(ALICE, BOB, m));
-        assertEq(t.allowance(ALICE, DELEGATE), 1 ether, "D24C_REF_SECOND");
+        require(t.allowance(ALICE, DELEGATE) == 1 ether, "D24C_REF_SECOND");
         assertEq(t.totalSupply(), total, "D24C_REF_SUPPLY");
     }
 
