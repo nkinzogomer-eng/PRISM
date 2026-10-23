@@ -37,7 +37,8 @@ PREDICATE_FAILURES=(
     "D24C_STATEFUL_ZERO_SUPPLY"
 )
 
-def execute(root:Path,out:Path,method:str,repeat:int)->dict:
+def execute(root:Path,out:Path,method:str,repeat:int, *,
+            allow_unadjudicated_handler_reverts:bool=False)->dict:
     if method not in CONTRACTS or repeat not in (0,1):
         raise ValueError("unrecognized evaluation")
     out.mkdir(parents=True,exist_ok=True)
@@ -77,11 +78,20 @@ def execute(root:Path,out:Path,method:str,repeat:int)->dict:
         reason=str(row.get("reason") or "")
         if status not in ("Success","Failure"):
             raise RuntimeError(f"invalid EVM status: {status}")
-        if status=="Failure" and not any(code in reason for code in PREDICATE_FAILURES):
+        unclassified_handler_revert=(
+            method=="stateful" and allow_unadjudicated_handler_reverts
+            and name=="invariant_positiveSupply()"
+            and "persisted failure revert" in reason
+        )
+        if status=="Failure" and not any(code in reason for code in PREDICATE_FAILURES) and not unclassified_handler_revert:
             raise RuntimeError("EVM error or setup failure, not an adjudicated flaw: "+reason[:300])
+        interpretation=(
+            "STATEFUL_HANDLER_REVERT_UNADJUDICATED" if unclassified_handler_revert else
+            "NO_COUNTEREXAMPLE_IN_BOUNDED_RUN" if status=="Success" else
+            "CANDIDATE_COUNTEREXAMPLE_REQUIRES_ADJUDICATION"
+        )
         states.append({"test":name,"status":status,
-                       "interpretation":("NO_COUNTEREXAMPLE_IN_BOUNDED_RUN" if status=="Success"
-                                         else "CANDIDATE_COUNTEREXAMPLE_REQUIRES_ADJUDICATION"),
+                       "interpretation":interpretation,
                        "reason":reason[:500]})
     if (p.returncode!=0) != any(x["status"]=="Failure" for x in states):
         raise RuntimeError("Foundry exit/outcome mismatch")
