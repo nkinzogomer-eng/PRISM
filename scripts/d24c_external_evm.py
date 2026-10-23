@@ -19,16 +19,22 @@ INVENTORY={
     "generated":{"testFuzz_PRISMNonrebasingIsolation(uint96)",
                  "testFuzz_PRISMSpenderDebit(uint96)"},
     "reference":{"testFuzz_ReferenceRebaseIsolation(uint96)",
-                 "testFuzz_ReferenceSpenderDebit(uint96)"}
+                 "testFuzz_ReferenceSpenderDebit(uint96)"},
+    "stateful":{"invariant_positiveSupply()",
+                "testFuzz_CoverageSequence(uint96,uint96)"}
 }
 CONTRACTS={"generated":"D24CGeneratedEconomicTest",
-           "reference":"D24CIndependentReferenceTest"}
+           "reference":"D24CIndependentReferenceTest",
+           "stateful":"D24CStatefulReferenceTest"}
 PREDICATE_FAILURES=(
     "D24C_REBASE_LEAK_TO_NONREBASING","D24C_SUPPLY_DELTA_MISMATCH",
     "D24C_TOGGLE_LOSS","D24C_ALLOWANCE_NOT_DEBITED",
     "D24C_REBASING_YIELD_DRIFT","D24C_REF_YIELD_ACCOUNTING_DRIFT",
     "D24C_REF_NONREBASE_DRIFT","D24C_REF_SUPPLY_DRIFT",
-    "D24C_REF_OPTIN_DRIFT","D24C_REF_ALLOWANCE_DRIFT"
+    "D24C_REF_OPTIN_DRIFT","D24C_REF_ALLOWANCE_DRIFT",
+    "D24C_STATEFUL_REBASE_YIELD","D24C_STATEFUL_ALLOWANCE",
+    "D24C_STATEFUL_OWNER_DRIFT","D24C_STATEFUL_SUPPLY",
+    "D24C_STATEFUL_ZERO_SUPPLY"
 )
 
 def execute(root:Path,out:Path,method:str,repeat:int)->dict:
@@ -36,7 +42,10 @@ def execute(root:Path,out:Path,method:str,repeat:int)->dict:
         raise ValueError("unrecognized evaluation")
     out.mkdir(parents=True,exist_ok=True)
     env={**os.environ,"FOUNDRY_FUZZ_RUNS":"256",
-         "FOUNDRY_FUZZ_SEED":"0x"+format(repeat+1,"064x")}
+         "FOUNDRY_FUZZ_SEED":"0x"+format(repeat+1,"064x"),
+         "FOUNDRY_INVARIANT_RUNS":"128",
+         "FOUNDRY_INVARIANT_DEPTH":"48",
+         "FOUNDRY_INVARIANT_FAIL_ON_REVERT":"true"}
     command=["forge","test","--match-contract",CONTRACTS[method],"--json"]
     before=resource.getrusage(resource.RUSAGE_CHILDREN)
     t=perf_counter()
@@ -77,7 +86,9 @@ def execute(root:Path,out:Path,method:str,repeat:int)->dict:
     if (p.returncode!=0) != any(x["status"]=="Failure" for x in states):
         raise RuntimeError("Foundry exit/outcome mismatch")
     return {"method":method,"repeat":repeat,"budget":{"fuzz_runs_per_test":256,
-            "seed":env["FOUNDRY_FUZZ_SEED"]},
+            "seed":env["FOUNDRY_FUZZ_SEED"],
+            "invariant_runs":128 if method=="stateful" else None,
+            "invariant_depth":48 if method=="stateful" else None},
             "outcomes":states,"wall_seconds":wall,
             "child_cpu_seconds":(after.ru_stime+after.ru_utime)
                               -(before.ru_stime+before.ru_utime),
