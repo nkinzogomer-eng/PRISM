@@ -80,3 +80,23 @@ claim. Writing templates and comparator consumed unmeasured human work.
 
 **Promotion:** Keep research branch and PR draft; keep `main` untouched
 until replication and honest evidence review.
+
+
+## Post-observation experimental extension (not part of the frozen clean holdout)
+
+After evaluating the initial two checks, an independent native Foundry
+stateful handler was added. It executes rebases, allowance-dependent spending
+and reciprocal transfers in a single persistent EVM state, with 128 invariant
+runs of depth 48 and two repetitions. A separate mandatory state-changing
+fuzz control requires both a successful rebase and a successful delegated
+spending action; this protects the instrumentation check from an entirely
+vacuous pass. It does **not** establish non-vacuous coverage of every
+individual invariant trajectory. Synthetic-mutant sensitivity of the stateful
+comparator is evaluated as an instrument check, not an unseen vulnerability
+benchmark. Runtime and search budgets remain unmatched to the generated
+one-shot tests, so there is still **no fair detection-superiority claim**.
+
+The preceding failed sole-yield-recipient property remains permanently
+recorded as a model misspecification. No existing target behavior should
+be called a newly discovered vulnerability because a hypothesis was revised
+after observing its response.
