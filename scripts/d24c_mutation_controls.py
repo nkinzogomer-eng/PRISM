@@ -60,7 +60,8 @@ def check_mutant(root:Path,abi:Path,proposals:Path,out:Path,name:str)->dict:
         # independently authored handlers, not PRISM-generated traces.
         stateful=[]
         for repeat in (0,1):
-            independent=execute(root,out/name,method="stateful",repeat=repeat)
+            independent=execute(root,out/name,method="stateful",repeat=repeat,
+                                allow_unadjudicated_handler_reverts=True)
             by_name={t["test"]:t["status"] for t in independent["outcomes"]}
             if by_name.get("testFuzz_CoverageSequence(uint96,uint96)")!="Failure":
                 raise RuntimeError("mandatory native stateful control missed the injected mutation")
