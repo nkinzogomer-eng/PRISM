@@ -16,6 +16,7 @@ import runpy
 from time import perf_counter
 
 from prism.cyber_source_frontends import closure, python_surface, solidity_surface
+from scripts.d24e_guard_seeds import candidates
 
 EXPECTED_WERKZEUG = "6c4c680f5392342a68065114987f39160388064c"
 EXPECTED_OUSD = "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
@@ -108,6 +109,22 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
     if "transferFrom" not in selections["solidity_token_allowances"]["function_frontier"]:
         raise AssertionError("Solidity allowance caller omitted")
     runtime = python_checks(py, python_path)
+    guard_candidates = candidates(py, only_function="safe_join")
+    if not guard_candidates:
+        raise RuntimeError("no automatic executable rejection candidates from real source")
+    real_namespace = runpy.run_path(str(python_path))
+    guarded = real_namespace["safe_join"]
+    safe_base = "/srv/d24e-pinned"
+    derived = []
+    for candidate in guard_candidates:
+        response = guarded(safe_base, candidate.witness)
+        derived.append({"function": candidate.function,
+                        "line": candidate.line,
+                        "source_prefix": candidate.prefix,
+                        "source_derived_input": candidate.witness,
+                        "returned_none_on_real_code": response is None})
+    if not any(d["returned_none_on_real_code"] for d in derived):
+        raise RuntimeError("source-derived guard candidates never exercised")
     result = {
         "schema": "prism-d24e-real-source-cross-language-v1",
         "status": "REAL_SOURCES_RUNTIME_AND_LEXICAL_GATES_PASSED",
@@ -130,6 +147,8 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
         },
         "selections": selections,
         "python_runtime": runtime,
+        "exploratory_source_derived_guards": derived,
+        "exploratory_analysis_not_pre_registered": True,
         "total_python_analysis_and_controls_seconds": perf_counter()-started,
         "superiority_over_conventional_callgraph": None,
         "new_real_third_party_vulnerabilities": None,
@@ -149,6 +168,7 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
         "surfaces": {k: val["functions"] for k, val in result["surface"].items()},
         "frontiers": {k: [v["selected"], v["total"]] for k, v in selections.items()},
         "python_controls": len(runtime["clean_cases"]),
+        "source_derived_guard_candidates": len(derived),
         "synthetic_regression": runtime["synthetic_regression_witnesses"],
         "seconds": round(result["total_python_analysis_and_controls_seconds"], 6),
     }, sort_keys=True))
