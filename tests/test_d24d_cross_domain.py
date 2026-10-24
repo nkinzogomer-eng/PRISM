@@ -70,6 +70,8 @@ class KernelTests(unittest.TestCase):
         witness = audit_effects(d, depth=3)
         self.assertGreater(witness["transitions_audited"], 0)
         self.assertFalse(witness["read_set_proved"])
+        self.assertTrue(witness["audit_truncated"])
+        self.assertFalse(witness["write_set_exhaustively_proved"])
 
     def test_unsupported_metadata_can_break_reduction_not_proven_sound(self):
         @dataclass(frozen=True)
