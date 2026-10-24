@@ -6,7 +6,9 @@ on:
     paths:
       - "prism/cyber_source_frontends.py"
       - "scripts/d24e_real_source.py"
+      - "scripts/d24e_guard_seeds.py"
       - "tests/test_d24e_source_frontends.py"
+      - "tests/test_d24e_guard_seeds.py"
       - ".github/workflows/d24e-real-source.yml"
       - "docs/scm-cyber-d24e-protocol.md"
   workflow_dispatch:
@@ -84,6 +86,9 @@ jobs:
           record=json.loads((root/"real-source-cross-language.json").read_text())
           assert record["status"]=="REAL_SOURCES_RUNTIME_AND_LEXICAL_GATES_PASSED"
           assert len(record["selections"])==4
+          assert record["exploratory_analysis_not_pre_registered"] is True
+          assert len(record["exploratory_source_derived_guards"]) >= 1
+          assert any(v["returned_none_on_real_code"] for v in record["exploratory_source_derived_guards"])
           assert record["python_runtime"]["clean_expected_matched"]==7
           assert record["python_runtime"]["synthetic_regression_witnesses"]
           assert record["new_real_third_party_vulnerabilities"] is None
