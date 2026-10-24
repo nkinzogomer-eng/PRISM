@@ -17,6 +17,7 @@ from time import perf_counter
 
 from prism.cyber_source_frontends import closure, python_surface, solidity_surface
 from scripts.d24e_guard_seeds import candidates
+from scripts.d24e_classical_baseline import ast_callgraph_baseline
 
 EXPECTED_WERKZEUG = "6c4c680f5392342a68065114987f39160388064c"
 EXPECTED_OUSD = "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
@@ -108,6 +109,13 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
         raise AssertionError("password checking dependency omitted")
     if "transferFrom" not in selections["solidity_token_allowances"]["function_frontier"]:
         raise AssertionError("Solidity allowance caller omitted")
+    independent_python = ast_callgraph_baseline(py, {
+        "python_safe_join": ("safe_join",),
+        "python_password_verification": ("check_password_hash",),
+    })
+    for key, base in independent_python["queries"].items():
+        if base["closure"] != selections[key]["function_frontier"]:
+            raise RuntimeError(f"SCM disagreed with strong cached classical AST baseline: {key}")
     runtime = python_checks(py, python_path)
     guard_candidates = candidates(py, only_function="safe_join")
     if not guard_candidates:
@@ -146,6 +154,8 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
                          "limitations": list(sol_surface.limitations)},
         },
         "selections": selections,
+        "classical_python_ast_baseline": independent_python,
+        "scm_superiority_over_cached_classical_ast": False,
         "python_runtime": runtime,
         "exploratory_source_derived_guards": derived,
         "exploratory_analysis_not_pre_registered": True,
@@ -169,6 +179,7 @@ def evaluate(python_path: Path, solidity_path: Path, out: Path) -> dict:
         "frontiers": {k: [v["selected"], v["total"]] for k, v in selections.items()},
         "python_controls": len(runtime["clean_cases"]),
         "source_derived_guard_candidates": len(derived),
+        "classic_cached_ast_tie": True,
         "synthetic_regression": runtime["synthetic_regression_witnesses"],
         "seconds": round(result["total_python_analysis_and_controls_seconds"], 6),
     }, sort_keys=True))
