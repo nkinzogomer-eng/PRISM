@@ -1,0 +1,116 @@
+name: D2.4E pinned real Python and Solidity source gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24e-real-source]
+    paths:
+      - "prism/cyber_source_frontends.py"
+      - "scripts/d24e_real_source.py"
+      - "scripts/d24e_guard_seeds.py"
+      - "scripts/d24e_classical_baseline.py"
+      - "tests/test_d24e_source_frontends.py"
+      - "tests/test_d24e_guard_seeds.py"
+      - ".github/workflows/d24e-real-source.yml"
+      - "docs/scm-cyber-d24e-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-cross-language-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Run adversarial Python/Solidity frontend tests
+        run: python -m unittest discover -s tests -p 'test_d24e_*.py' -v
+      - name: Fetch immutable independently authored Python source
+        run: |
+          mkdir -p external/werkzeug
+          git -C external/werkzeug init
+          git -C external/werkzeug remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/werkzeug fetch --depth 1 origin 6c4c680f5392342a68065114987f39160388064c
+          git -C external/werkzeug checkout --detach FETCH_HEAD
+          test "$(git -C external/werkzeug rev-parse HEAD)" = 6c4c680f5392342a68065114987f39160388064c
+          test -s external/werkzeug/src/werkzeug/security.py
+      - name: Fetch immutable independent OUSD source
+        run: |
+          mkdir -p external/origin-dollar
+          git -C external/origin-dollar init
+          git -C external/origin-dollar remote add origin https://github.com/scfuzzbench/origin-dollar-scfuzzbench.git
+          git -C external/origin-dollar fetch --depth 1 origin 299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          git -C external/origin-dollar checkout --detach FETCH_HEAD
+          test "$(git -C external/origin-dollar rev-parse HEAD)" = 299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4
+          git -C external/origin-dollar submodule update --init --recursive --depth 1
+      - name: Analyze two real sources and run Python checks
+        run: |
+          mkdir -p reports/d24e-ci
+          /usr/bin/time -v -o reports/d24e-ci/source-resources.txt \
+             python -m scripts.d24e_real_source \
+                --python external/werkzeug/src/werkzeug/security.py \
+                --solidity external/origin-dollar/contracts/contracts/token/OUSD.sol \
+                --out reports/d24e-ci/real-source-cross-language.json
+      - name: Independently rerun actual pinned OUSD EVM checks
+        run: |
+          cd external/origin-dollar
+          /usr/bin/time -v -o ../../reports/d24e-ci/ousd-abi-resources.txt \
+            forge inspect OUSD abi --json > ../../reports/d24e-ci/ousd-abi.json
+          cd ../..
+          python -m scripts.d24c_accounting_properties \
+            --abi reports/d24e-ci/ousd-abi.json \
+            --root external/origin-dollar --out reports/d24e-ci
+          cp benchmarks/defi/d24c/D24CReference.t.sol external/origin-dollar/test/recon/D24CReference.t.sol
+          /usr/bin/time -v -o reports/d24e-ci/ousd-evm-resources.txt \
+            python -m scripts.d24c_real_evm \
+              --root external/origin-dollar \
+              --abi reports/d24e-ci/ousd-abi.json \
+              --proposals reports/d24e-ci/proposals.json \
+              --out reports/d24e-ci
+      - name: Independent EVM synthetic mutation positive control
+        run: |
+          /usr/bin/time -v -o reports/d24e-ci/ousd-mutation-resources.txt \
+            python -m scripts.d24c_mutation_controls \
+              --root external/origin-dollar --out reports/d24e-ci
+      - name: Enforce no unearned vulnerability or superiority labels
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/d24e-ci")
+          record=json.loads((root/"real-source-cross-language.json").read_text())
+          assert record["status"]=="REAL_SOURCES_RUNTIME_AND_LEXICAL_GATES_PASSED"
+          assert len(record["selections"])==4
+          assert record["exploratory_analysis_not_pre_registered"] is True
+          assert len(record["exploratory_source_derived_guards"]) >= 1
+          assert any(v["returned_none_on_real_code"] for v in record["exploratory_source_derived_guards"])
+          assert record["python_runtime"]["clean_expected_matched"]==7
+          assert record["python_runtime"]["synthetic_regression_witnesses"]
+          assert record["new_real_third_party_vulnerabilities"] is None
+          assert record["superiority_over_conventional_callgraph"] is None
+          assert record["scm_superiority_over_cached_classical_ast"] is False
+          assert set(record["classical_python_ast_baseline"]["queries"]) == {"python_safe_join","python_password_verification"}
+          assert all(not c["certifies_security"] for c in record["selections"].values())
+          evm=json.loads((root/"evaluation.json").read_text())
+          mutation=json.loads((root/"mutation-control.json").read_text())
+          assert evm["status"]=="REAL_EVM_MULTI_TX_COMPLETED_UNADJUDICATED"
+          assert len(evm["runs"])==6
+          assert mutation["status"]=="THREE_REFERENCES_DETECTED_SYNTHETIC_MUTANT"
+          assert mutation["source_restored"]
+          print("D24E_REAL_CROSS_LANGUAGE_VERIFIED", [(k,c["selected"],c["total"]) for k,c in record["selections"].items()])
+          print("D24E_PYTHON_PINNED_SAFE_JOIN",record["python_runtime"]["clean_expected_matched"])
+          print("D24E_SYNTHETIC_NOT_REAL_VULN",record["python_runtime"]["synthetic_regression_witnesses"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24e-two-independent-real-source-verification
+          path: reports/d24e-ci/
+          if-no-files-found: warn
+          retention-days: 30
