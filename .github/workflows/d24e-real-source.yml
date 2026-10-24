@@ -7,6 +7,7 @@ on:
       - "prism/cyber_source_frontends.py"
       - "scripts/d24e_real_source.py"
       - "scripts/d24e_guard_seeds.py"
+      - "scripts/d24e_classical_baseline.py"
       - "tests/test_d24e_source_frontends.py"
       - "tests/test_d24e_guard_seeds.py"
       - ".github/workflows/d24e-real-source.yml"
@@ -93,6 +94,8 @@ jobs:
           assert record["python_runtime"]["synthetic_regression_witnesses"]
           assert record["new_real_third_party_vulnerabilities"] is None
           assert record["superiority_over_conventional_callgraph"] is None
+          assert record["scm_superiority_over_cached_classical_ast"] is False
+          assert set(record["classical_python_ast_baseline"]["queries"]) == {"python_safe_join","python_password_verification"}
           assert all(not c["certifies_security"] for c in record["selections"].values())
           evm=json.loads((root/"evaluation.json").read_text())
           mutation=json.loads((root/"mutation-control.json").read_text())
