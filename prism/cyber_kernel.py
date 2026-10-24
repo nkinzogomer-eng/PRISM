@@ -110,11 +110,14 @@ def search(domain: Domain, *, mode: str, depth: int = 5,
         raise ValueError("unknown policy")
     if depth < 0 or depth > 12 or max_expanded < 1:
         raise ValueError("invalid resource budget")
-    all_fields = model_fields(domain)
-    relevant, selected = dependency_frontier(domain)
-    alphabet = domain.actions if mode == "full" else selected
-    key_fields = tuple(sorted(relevant if mode == "quotient" else all_fields))
     started = perf_counter()
+    all_fields = model_fields(domain)
+    if mode == "full":
+        relevant, selected = domain.goal_fields, domain.actions
+    else:
+        relevant, selected = dependency_frontier(domain)
+    alphabet = selected
+    key_fields = tuple(sorted(relevant if mode == "quotient" else all_fields))
     queue = deque([(domain.start, ())])
     seen = {(state_key(domain.start, key_fields), 0)}
     expanded = generated = attempted = 0
@@ -152,10 +155,12 @@ def audit_effects(domain: Domain, *, depth: int = 3,
     queue = deque([(domain.start, 0)])
     seen = {(domain.start, 0)}
     examined = steps = 0
+    hit_depth_boundary = False
     while queue and examined < max_states:
         state, dist = queue.popleft()
         examined += 1
         if dist == depth:
+            hit_depth_boundary = True
             continue
         for act in domain.actions:
             successor = domain.transition(state, act)
@@ -171,5 +176,6 @@ def audit_effects(domain: Domain, *, depth: int = 3,
                 seen.add(key)
                 queue.append(key)
     return {"visited": examined, "transitions_audited": steps,
-            "exhausted": bool(queue),
-            "read_set_proved": False, "write_set_exhaustively_proved": not queue}
+            "audit_truncated": bool(queue) or hit_depth_boundary,
+            "read_set_proved": False,
+            "write_set_exhaustively_proved": not queue and not hit_depth_boundary}
