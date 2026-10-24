@@ -29,7 +29,7 @@ Known allowance mutation witness retained: **True**. Source traversal flagged un
 
 **Does:** demonstrate the engineering ability to narrow an explicitly chosen source-visible function frontier while still retaining one pre-known witness, run adversarial parsing/dependency guards, and rerun the original independent EVM positive-control suite in CI after the change.
 
-**Does not:** demonstrate more vulnerabilities, any new zero-day, a source-to-EVM soundness theorem, a positive recall over the 13 untested historical root causes, lower total CPU or human effort, a faster EVM verifier, or better discovery than a competent conventional slicer/stateful fuzzer. The function reduction is measured against naive whole-file inspection only; this is **not a strong competitive baseline**. Both Findry-based conventional and generated test paths detected the same deliberate mutation.
+**Does not:** demonstrate more vulnerabilities, any new zero-day, a source-to-EVM soundness theorem, a positive recall over the 13 untested historical root causes, lower total CPU or human effort, a faster EVM verifier, or better discovery than a competent conventional slicer/stateful fuzzer. The function reduction is measured against naive whole-file inspection only; this is **not a strong competitive baseline**. Both Foundry-based conventional and generated test paths detected the same deliberate mutation.
 
 The manual goal specification can embed researcher knowledge. This prototype is also file-local and does not resolve effects from imported/inherited Solidity or external system contracts. An end-to-end speed claim or economic-security certification on the reduced code would be incorrect.
 
