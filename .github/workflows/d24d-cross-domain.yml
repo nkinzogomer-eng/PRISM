@@ -1,0 +1,60 @@
+name: D2.4D cross-domain bounded structural kernel
+
+on:
+  push:
+    branches:
+      - research/scm-cyber-d24d-cross-domain
+    paths:
+      - "prism/cyber_kernel.py"
+      - "prism/cyber_workloads.py"
+      - "scripts/d24d_cross_domain.py"
+      - "tests/test_d24d_cross_domain.py"
+      - "docs/scm-cyber-d24d-protocol.md"
+      - ".github/workflows/d24d-cross-domain.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-domain-proof-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run adversarial specification and finite-model unit tests
+        run: python -m unittest discover -s tests -p 'test_d24d_*.py' -v
+      - name: Run preregistered cross-domain benchmark
+        run: |
+          mkdir -p reports/d24d-ci
+          /usr/bin/time -v -o reports/d24d-ci/resources.txt \
+             python -m scripts.d24d_cross_domain \
+               --seeds 8 --depth 5 --budget 20000 \
+               --output reports/d24d-ci/model-comparison.json
+      - name: Enforce conservative scientific interpretation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('reports/d24d-ci/model-comparison.json').read_text())
+          assert result['status']=='COMPLETED_MODEL_ONLY'
+          assert result['target_count']==80
+          assert result['superiority_claim'] is None
+          assert result['historical_real_vulnerabilities_evaluated'] is None
+          assert len(result['by_family'])==3
+          for family, group in result['by_family'].items():
+              assert group['verdict_agreement']
+              print('D24D_MODEL_PROOF',family,group['cases'],
+                    group['median_attempted'],group['median_expanded'])
+          PY
+      - name: Retain complete model evidence and wall/CPU resources
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d24d-cross-domain-model-reproducible
+          path: reports/d24d-ci/
+          retention-days: 30
+          if-no-files-found: warn
