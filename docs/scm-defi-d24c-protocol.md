@@ -47,3 +47,33 @@ If any of the three misses this obvious artificial fault, the sensitivity
 control is **FAIL**, not an opportunity to rewrite the detection budget.
 A successful control is **not a third-party vulnerability discovery** and
 proves **no advantage over the independent baseline**.
+
+## D2.4C structural dependency-frontier diagnostic (incremental engineering)
+
+D2.4B/C revealed that the purported "PRISM" test engine was only ordinary
+Foundry driven by manually coded templates. The next **falsifiable component**
+must run before EVM sampling, on the exact independently pinned OUSD source.
+A deliberately bounded lexical Solidity function extractor identifies
+source-visible call dependencies from frozen property-relevant entrypoints:
+allowance approval/transferFrom and token supply transitions. It reports
+numbers of relevant vs all locally defined functions, the exact allowed
+roots/symbols, unresolved member calls and a known source mutation witness.
+
+**Primary engineering metric:** retained positive-control source witness and
+function-count reduction versus inspecting every locally defined function.
+Do **not** treat the reduction ratio as CPU improvement, proof of semantic
+completeness, recall of real bugs, or superior vulnerability discovery.
+The full source is still needed for sound security claims; inherited source,
+overloads, external calls and dynamic behavior remain UNKNOWN. Lexical source
+slicing is a conventional technique, not inherently novel.
+
+**Test gate:** paired synthetic distractors (comments/strings/unrelated
+functions), nested-body calls, missing roots/symbols, unknown external calls,
+and mutation of the witnessed allowance decrement must all be handled without
+inventing a SAFE verdict. GitHub Actions archives the measured frontier and
+its resource costs alongside the real-source EVM campaign.
+
+**Scientific advancement required after this component:** source-semantic
+contract models, independent adversarially chosen real root causes, a verified
+difference between search policies under equal allowed observations, honest
+ablations against conventional program slicing and strong dynamic search.

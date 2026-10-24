@@ -42,6 +42,13 @@ jobs:
           git -C external/origin-dollar checkout --detach FETCH_HEAD
           test "$(git -C external/origin-dollar rev-parse HEAD)" = "299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4"
           git -C external/origin-dollar submodule update --init --recursive --depth 1
+      - name: Test SCM source dependency frontier on exact OUSD contract
+        run: |
+          mkdir -p reports/d24c-ci
+          /usr/bin/time -v -o reports/d24c-ci/structural-frontier-resources.txt \
+            python -m scripts.d24c_structural_frontier \
+              --source external/origin-dollar/contracts/contracts/token/OUSD.sol \
+              --out reports/d24c-ci/structural-frontier.json
       - name: Compile independent real OUSD ABI
         run: |
           mkdir -p reports/d24c-ci
@@ -89,6 +96,15 @@ jobs:
           assert len(result["runs"]) == 6
           assert result["historical_bugs_tested"] is None
           assert result["comparative_superiority"] is None
+          structural=json.loads(Path("reports/d24c-ci/structural-frontier.json").read_text())
+          assert structural["status"] == "STRUCTURAL_DIAGNOSTIC_NOT_SECURITY_PROOF"
+          assert structural["allowance_known_witness_in_frontier"] is True
+          assert len(structural["goals"]) == 2
+          assert all(x["selected_functions"] <= x["all_functions"]
+                     for x in structural["goals"].values())
+          print("D24C_SOURCE_DIAGNOSTIC", [(k,v["selected_functions"],
+                v["all_functions"],v["unknown_semantics"])
+                for k,v in structural["goals"].items()])
           mutation=json.loads(Path("reports/d24c-ci/mutation-control.json").read_text())
           assert mutation["status"] == "THREE_REFERENCES_DETECTED_SYNTHETIC_MUTANT"
           assert mutation["source_restored"]
