@@ -1,0 +1,80 @@
+name: D2.4F real historic third-party vulnerability regression proof
+
+on:
+  push:
+    branches: [research/scm-cyber-d24f-real-regression-proof]
+    paths:
+      - "prism/cyber_proof.py"
+      - "scripts/d24f_historical_real_regression.py"
+      - "tests/test_d24f_real_proof.py"
+      - ".github/workflows/d24f-real-regression.yml"
+      - "docs/scm-cyber-d24f-build-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-historical-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit/adversarial tests for proof replay and candidate generation
+        run: |
+          python -m unittest discover -s tests -p 'test_d24f_*.py' -v
+      - name: Obtain real vulnerable Werkzeug 3.1.5
+        run: |
+          mkdir -p external/werkzeug-pre
+          git -C external/werkzeug-pre init
+          git -C external/werkzeug-pre remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/werkzeug-pre fetch --depth 1 origin e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+          git -C external/werkzeug-pre checkout --detach FETCH_HEAD
+          test "$(git -C external/werkzeug-pre rev-parse HEAD)" = e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+          test -s external/werkzeug-pre/src/werkzeug/security.py
+      - name: Obtain real fixed Werkzeug 3.1.6
+        run: |
+          mkdir -p external/werkzeug-post
+          git -C external/werkzeug-post init
+          git -C external/werkzeug-post remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/werkzeug-post fetch --depth 1 origin 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+          git -C external/werkzeug-post checkout --detach FETCH_HEAD
+          test "$(git -C external/werkzeug-post rev-parse HEAD)" = 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+          test -s external/werkzeug-post/src/werkzeug/security.py
+      - name: Build proof from the two unmodified real third-party versions
+        run: |
+          mkdir -p reports/d24f-ci
+          /usr/bin/time -v -o reports/d24f-ci/real-regression-resource-usage.txt \
+            python -m scripts.d24f_historical_real_regression \
+              --before external/werkzeug-pre/src/werkzeug/security.py \
+              --after external/werkzeug-post/src/werkzeug/security.py \
+              --out reports/d24f-ci/verified-real-regression.json
+      - name: No fake novelty or omitted failed controls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("reports/d24f-ci/verified-real-regression.json").read_text())
+          assert r["status"] == "HISTORICAL_THIRD_PARTY_BEHAVIORAL_REGRESSION_REPRODUCED"
+          assert r["historical_nested_regressions"] >= 4
+          assert r["historical_regression_candidates"] >= 4
+          assert r["after_property_failures"] == []
+          assert r["minimal_observed_witness"]["input"].count("/") == 1
+          assert r["novel_vulnerability_confirmed"] is False
+          assert r["real_exploit_confirmed"] is False
+          assert r["tool_general_security_supremacy"] is None
+          assert len(r["deterministic_replay_sha256"]) == 64
+          print("D24F_REAL_BEFORE_AFTER_PROOF",r["probe_count"],
+                r["historical_nested_regressions"],
+                r["minimal_observed_witness"]["input"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24f-historical-real-werkzeug-proof
+          path: reports/d24f-ci/
+          retention-days: 30
+          if-no-files-found: warn
