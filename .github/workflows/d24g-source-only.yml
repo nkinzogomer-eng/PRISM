@@ -1,0 +1,159 @@
+name: D2.4G source-only security hypothesis discovery and Ciel contract
+
+on:
+  push:
+    branches: [research/scm-cyber-d24g-unlabeled-discovery]
+    paths:
+      - "prism/cyber_discovery.py"
+      - "scripts/d24g_source_only_discover.py"
+      - "tests/test_d24g_unlabeled_discovery.py"
+      - "tests/test_d24g_django.py"
+      - "docs/scm-cyber-d24g-ciel-integration.md"
+      - ".github/workflows/d24g-source-only.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-local-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test evidence semantics, budgets and unverified Ciel envelope
+        run: python -m unittest discover -s tests -p 'test_d24g_*.py' -v
+      - name: Obtain source versions without fix labels in analyzer inputs
+        run: |
+          mkdir -p external/prism-starlette-old external/prism-werkzeug-old
+          git -C external/prism-starlette-old init
+          git -C external/prism-starlette-old remote add origin https://github.com/Kludex/starlette.git
+          git -C external/prism-starlette-old fetch --depth 1 origin 8965f8849977b5752e415722a83aa00049f80ff3
+          git -C external/prism-starlette-old checkout --detach FETCH_HEAD
+          test "$(git -C external/prism-starlette-old rev-parse HEAD)" = 8965f8849977b5752e415722a83aa00049f80ff3
+          git -C external/prism-werkzeug-old init
+          git -C external/prism-werkzeug-old remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/prism-werkzeug-old fetch --depth 1 origin e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+          git -C external/prism-werkzeug-old checkout --detach FETCH_HEAD
+          test "$(git -C external/prism-werkzeug-old rev-parse HEAD)" = e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+      - name: Run SOURCE-ONLY candidate generation and local verification
+        run: |
+          mkdir -p reports/d24g-ci
+          /usr/bin/time -v -o reports/d24g-ci/starlette-old-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter starlette_static \
+              --source external/prism-starlette-old/starlette/staticfiles.py \
+              --max-probes 64 --mission-id d24g-local --task-id starlette \
+              --out reports/d24g-ci/starlette-unlabeled.json
+          /usr/bin/time -v -o reports/d24g-ci/werkzeug-old-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter werkzeug_windows_path \
+              --source external/prism-werkzeug-old/src/werkzeug/security.py \
+              --max-probes 64 --mission-id d24g-local --task-id werkzeug \
+              --out reports/d24g-ci/werkzeug-unlabeled.json
+      - name: Independently obtain later unchanged program versions only AFTER scanning
+        run: |
+          mkdir -p external/prism-starlette-new external/prism-werkzeug-new
+          git -C external/prism-starlette-new init
+          git -C external/prism-starlette-new remote add origin https://github.com/Kludex/starlette.git
+          git -C external/prism-starlette-new fetch --depth 1 origin 0c4b68ac4e179a788e38bac28f299dcad0f36e99
+          git -C external/prism-starlette-new checkout --detach FETCH_HEAD
+          test "$(git -C external/prism-starlette-new rev-parse HEAD)" = 0c4b68ac4e179a788e38bac28f299dcad0f36e99
+          git -C external/prism-werkzeug-new init
+          git -C external/prism-werkzeug-new remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/prism-werkzeug-new fetch --depth 1 origin 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+          git -C external/prism-werkzeug-new checkout --detach FETCH_HEAD
+          test "$(git -C external/prism-werkzeug-new rev-parse HEAD)" = 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+      - name: Run same scanner as fixed-version negative control
+        run: |
+          /usr/bin/time -v -o reports/d24g-ci/starlette-new-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter starlette_static \
+              --source external/prism-starlette-new/starlette/staticfiles.py \
+              --max-probes 64 --out reports/d24g-ci/starlette-new.json
+          /usr/bin/time -v -o reports/d24g-ci/werkzeug-new-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter werkzeug_windows_path \
+              --source external/prism-werkzeug-new/src/werkzeug/security.py \
+              --max-probes 64 --out reports/d24g-ci/werkzeug-new.json
+      - name: Pin and scan a third current open-source security implementation
+        run: |
+          mkdir -p external/django-current/django/utils
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/django/django/0e128d524d0a7c55a955570d6e5da983ac6ce6c7/django/utils/_os.py \
+            -o external/django-current/django/utils/_os.py
+          test -s external/django-current/django/utils/_os.py
+          /usr/bin/time -v -o reports/d24g-ci/django-current-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter django_safe_join \
+              --source external/django-current/django/utils/_os.py \
+              --max-probes 64 --mission-id d24g-local --task-id django-current \
+              --out reports/d24g-ci/django-current-source-only.json
+      - name: Assert run-scoped historical reproduction, no novelty inflation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/d24g-ci")
+          pairs={}
+          for key in ("starlette","werkzeug"):
+              old=json.loads((root/f"{key}-unlabeled.json").read_text())
+              new=json.loads((root/f"{key}-new.json").read_text())
+              ciel=json.loads((root/f"{key}-unlabeled.ciel.json").read_text())
+              assert old["status"]=="LOCAL_PROPERTY_WITNESS",key
+              assert old["observed_property_violations"]>=1,key
+              assert new["status"]=="NO_WITNESS_NOT_SAFE",key
+              assert new["observed_property_violations"]==0,key
+              assert old["target"]["source_sha256"]!=new["target"]["source_sha256"]
+              assert ciel["schema"]=="scm.prism.ciel-capability.v1"
+              assert ciel["observation"]["replay_sha256"]==old["replay_sha256"]
+              assert ciel["ciel_verification_state"]=="UNVERIFIED"
+              assert ciel["needs_independent_attestation"]
+              assert not old["verification"]["previously_unknown_vulnerability_confirmed"]
+              assert not new["verification"]["overall_program_safety_proved"]
+              pairs[key]={
+                  "source_only_old_status":old["status"],
+                  "old_witnesses":old["observed_property_violations"],
+                  "old_inputs":old["hypotheses_generated"],
+                  "fixed_version_no_witness":new["status"],
+                  "fixed_inputs":new["hypotheses_generated"],
+                  "ciel_contract":"UNVERIFIED",
+              }
+          current=json.loads((root/"django-current-source-only.json").read_text())
+          assert current["target"]["project"]=="django/django"
+          assert current["hypotheses_generated"]==7
+          assert current["status"] in {"LOCAL_PROPERTY_WITNESS","NO_WITNESS_NOT_SAFE"}
+          assert current["verification"]["previously_unknown_vulnerability_confirmed"] is False
+          assert current["verification"]["overall_program_safety_proved"] is False
+          print("D24G_UNSEEN_CURRENT_DJANGO",current["status"],
+                current["observed_property_violations"])
+          result={
+              "schema":"scm.prism.d24g-evaluation.v1",
+              "mode":"SOURCE_ONLY_TARGETS_SELECTED_AFTER_HISTORICAL_KNOWLEDGE",
+              "historical_external_root_causes_reproduced":len(pairs),
+              "prospectively_unknown_vulnerabilities_confirmed":0,
+              "sealed_blind_holdout":False,
+              "additional_current_source":{
+                  "project":"django/django",
+                  "commit":"0e128d524d0a7c55a955570d6e5da983ac6ce6c7",
+                  "local_witnesses":current["observed_property_violations"],
+                  "status":current["status"],
+                  "verified_novel_vulnerabilities":0,
+              },
+              "ciel_real_mission_execution_tested":False,
+              "paired_results":pairs,
+          }
+          (root/"d24g-evaluation.json").write_text(
+              json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print("D24G_NO_PATCH_IN_SCANNER",json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24g-local-unlabeled-execution-and-ciel-json
+          path: reports/d24g-ci/
+          retention-days: 30
+          if-no-files-found: warn
