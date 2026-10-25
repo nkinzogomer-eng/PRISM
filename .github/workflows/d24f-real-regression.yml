@@ -1,0 +1,139 @@
+name: D2.4F real historic third-party vulnerability regression proof
+
+on:
+  push:
+    branches: [research/scm-cyber-d24f-real-regression-proof]
+    paths:
+      - "prism/cyber_proof.py"
+      - "scripts/d24f_historical_real_regression.py"
+      - "scripts/d24f_starlette_real_regression.py"
+      - "scripts/d24f_delivery.py"
+      - "tests/test_d24f_real_proof.py"
+      - "tests/test_d24f_starlette.py"
+      - "tests/test_d24f_delivery.py"
+      - ".github/workflows/d24f-real-regression.yml"
+      - "docs/scm-cyber-d24f-build-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-historical-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit/adversarial tests for proof replay and candidate generation
+        run: |
+          python -m unittest discover -s tests -p 'test_d24f_*.py' -v
+      - name: Obtain real vulnerable Werkzeug 3.1.5
+        run: |
+          mkdir -p external/werkzeug-pre
+          git -C external/werkzeug-pre init
+          git -C external/werkzeug-pre remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/werkzeug-pre fetch --depth 1 origin e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+          git -C external/werkzeug-pre checkout --detach FETCH_HEAD
+          test "$(git -C external/werkzeug-pre rev-parse HEAD)" = e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d
+          test -s external/werkzeug-pre/src/werkzeug/security.py
+      - name: Obtain real fixed Werkzeug 3.1.6
+        run: |
+          mkdir -p external/werkzeug-post
+          git -C external/werkzeug-post init
+          git -C external/werkzeug-post remote add origin https://github.com/pallets/werkzeug.git
+          git -C external/werkzeug-post fetch --depth 1 origin 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+          git -C external/werkzeug-post checkout --detach FETCH_HEAD
+          test "$(git -C external/werkzeug-post rev-parse HEAD)" = 04da1b5221b7a7b57e82246e4b5741d37a6b2e56
+          test -s external/werkzeug-post/src/werkzeug/security.py
+      - name: Build proof from the two unmodified real third-party versions
+        run: |
+          mkdir -p reports/d24f-ci
+          /usr/bin/time -v -o reports/d24f-ci/real-regression-resource-usage.txt \
+            python -m scripts.d24f_historical_real_regression \
+              --before external/werkzeug-pre/src/werkzeug/security.py \
+              --after external/werkzeug-post/src/werkzeug/security.py \
+              --out reports/d24f-ci/verified-real-regression.json
+      - name: Obtain historical Starlette 0.26.1 original source
+        run: |
+          mkdir -p external/starlette-pre
+          git -C external/starlette-pre init
+          git -C external/starlette-pre remote add origin https://github.com/Kludex/starlette.git
+          git -C external/starlette-pre fetch --depth 1 origin 8965f8849977b5752e415722a83aa00049f80ff3
+          git -C external/starlette-pre checkout --detach FETCH_HEAD
+          test "$(git -C external/starlette-pre rev-parse HEAD)" = 8965f8849977b5752e415722a83aa00049f80ff3
+          test -s external/starlette-pre/starlette/staticfiles.py
+      - name: Obtain fixed Starlette 0.27.0 original source
+        run: |
+          mkdir -p external/starlette-post
+          git -C external/starlette-post init
+          git -C external/starlette-post remote add origin https://github.com/Kludex/starlette.git
+          git -C external/starlette-post fetch --depth 1 origin 0c4b68ac4e179a788e38bac28f299dcad0f36e99
+          git -C external/starlette-post checkout --detach FETCH_HEAD
+          test "$(git -C external/starlette-post rev-parse HEAD)" = 0c4b68ac4e179a788e38bac28f299dcad0f36e99
+          test -s external/starlette-post/starlette/staticfiles.py
+      - name: Verify Starlette known real path boundary root cause with actual files
+        run: |
+          /usr/bin/time -v -o reports/d24f-ci/starlette-resource-usage.txt \
+            python -m scripts.d24f_starlette_real_regression \
+              --before external/starlette-pre/starlette/staticfiles.py \
+              --after external/starlette-post/starlette/staticfiles.py \
+              --out reports/d24f-ci/starlette-real-regression.json
+      - name: No fake novelty or omitted failed controls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("reports/d24f-ci/verified-real-regression.json").read_text())
+          assert r["status"] == "HISTORICAL_THIRD_PARTY_BEHAVIORAL_REGRESSION_REPRODUCED"
+          assert r["historical_nested_regressions"] >= 4
+          assert r["historical_regression_candidates"] >= 4
+          assert r["after_property_failures"] == []
+          assert r["minimal_observed_witness"]["input"].count("/") == 1
+          assert r["novel_vulnerability_confirmed"] is False
+          assert r["real_exploit_confirmed"] is False
+          assert r["tool_general_security_supremacy"] is None
+          assert len(r["deterministic_replay_sha256"]) == 64
+          sibling=json.loads(Path("reports/d24f-ci/starlette-real-regression.json").read_text())
+          assert sibling["status"] == "HISTORICAL_THIRD_PARTY_REAL_FILE_BOUNDARY_REPRODUCED"
+          assert sibling["historical_sibling_file_regressions"] == 3
+          assert sibling["after_property_failures"] == []
+          assert sibling["novel_vulnerability_confirmed"] is False
+          assert sibling["confirmed_in_live_service"] is False
+          assert len(sibling["deterministic_replay_sha256"]) == 64
+          print("D24F_STARLETTE_HISTORICAL_PROOF",sibling["probe_count"],
+                sibling["historical_sibling_file_regressions"],
+                sibling["minimal_observed_witness"]["input"])
+          print("D24F_REAL_BEFORE_AFTER_PROOF",r["probe_count"],
+                r["historical_nested_regressions"],
+                r["minimal_observed_witness"]["input"])
+          PY
+      - name: Build stakeholder-ready independently replayable proof bundle
+        run: |
+          python -m scripts.d24f_delivery \
+            --werkzeug reports/d24f-ci/verified-real-regression.json \
+            --starlette reports/d24f-ci/starlette-real-regression.json \
+            --out reports/d24f-ci/delivery-summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("reports/d24f-ci/delivery-summary.json").read_text())
+          assert r["status"]=="TWO_REAL_HISTORICAL_ROOT_CAUSES_REPRODUCED"
+          assert r["counts"]=={
+              "distinct_historical_root_causes_reproduced":2,
+              "independent_third_party_projects":2,
+              "total_behavioral_inputs":23,
+              "total_confirmed_before_after_witnesses":11,
+          }
+          assert r["novel_cves_discovered"]==0
+          assert r["demonstrated_general_superiority"] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24f-historical-real-werkzeug-proof
+          path: reports/d24f-ci/
+          retention-days: 30
+          if-no-files-found: warn
