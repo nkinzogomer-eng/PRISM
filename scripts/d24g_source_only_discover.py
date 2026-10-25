@@ -7,6 +7,7 @@ knowledge: this is a LABEL-BLIND pipeline test, NOT a sealed scientific holdout.
 from __future__ import annotations
 
 import argparse
+import ast
 from hashlib import sha256
 import json
 import ntpath
@@ -113,6 +114,67 @@ def werkzeug_scan(source: Path, limit: int) -> dict:
     )
 
 
+def django_scan(source: Path, limit: int) -> dict:
+    """Independent current-source Linux lexical containment trial.
+
+    Extract the genuine third-party safe_join function AST without loading
+    the full Django framework. A separately defined local SuspiciousFileOperation
+    stub substitutes ONLY the unavailable imported exception type.
+    """
+    raw = source.read_bytes()
+    tree = ast.parse(raw, filename=str(source))
+    functions = [node for node in tree.body
+                 if isinstance(node, ast.FunctionDef) and node.name == "safe_join"]
+    if len(functions) != 1 or functions[0].decorator_list:
+        raise ValueError("unsupported/ambiguous Django safe_join source")
+    class SuspiciousFileOperation(Exception):
+        pass
+    env = {"abspath": os.path.abspath, "join": os.path.join,
+           "normcase": os.path.normcase, "sep": os.sep,
+           "dirname": os.path.dirname, "SuspiciousFileOperation": SuspiciousFileOperation}
+    unit = ast.fix_missing_locations(ast.Module(body=[functions[0]], type_ignores=[]))
+    exec(compile(unit, str(source), "exec"), env)
+    join = env["safe_join"]
+    with TemporaryDirectory(prefix="prism-django-independent-") as tmp:
+        root = Path(tmp)/"public"
+        root.mkdir()
+        inputs = [
+            ("valid_file", "index.html", "ALLOW"),
+            ("valid_nested", "images/icon.svg", "ALLOW"),
+            ("same_directory", ".", "ALLOW"),
+            ("parent", "../outside.txt", "DENY"),
+            ("prefix_sibling", "../public2.txt", "DENY"),
+            ("private_sibling", "../public_private/secret.txt", "DENY"),
+            ("absolute_outside", str(Path(tmp)/"outside.txt"), "DENY"),
+        ]
+        probes = [SecurityProbe(name,value,want,
+                   "POSIX root-containment/property-driven source-only test")
+                  for name,value,want in inputs]
+        def observe(payload: str) -> tuple[str, str | None]:
+            try:
+                value = join(str(root),payload)
+            except SuspiciousFileOperation:
+                return "DENY", None
+            # This is the program's actual ACCEPT, not a forced oracle verdict.
+            return "ALLOW", str(Path(value).relative_to(Path(tmp)))
+        result = discover(
+            project="django/django",
+            source_sha256=sha256(raw).hexdigest(),
+            property_id="linux_static_path_must_be_lexically_under_base",
+            probes=probes, observe=observe, max_probes=limit,
+            context={
+                "adapter":"django-safejoin-source-ast",
+                "full_framework_dependencies_not_loaded":True,
+                "actual_upstream_function_ast_used":True,
+                "linux_path_behavior_only":True,
+                "not_a_sealed_prospective_holdout":True,
+                "selected_as_unseen_current_public_source":True,
+                "security_advisory_or_patched_source_not_supplied":True,
+            },
+        )
+    return result
+
+
 def evaluate(source: Path, adapter: str, limit: int, out: Path, *,
              mission_id: str = "", task_id: str = "", authorized: bool = False) -> dict:
     if not authorized:
@@ -124,6 +186,8 @@ def evaluate(source: Path, adapter: str, limit: int, out: Path, *,
         report = starlette_scan(source, limit)
     elif adapter == "werkzeug_windows_path":
         report = werkzeug_scan(source, limit)
+    elif adapter == "django_safe_join":
+        report = django_scan(source, limit)
     else:
         raise ValueError("unsupported source adapter; no guessed behavior")
     if sha256(source.read_bytes()).hexdigest() != before:
@@ -155,7 +219,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--source", type=Path, required=True)
     p.add_argument("--adapter", required=True,
-                   choices=("starlette_static", "werkzeug_windows_path"))
+                   choices=("starlette_static", "werkzeug_windows_path", "django_safe_join"))
     p.add_argument("--max-probes", type=int, default=64)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--authorized-local", action="store_true")
