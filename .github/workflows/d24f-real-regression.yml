@@ -7,8 +7,10 @@ on:
       - "prism/cyber_proof.py"
       - "scripts/d24f_historical_real_regression.py"
       - "scripts/d24f_starlette_real_regression.py"
+      - "scripts/d24f_delivery.py"
       - "tests/test_d24f_real_proof.py"
       - "tests/test_d24f_starlette.py"
+      - "tests/test_d24f_delivery.py"
       - ".github/workflows/d24f-real-regression.yml"
       - "docs/scm-cyber-d24f-build-protocol.md"
   workflow_dispatch:
@@ -107,6 +109,26 @@ jobs:
           print("D24F_REAL_BEFORE_AFTER_PROOF",r["probe_count"],
                 r["historical_nested_regressions"],
                 r["minimal_observed_witness"]["input"])
+          PY
+      - name: Build stakeholder-ready independently replayable proof bundle
+        run: |
+          python -m scripts.d24f_delivery \
+            --werkzeug reports/d24f-ci/verified-real-regression.json \
+            --starlette reports/d24f-ci/starlette-real-regression.json \
+            --out reports/d24f-ci/delivery-summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("reports/d24f-ci/delivery-summary.json").read_text())
+          assert r["status"]=="TWO_REAL_HISTORICAL_ROOT_CAUSES_REPRODUCED"
+          assert r["counts"]=={
+              "distinct_historical_root_causes_reproduced":2,
+              "independent_third_party_projects":2,
+              "total_behavioral_inputs":23,
+              "total_confirmed_before_after_witnesses":11,
+          }
+          assert r["novel_cves_discovered"]==0
+          assert r["demonstrated_general_superiority"] is False
           PY
       - uses: actions/upload-artifact@v4
         if: always()
