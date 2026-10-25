@@ -156,7 +156,7 @@ def django_scan(source: Path, limit: int) -> dict:
             except SuspiciousFileOperation:
                 return "DENY", None
             # This is the program's actual ACCEPT, not a forced oracle verdict.
-            return "ALLOW", str(Path(value).relative_to(Path(tmp)))
+            return "ALLOW", os.path.relpath(value, tmp)
         result = discover(
             project="django/django",
             source_sha256=sha256(raw).hexdigest(),
