@@ -7,6 +7,7 @@ on:
       - "prism/cyber_discovery.py"
       - "scripts/d24g_source_only_discover.py"
       - "tests/test_d24g_unlabeled_discovery.py"
+      - "tests/test_d24g_django.py"
       - "docs/scm-cyber-d24g-ciel-integration.md"
       - ".github/workflows/d24g-source-only.yml"
   workflow_dispatch:
@@ -78,6 +79,19 @@ jobs:
               --authorized-local --adapter werkzeug_windows_path \
               --source external/prism-werkzeug-new/src/werkzeug/security.py \
               --max-probes 64 --out reports/d24g-ci/werkzeug-new.json
+      - name: Pin and scan a third current open-source security implementation
+        run: |
+          mkdir -p external/django-current/django/utils
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/django/django/0e128d524d0a7c55a955570d6e5da983ac6ce6c7/django/utils/_os.py \
+            -o external/django-current/django/utils/_os.py
+          test -s external/django-current/django/utils/_os.py
+          /usr/bin/time -v -o reports/d24g-ci/django-current-resources.txt \
+            python -m scripts.d24g_source_only_discover \
+              --authorized-local --adapter django_safe_join \
+              --source external/django-current/django/utils/_os.py \
+              --max-probes 64 --mission-id d24g-local --task-id django-current \
+              --out reports/d24g-ci/django-current-source-only.json
       - name: Assert run-scoped historical reproduction, no novelty inflation
         run: |
           python - <<'PY'
@@ -108,12 +122,27 @@ jobs:
                   "fixed_inputs":new["hypotheses_generated"],
                   "ciel_contract":"UNVERIFIED",
               }
+          current=json.loads((root/"django-current-source-only.json").read_text())
+          assert current["target"]["project"]=="django/django"
+          assert current["hypotheses_generated"]==7
+          assert current["status"] in {"LOCAL_PROPERTY_WITNESS","NO_WITNESS_NOT_SAFE"}
+          assert current["verification"]["previously_unknown_vulnerability_confirmed"] is False
+          assert current["verification"]["overall_program_safety_proved"] is False
+          print("D24G_UNSEEN_CURRENT_DJANGO",current["status"],
+                current["observed_property_violations"])
           result={
               "schema":"scm.prism.d24g-evaluation.v1",
               "mode":"SOURCE_ONLY_TARGETS_SELECTED_AFTER_HISTORICAL_KNOWLEDGE",
               "historical_external_root_causes_reproduced":len(pairs),
               "prospectively_unknown_vulnerabilities_confirmed":0,
               "sealed_blind_holdout":False,
+              "additional_current_source":{
+                  "project":"django/django",
+                  "commit":"0e128d524d0a7c55a955570d6e5da983ac6ce6c7",
+                  "local_witnesses":current["observed_property_violations"],
+                  "status":current["status"],
+                  "verified_novel_vulnerabilities":0,
+              },
               "ciel_real_mission_execution_tested":False,
               "paired_results":pairs,
           }
