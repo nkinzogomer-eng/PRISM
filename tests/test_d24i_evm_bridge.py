@@ -5,12 +5,13 @@ from copy import deepcopy
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from scripts.d24i_evm_bridge import (CASE_CONTRACTS, INVENTORY, PROPERTIES,
     REASONS, EXPECTED_CASE, parse_native_evm, score_native_matrix,
-    verify_native_matrix, run_seeded_stress)
+    verify_native_matrix, run_seeded_stress, _run_forge)
 
 
 def synthetic_json(failed=(), *, omit=(), wrong_reason=False,
@@ -131,6 +132,29 @@ class EVMProofControls(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError,"non-duplicated"):
                 run_seeded_stress(Path(tmp),Path(tmp),seeds=(1,1))
+
+    def test_native_trials_never_replay_another_seed_counterexample(self):
+        dirs=[]
+        def fake_forge(*args,**kwargs):
+            env=kwargs["env"]
+            persist=Path(env["FOUNDRY_INVARIANT_FAILURE_PERSIST_DIR"])
+            fuzz=Path(env["FOUNDRY_FUZZ_FAILURE_PERSIST_DIR"])
+            self.assertTrue(persist.parent.is_dir())
+            self.assertFalse(persist.exists())
+            self.assertEqual(fuzz.parent,persist.parent)
+            self.assertEqual(env["FOUNDRY_FUZZ_SEED"],"0x1")
+            dirs.append(persist.parent)
+            persist.mkdir()
+            (persist/"failure").write_text("previous witness")
+            return SimpleNamespace(stdout=synthetic_json(["oracle"]),stderr="",returncode=1)
+        with TemporaryDirectory() as tmp, patch(
+            "scripts.d24i_evm_bridge.subprocess.run", side_effect=fake_forge
+        ):
+            for _ in range(2):
+                result=_run_forge(Path(tmp),Path(tmp),"oracle_bug",runs=32,depth=16,seed=1)
+                self.assertFalse(result["properties"]["oracle"]["property_holds"])
+        self.assertEqual(len(set(dirs)),2)
+        self.assertTrue(all(not path.exists() for path in dirs))
 
 
 if __name__ == "__main__":

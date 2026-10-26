@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import resource
 import subprocess
+from tempfile import TemporaryDirectory
 from time import perf_counter
 
 from prism.hypothesis_contract import (SCHEMA, ciel_hypothesis_capability_result,
@@ -178,9 +179,16 @@ def _run_forge(root: Path, output: Path, case: str, *, runs: int, depth: int,
         env["FOUNDRY_FUZZ_SEED"]=hex(seed)
     before=resource.getrusage(resource.RUSAGE_CHILDREN)
     t=perf_counter()
-    process=subprocess.run(["forge","test","--match-contract",CASE_CONTRACTS[case],
-                            "--json"],cwd=root,env=env,capture_output=True,text=True,
-                           timeout=180,check=False)
+    # Foundry replays failures from its persistent invariant cache, even when
+    # a subsequent evaluation deliberately uses another seed/depth. A replay
+    # failure is NOT new evidence from that seed. Isolate both persistence
+    # namespaces per invocation to keep every native trial independent.
+    with TemporaryDirectory(prefix="prism-evm-replay-") as replay_dir:
+        env["FOUNDRY_INVARIANT_FAILURE_PERSIST_DIR"]=replay_dir+"/invariant"
+        env["FOUNDRY_FUZZ_FAILURE_PERSIST_DIR"]=replay_dir+"/fuzz"
+        process=subprocess.run(["forge","test","--match-contract",CASE_CONTRACTS[case],
+                                "--json"],cwd=root,env=env,capture_output=True,text=True,
+                               timeout=180,check=False)
     after=resource.getrusage(resource.RUSAGE_CHILDREN)
     stem=f"{case}-{runs}x{depth}"+(f"-seed{seed}" if seed is not None else "")
     (output/f"{stem}.stdout.json").write_text(process.stdout,encoding="utf-8")
