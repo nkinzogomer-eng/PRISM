@@ -1,0 +1,85 @@
+name: D2.4I preregistered source holdout and bounded flow models
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "prism/cyber_flow_model.py"
+      - "scripts/d24i_holdout.py"
+      - "tests/test_d24i_*.py"
+      - "benchmarks/cyber/d24i/holdout_v1.json"
+      - ".github/workflows/d24i-independent-holdout.yml"
+      - "docs/scm-cyber-d24i-protocol.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Adversarial flow model controls and D2.4H non-regression
+        run: |
+          python -m unittest discover -s tests -p 'test_d24i_*.py' -v
+          python -m unittest discover -s tests -p 'test_d24h_*.py' -v
+      - name: Download only the four pre-registered immutable-source versions
+        run: |
+          mkdir -p external/d24i reports/d24i-ci
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/pallets/click/2247b35ea1c47c727d7a06e51fa280e12a863ff6/src/click/core.py \
+            -o external/d24i/click.py
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/psf/requests/611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60/src/requests/sessions.py \
+            -o external/d24i/requests.py
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/encode/httpx/b5addb64f0161ff6bfe94c124ef76f6a1fba5254/httpx/_client.py \
+            -o external/d24i/httpx.py
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/pydantic/pydantic/37dc34b4f001191b4f3db707cc52bac95baf17f0/pydantic/main.py \
+            -o external/d24i/pydantic.py
+      - name: Measure source candidates, abstentions, CPU, wall and peak process memory
+        run: |
+          /usr/bin/time -v -o reports/d24i-ci/process_resources.txt \
+            python -m scripts.d24i_holdout \
+            --manifest benchmarks/cyber/d24i/holdout_v1.json \
+            --sources-root external/d24i \
+            --out reports/d24i-ci/evaluated-outcomes.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24i-ci/evaluated-outcomes.json').read_text())
+          assert r['schema']=='scm.prism.d24i.preregistered.holdout.results.v1'
+          assert [x['id'] for x in r['results']]==['click','requests','httpx','pydantic']
+          assert r['all_inputs_preselected'] is True
+          assert r['sources_are_executed'] is False
+          assert r['external_model_calls']==0
+          assert r['requires_gpu'] is False
+          assert r['precision_recall_measured'] is False
+          assert r['verified_novel_vulnerabilities']==0
+          for item in r['results']:
+              assert 0 < item['source_bytes'] <= r['budgets']['max_source_bytes']
+              assert item['evaluated_candidates'] <= r['budgets']['max_candidates']
+              assert len(item['content_sha256'])==64
+          print('D24I_VERIFIED_CONSERVATIVE_OUTCOME',json.dumps({
+            'bytes':r['total_source_bytes'],'candidates':r['total_candidates'],
+            'model_only_witnesses':r['modeled_flow_witnesses'],
+            'wall_seconds':r['wall_seconds'],'cpu_seconds':r['cpu_seconds'],
+            'max_rss_kib':r['max_process_rss_kib_linux'],
+            'by_file':{x['id']:{'candidates':x['candidate_count'],
+                     'families':x['families'],'cpu_seconds':x['cpu_seconds']}
+                     for x in r['results']},
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24i-preregistered-holdout-evidence
+          path: reports/d24i-ci/
+          retention-days: 30
+          if-no-files-found: warn
