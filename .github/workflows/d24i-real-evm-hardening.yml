@@ -38,7 +38,8 @@ jobs:
           /usr/bin/time -v -o reports/d24i-evm-ci/process_resources.txt \
             python -m scripts.d24i_evm_bridge \
               --root benchmarks/defi/d22 \
-              --out reports/d24i-evm-ci
+              --out reports/d24i-evm-ci \
+              --stress-seeds 8
       - name: Independently score known-mutation sensitivity and Ciel honesty
         run: |
           python - <<'PY'
@@ -72,6 +73,19 @@ jobs:
               'verified_new_vulnerabilities':0,
               'native_seconds_by_case':{k:round(v['wall_seconds'],4)
                        for k,v in final['native'].items()},
+          },sort_keys=True))
+          seeded=json.loads(Path('reports/d24i-evm-ci/seeded-stress.json').read_text())
+          assert seeded['schema']=='scm.prism.d24i.seeded-evm-adversarial.v1'
+          assert seeded['seed_inventory']==list(range(1,9))
+          assert seeded['status']=='ENGINEERING_SEED_GATE_PASS'
+          assert seeded['seeds_recovered']==8
+          assert all(r['recovered_all'] for r in seeded['results'])
+          print('D24I_EVM_SEED_MATRIX',json.dumps({
+              'initial_profile_successes':seeded['initial_profile_full_detection'],
+              'recovery_profiles':{str(r['seed']):r['attempts'][-1]['budget']
+                                   for r in seeded['results']},
+              'total_native_wall_seconds':round(sum(a['total_wall_seconds']
+                                      for r in seeded['results'] for a in r['attempts']),4),
           },sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4

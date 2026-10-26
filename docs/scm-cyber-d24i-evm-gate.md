@@ -28,6 +28,13 @@ Start at 64 runs × 32 steps per stateful invariant, then escalate to 256 × 64
 only if the known mutant is missed or a spurious property fails. Preserve all
 misses and timings, and abort the engineering gate if the max budget still
 fails. Each budget runs all four variants, with no silent filtering of errors.
+
+After that first evidence gate, the **second, harder** gate repeats the
+experiment over eight preregistered seeds (1–8), beginning with only 32 runs
+× 16 steps, then 64 × 32 and finally 256 × 64 as required. The seed and
+Foundry version are recorded with raw stdout for replay. All initial misses
+are kept in the result even when a later budget catches them; per-seed cost
+and coverage are recorded separately.
 No human tuning of search seeds or oracle after reading results is allowed
 without documenting the effect on the benchmark; this cohort is prelabelled
 and is never counted as a blind holdout.

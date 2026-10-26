@@ -6,10 +6,11 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from scripts.d24i_evm_bridge import (CASE_CONTRACTS, INVENTORY, PROPERTIES,
     REASONS, EXPECTED_CASE, parse_native_evm, score_native_matrix,
-    verify_native_matrix)
+    verify_native_matrix, run_seeded_stress)
 
 
 def synthetic_json(failed=(), *, omit=(), wrong_reason=False,
@@ -94,6 +95,42 @@ class EVMProofControls(unittest.TestCase):
     def test_no_false_positive_on_safe_evm_variant(self):
         with self.assertRaisesRegex(ValueError,"negative control"):
             parse_native_evm(synthetic_json(["repayment"]),case="safe",returncode=1)
+
+    def test_adaptive_seed_ladder_keeps_early_misses(self):
+        def fake_run(root,output,case,*,runs,depth,seed):
+            props={family:{"property_holds": not(case==expected and runs>=64)}
+                   for family,expected in EXPECTED_CASE.items()}
+            return {"properties":props,"stdout_sha256":"0"*64,
+                    "wall_seconds":0.01,"child_cpu_seconds":0.01}
+        with TemporaryDirectory() as tmp, patch(
+            "scripts.d24i_evm_bridge._run_forge",side_effect=fake_run
+        ):
+            r=run_seeded_stress(Path(tmp),Path(tmp),seeds=(1,2,3))
+        self.assertEqual(r["status"],"ENGINEERING_SEED_GATE_PASS")
+        self.assertEqual(r["initial_profile_full_detection"],0)
+        self.assertEqual(r["seeds_recovered"],3)
+        for row in r["results"]:
+            self.assertEqual(len(row["attempts"]),2)
+            self.assertEqual(len(row["attempts"][0]["missed_known_mutants"]),3)
+            self.assertEqual(row["attempts"][1]["missed_known_mutants"],[])
+
+    def test_seed_stress_hard_fail_is_recorded(self):
+        def blind(root,output,case,*,runs,depth,seed):
+            return {"properties":{family:{"property_holds":True}
+                                  for family in EXPECTED_CASE},
+                    "stdout_sha256":"0"*64,"wall_seconds":0.01,"child_cpu_seconds":0.01}
+        with TemporaryDirectory() as tmp, patch(
+            "scripts.d24i_evm_bridge._run_forge",side_effect=blind
+        ):
+            r=run_seeded_stress(Path(tmp),Path(tmp),seeds=(1,))
+        self.assertEqual(r["status"],"KNOWN_MUTANT_SEED_RECALL_NOT_COMPLETE")
+        self.assertEqual(r["seeds_recovered"],0)
+        self.assertEqual(len(r["results"][0]["attempts"]),3)
+
+    def test_seed_inventory_rejects_duplicates(self):
+        with TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError,"non-duplicated"):
+                run_seeded_stress(Path(tmp),Path(tmp),seeds=(1,1))
 
 
 if __name__ == "__main__":

@@ -162,19 +162,24 @@ def score_native_matrix(cases: dict[str,dict]) -> dict:
             "known_mutant_total":len(EXPECTED_CASE)}
 
 
-def _run_forge(root: Path, output: Path, case: str, *, runs: int, depth: int) -> dict:
+def _run_forge(root: Path, output: Path, case: str, *, runs: int, depth: int,
+               seed: int | None = None) -> dict:
     if case not in CASE_CONTRACTS or not 1 <= runs <= 1024 or not 1 <= depth <= 128:
         raise ValueError("unbounded or unknown local EVM workload")
+    if seed is not None and (type(seed) is not int or not 1 <= seed <= 65535):
+        raise ValueError("invalid reproducible Foundry seed")
     env=dict(os.environ)
     env.update(FOUNDRY_INVARIANT_RUNS=str(runs),FOUNDRY_INVARIANT_DEPTH=str(depth),
                FOUNDRY_INVARIANT_FAIL_ON_REVERT="false")
+    if seed is not None:
+        env["FOUNDRY_FUZZ_SEED"]=hex(seed)
     before=resource.getrusage(resource.RUSAGE_CHILDREN)
     t=perf_counter()
     process=subprocess.run(["forge","test","--match-contract",CASE_CONTRACTS[case],
                             "--json"],cwd=root,env=env,capture_output=True,text=True,
                            timeout=180,check=False)
     after=resource.getrusage(resource.RUSAGE_CHILDREN)
-    stem=f"{case}-{runs}x{depth}"
+    stem=f"{case}-{runs}x{depth}"+(f"-seed{seed}" if seed is not None else "")
     (output/f"{stem}.stdout.json").write_text(process.stdout,encoding="utf-8")
     (output/f"{stem}.stderr.txt").write_text(process.stderr,encoding="utf-8")
     result=parse_native_evm(process.stdout,case=case,returncode=process.returncode)
@@ -182,6 +187,7 @@ def _run_forge(root: Path, output: Path, case: str, *, runs: int, depth: int) ->
     result["wall_seconds"]=perf_counter()-t
     result["child_cpu_seconds"]=(after.ru_utime+after.ru_stime)-(before.ru_utime+before.ru_stime)
     result["returncode"]=process.returncode
+    result["seed"]=seed
     return result
 
 
@@ -216,10 +222,56 @@ def run_evm_campaign(root: Path, output: Path) -> dict:
     return output_data
 
 
+def run_seeded_stress(root: Path, output: Path, *, seeds: tuple[int,...] = tuple(range(1,9))) -> dict:
+    """Pre-fixed low-budget adversity across many genuine EVM fuzz seeds.
+
+    Every initial miss is preserved even if a later budget rescues it. This
+    is a labelled development control; it is not a blind vulnerability trial.
+    """
+    if not 1 <= len(seeds) <= 16 or len(seeds)!=len(set(seeds)):
+        raise ValueError("fixed non-duplicated seed inventory required")
+    output.mkdir(parents=True,exist_ok=True)
+    report={"schema":"scm.prism.d24i.seeded-evm-adversarial.v1",
+            "seed_inventory":list(seeds),"profiles":[
+                {"runs":32,"depth":16},{"runs":64,"depth":32},
+                {"runs":256,"depth":64}],
+            "results":[],"known_mutants_per_seed":3,"blind":False}
+    for seed in seeds:
+        if type(seed) is not int or not 1 <= seed <= 65535:
+            raise ValueError("unsupported immutable seed")
+        record={"seed":seed,"attempts":[],"recovered_all":False}
+        for runs,depth in ((32,16),(64,32),(256,64)):
+            cases={case:_run_forge(root,output,case,runs=runs,depth=depth,seed=seed)
+                   for case in CASE_CONTRACTS}
+            scored=score_native_matrix(cases)
+            record["attempts"].append({"budget":{"runs":runs,"depth":depth},
+                                      **scored,
+                                      "source_hashes":{case:value["stdout_sha256"]
+                                                       for case,value in cases.items()},
+                                      "total_wall_seconds":sum(v["wall_seconds"] for v in cases.values()),
+                                      "total_child_cpu_seconds":sum(v["child_cpu_seconds"] for v in cases.values())})
+            if not scored["missed_known_mutants"] and not scored["spurious_counterexamples"]:
+                record["recovered_all"]=True
+                break
+        report["results"].append(record)
+        # Do not lose partial observations when a later seed cannot run.
+        (output/"seeded-stress.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+    report["status"]=("ENGINEERING_SEED_GATE_PASS" if all(r["recovered_all"] for r in report["results"])
+                      else "KNOWN_MUTANT_SEED_RECALL_NOT_COMPLETE")
+    report["seeds_recovered"] = sum(r["recovered_all"] for r in report["results"])
+    report["initial_profile_full_detection"] = sum(
+        not r["attempts"][0]["missed_known_mutants"] and
+        not r["attempts"][0]["spurious_counterexamples"]
+        for r in report["results"])
+    (output/"seeded-stress.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+    return report
+
+
 if __name__ == "__main__":
     p=argparse.ArgumentParser()
     p.add_argument("--root",required=True,type=Path)
     p.add_argument("--out",required=True,type=Path)
+    p.add_argument("--stress-seeds",type=int,default=0)
     args=p.parse_args()
     result=run_evm_campaign(args.root.resolve(),args.out.resolve())
     print("D24I_EVM_ADVERSARIAL",json.dumps({
@@ -229,3 +281,17 @@ if __name__ == "__main__":
     },sort_keys=True))
     if not result["all_known_mutants_observed"]:
         raise SystemExit(1)
+    if args.stress_seeds:
+        if not 1 <= args.stress_seeds <= 16:
+            raise ValueError("invalid requested stress seed count")
+        stress=run_seeded_stress(args.root.resolve(),args.out.resolve(),
+                                 seeds=tuple(range(1,args.stress_seeds+1)))
+        print("D24I_EVM_SEEDED_STRESS",json.dumps({
+            "status":stress["status"],"seed_count":args.stress_seeds,
+            "seed_recovered":stress["seeds_recovered"],
+            "low_budget_full_detection":stress["initial_profile_full_detection"],
+            "recovery_budget_profiles":{
+                str(r["seed"]):r["attempts"][-1]["budget"] for r in stress["results"]},
+        },sort_keys=True))
+        if stress["status"]!="ENGINEERING_SEED_GATE_PASS":
+            raise SystemExit(1)
