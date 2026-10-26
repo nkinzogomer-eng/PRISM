@@ -43,7 +43,7 @@ jobs:
           assert x['methodology'].startswith('RETROSPECTIVE_')
           assert x['compiled']==2, x['targets']
           byid={r['id']:r for r in x['targets']}
-          assert byid['L1']['compiler']=='0.8.31'
+          assert byid['L1']['compiler']=='0.8.33'
           assert byid['L2']['compiler']=='0.8.24'
           assert all(r['d24m_unsupported'] <= r['d24l_unsupported'] for r in x['targets'])
           assert x['native_branch']['known_synthetic_branch_candidates']==1

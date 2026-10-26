@@ -8,10 +8,10 @@ class CompilerMatrixTests(unittest.TestCase):
         x=select_compiler({"src/X.sol":b"pragma solidity ^0.8.10; contract X {}"})
         self.assertEqual(x["selected"],"0.8.24")
 
-    def test_new_openzeppelin_831_picks_only_compatible_version(self):
+    def test_new_openzeppelin_831_picks_patched_833_compiler(self):
         x=select_compiler({"contracts/X.sol":b"pragma solidity ^0.8.31; contract X {}",
                            "contracts/Y.sol":b"pragma solidity ^0.8.20; contract Y {}"})
-        self.assertEqual(x["selected"],"0.8.31")
+        self.assertEqual(x["selected"],"0.8.33")
 
     def test_comment_and_string_cannot_falsify_pragmas(self):
         with self.assertRaisesRegex(ValueError,"PRAGMA"):

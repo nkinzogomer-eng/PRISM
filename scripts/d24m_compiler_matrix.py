@@ -10,7 +10,10 @@ import re
 
 from scripts.d24c_structural_frontier import mask_noncode
 
-PINNED_COMPILERS=("0.8.24","0.8.31")
+# Solidity 0.8.31 failed the Foundry 1.3.6 integrity checksum on the
+# actual CI runner. 0.8.33 is an official bugfix/hotfix-compatible
+# alternative for caret-0.8.31 sources; NEVER disable compiler checksums.
+PINNED_COMPILERS=("0.8.24","0.8.33")
 _PRAGMA=re.compile(r"\bpragma\s+solidity\s+([^;]+);")
 _TOKEN=re.compile(r"^(\^|>=|>|<=|<|=)?\s*(0\.8\.\d+)$")
 
