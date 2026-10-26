@@ -75,9 +75,9 @@ jobs:
         run: |
           git clone --quiet --filter=blob:none https://github.com/euler-legacy-xyz/euler-contracts.git euler-native
           git -C euler-native checkout --quiet b1ee3265853628d5a529081d7908c38404201b4e
-      - name: Install historical project test dependencies (no lifecycle scripts)
+      - name: Install historical project dependencies without lockfile or lifecycle scripts
         working-directory: euler-native
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --package-lock=false
       - name: Reproduce real protocol accounting/health outcome on local EVM
         run: |
           python -m scripts.d24o_euler_native \
