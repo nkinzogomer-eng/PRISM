@@ -5,7 +5,10 @@ on:
     branches: [research/scm-cyber-d24h-autonomous-hypothesis-engine]
     paths:
       - "prism/cyber_hypotheses.py"
+      - "prism/cyber_path_grammar.py"
+      - "prism/cyber_solidity_hypotheses.py"
       - "scripts/d24h_autonomous_discover.py"
+      - "scripts/d24h_solidity_catalog.py"
       - "tests/test_d24h_*.py"
       - ".github/workflows/d24h-autonomous-discovery.yml"
       - "docs/scm-cyber-d24h-build-gate.md"
@@ -52,6 +55,17 @@ jobs:
           curl --fail --silent --show-error --retry 3 --location \
             https://raw.githubusercontent.com/django/django/0e128d524d0a7c55a955570d6e5da983ac6ce6c7/django/utils/_os.py \
             -o external/django-current/_os.py
+      - name: Pinned real third-party Solidity for independent semantic candidate catalogue
+        run: |
+          mkdir -p external/ousd-current
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/scfuzzbench/origin-dollar-scfuzzbench/299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4/contracts/contracts/token/OUSD.sol \
+            -o external/ousd-current/OUSD.sol
+          mkdir -p reports/d24h-ci
+          /usr/bin/time -v -o reports/d24h-ci/ousd-solidity-resources.txt \
+            python -m scripts.d24h_solidity_catalog \
+              --source external/ousd-current/OUSD.sol \
+              --out reports/d24h-ci/ousd-source-hypotheses.json
       - name: Source-only self-selected hypotheses and conditional safe local replay
         run: |
           mkdir -p reports/d24h-ci
@@ -87,6 +101,14 @@ jobs:
           for key in ("starlette_fixed","werkzeug_fixed","django_current"):
               assert records[key]["local_behavior_witnesses"]==0,(key,records[key]["evaluations"])
               assert records[key]["status"] in ("NO_WITNESS_NOT_SAFE","INCOMPLETE_UNKNOWN")
+          solidity=json.loads((root/"ousd-source-hypotheses.json").read_text())
+          assert solidity["schema"]=="scm.prism.d24h.solidity-hypotheses.v1"
+          assert solidity["source_functions"]>=20
+          assert solidity["families"]["asset_conservation"]>=1
+          assert solidity["independent_vulnerability_witnesses"]==0
+          assert not solidity["complete_semantics"]
+          assert all(h["status"]=="UNVERIFIED" for h in solidity["hypotheses"])
+          print("D24H_SOLIDITY_INVARIANTS_NOT_PROOFS",solidity["families"])
           metrics={key:{
               "status":r["status"],
               "hypotheses":r["compiler"]["candidate_count"],
@@ -102,6 +124,7 @@ jobs:
               "historical_source_selection_blind":False,
               "current_django_findings_beyond_tested_property":"UNKNOWN",
               "ciel_development":"PAUSED",
+              "solidity_proposals_unverified":solidity["families"],
               "records":metrics,
           }
           (root/"evaluated-outcomes.json").write_text(json.dumps(output,sort_keys=True,indent=2)+"\n")

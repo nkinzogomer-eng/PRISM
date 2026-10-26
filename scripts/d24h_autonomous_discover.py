@@ -16,7 +16,8 @@ from pathlib import Path
 from time import perf_counter
 
 from prism.cyber_hypotheses import compile_python_hypotheses
-from scripts.d24g_source_only_discover import starlette_scan, werkzeug_scan, django_scan
+from scripts.d24g_source_only_discover import werkzeug_scan, django_scan
+from prism.cyber_path_grammar import run_generated_path_exploration
 
 
 def _strategy(source: str, candidate: dict) -> str | None:
@@ -77,23 +78,30 @@ def inspect_source(source_file: Path, *,
                     decision["status"] = "UNKNOWN_RESOURCE_BUDGET"
                 else:
                     if strategy=="staticfiles_local":
-                        result=starlette_scan(source_file, remaining)
+                        result=run_generated_path_exploration(source_file, max_probes=remaining)
                     elif strategy=="windows_url_path":
                         result=werkzeug_scan(source_file, remaining)
                     else:
                         result=django_scan(source_file, remaining)
                     used=result["budget"]["used_probes"]
+                    dynamic_violations=(len(result["violations"]) if strategy=="staticfiles_local" else result["observed_property_violations"])
+                    dynamic_witness=(result["minimal_observed_witness"])
                     remaining-=used
                     decision.update({
                         "status": result["status"],
                         "discovery_verdict": (
                             "REPRODUCED_LOCAL_PROPERTY_WITNESS" if result["status"]=="LOCAL_PROPERTY_WITNESS"
                             else "TESTED_WITHOUT_WITNESS_NOT_SAFE"),
-                        "verification_scope": result["limitations"],
+                        "verification_scope": result.get("limitations", {
+                            "path_grammar_independently_computed_expectation":True,
+                            "not_exhaustive":result.get("not_exhaustive",True),
+                            "unexecuted_candidates":len(result.get("unexecuted_candidates",[])),
+                        }),
                         "used_probes": used,
-                        "observed_violations": result["observed_property_violations"],
-                        "minimal_witness": result["minimal_observed_witness"],
+                        "observed_violations": dynamic_violations,
+                        "minimal_witness": dynamic_witness,
                         "replay_sha256": result["replay_sha256"],
+                        "synthesis_strategy": result.get("strategy","PREVIOUS_SCOPED_EXECUTOR"),
                     })
             except (ValueError, OSError, TypeError, RuntimeError, AssertionError) as exc:
                 # Failed real-source execution is not a negative finding.
