@@ -5,11 +5,13 @@ on:
     branches: [research/scm-cyber-d24i-independent-holdout]
     paths:
       - "prism/cyber_flow_model.py"
+      - "prism/hypothesis_contract.py"
       - "scripts/d24i_holdout.py"
       - "tests/test_d24i_*.py"
       - "benchmarks/cyber/d24i/holdout_v1.json"
       - ".github/workflows/d24i-independent-holdout.yml"
       - "docs/scm-cyber-d24i-protocol.md"
+      - "docs/scm-cyber-d24i-ciel-verifier.md"
   workflow_dispatch:
 
 permissions:
