@@ -76,7 +76,10 @@ def parse_native_evm(raw: str, *, case: str, returncode: int) -> dict:
         if status not in ("Success","Failure"):
             raise ValueError("unknown EVM test outcome")
         if status=="Failure" and REASONS[family] not in reason:
-            raise ValueError("wrong reason for observed property failure")
+            raise ValueError(
+                f"wrong reason for observed property failure: case={case} "
+                f"property={family} actual_status={status} actual_reason={reason[:400]!r}"
+            )
         observations[family]={
             "property_holds":status=="Success",
             "status":status,
@@ -182,7 +185,16 @@ def _run_forge(root: Path, output: Path, case: str, *, runs: int, depth: int,
     stem=f"{case}-{runs}x{depth}"+(f"-seed{seed}" if seed is not None else "")
     (output/f"{stem}.stdout.json").write_text(process.stdout,encoding="utf-8")
     (output/f"{stem}.stderr.txt").write_text(process.stderr,encoding="utf-8")
-    result=parse_native_evm(process.stdout,case=case,returncode=process.returncode)
+    try:
+        result=parse_native_evm(process.stdout,case=case,returncode=process.returncode)
+    except ValueError as exc:
+        # Preserve the native evidence before aborting. Unknown EVM/harness
+        # failures are NOT converted into missed or confirmed vulnerabilities.
+        raise ValueError(
+            f"untrusted Foundry result: case={case} seed={seed} "
+            f"runs={runs} depth={depth} exit={process.returncode} "
+            f"stdout_file={stem}.stdout.json stderr_file={stem}.stderr.txt: {exc}"
+        ) from exc
     result["budget"]={"runs":runs,"depth":depth}
     result["wall_seconds"]=perf_counter()-t
     result["child_cpu_seconds"]=(after.ru_utime+after.ru_stime)-(before.ru_utime+before.ru_stime)
