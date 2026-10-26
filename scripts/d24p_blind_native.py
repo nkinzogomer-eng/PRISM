@@ -52,6 +52,10 @@ def _contract(case_id: int, variant: int) -> str:
         ''' + _PAYOUT + '''
         balances[msg.sender] -= amount;
         _locked = false;''')
+    elif variant == 6:
+        # Unlike variant 1, this deliberately uses unchecked arithmetic:
+        # callback withdrawal no longer makes the outer decrement revert.
+        withdraw = f'{_PAYOUT}\n        unchecked {{ balances[msg.sender] -= amount; }}'
     else:
         raise ValueError('INVALID_TEMPLATE')
     return f'''contract D24PInstance{case_id} {{
@@ -80,13 +84,13 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding='utf-8')
 
 
-def generate(out: Path, *, seed: int, cases: int = 18) -> dict:
+def generate(out: Path, *, seed: int, cases: int = 21) -> dict:
     if type(seed) is not int or not 0 <= seed < 2**64:
         raise ValueError('BAD_HOLDOUT_SEED')
-    if type(cases) is not int or cases < 6 or cases > 30 or cases % 6:
+    if type(cases) is not int or cases < 7 or cases > 35 or cases % 7:
         raise ValueError('INVALID_COHORT_SIZE')
     rng=random.Random(seed)
-    variants=list(range(6))*(cases//6)
+    variants=list(range(7))*(cases//7)
     rng.shuffle(variants)
     src='// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n'
     src+='\n'.join(_contract(i,v) for i,v in enumerate(variants))
@@ -99,8 +103,12 @@ def generate(out: Path, *, seed: int, cases: int = 18) -> dict:
     _write(out/'public_abi.json',json.dumps(ABI,sort_keys=True,indent=2)+'\n')
     # The only file disclosing labels is *not* loaded by propose_trials or
     # by the emitted Foundry test. The grading stage reads it later.
+    # Variant 1 (`-=` under Solidity 0.8 checked arithmetic) is a negative
+    # control: a nested decrement reverts the outer transaction atomically.
+    # A prior CI trial incorrectly labeled it dangerous and *failed* 3/18.
+    # Variant 6 is a separate unchecked-arithmetic positive control.
     ground_truth=[{"case":i,"family":"reentrancy_eth_liability_shortfall",
-                   "expected_evm_witness":v in (0,1),"template_private":v}
+                   "expected_evm_witness":v in (0,6),"template_private":v}
                   for i,v in enumerate(variants)]
     _write(out/'sealed_labels.json',json.dumps(ground_truth,indent=2)+'\n')
     _write(out/'foundry.toml','''[profile.default]
