@@ -175,9 +175,27 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
         auth_signals = ("is_authenticated","has_permission","permission_required",
                         "get_current_user","require_admin","verify_token",
                         "require_permission","Depends","current_user")
-        known_auth = any(k in ast.unparse(fn) or
-                         any(k in d for d in decorator_text)
-                         for k in auth_signals)
+        # Ordering matters: an authorization test *after* a state-changing
+        # operation cannot protect that prior effect. Recognize only obvious
+        # guards/capabilities before the first write call; other patterns
+        # remain ambiguous and yield review hypotheses.
+        mutator_nodes = [c for c in ast.walk(fn)
+                         if isinstance(c, ast.Call) and _callee(c) in write_signals]
+        first_write = min((n.lineno for n in mutator_nodes),default=10**9)
+        decorator_authorized = any(k in d for d in decorator_text
+                                   for k in auth_signals)
+        before_write_guard = any(
+            n.lineno < first_write and
+            any(k in ast.unparse(n.test) for k in auth_signals)
+            for n in ast.walk(fn) if isinstance(n, ast.If)
+        )
+        before_write_checker = any(
+            n.lineno < first_write and
+            any(k in _callee(n) for k in
+                ("require_admin","has_permission","require_permission","verify_token"))
+            for n in ast.walk(fn) if isinstance(n, ast.Call)
+        )
+        known_auth = decorator_authorized or before_write_guard or before_write_checker
         if looks_mutating_route and write_signals and not known_auth:
             prior.append(Hypothesis(
                 identifier=f"auth_review:{name}",

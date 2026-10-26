@@ -106,6 +106,19 @@ def remove(request):
         result=compile_python_hypotheses(code)
         self.assertEqual(result["counts_by_family"]["authorization_boundary"],0)
 
+    def test_authentication_check_after_mutation_is_not_a_guard(self):
+        code = """
+@app.delete("/objects")
+def remove(request):
+    store.delete(request.object_id)
+    if not request.user.is_authenticated:
+        return {"denied": True}
+    return {"ok": True}
+"""
+        r=compile_python_hypotheses(code)
+        self.assertEqual(r["counts_by_family"]["authorization_boundary"],1)
+        self.assertEqual(r["candidates"][0]["verification"],"UNVERIFIED")
+
     def test_read_only_route_is_not_claimed_auth_violation(self):
         code = """
 @app.get("/status")
