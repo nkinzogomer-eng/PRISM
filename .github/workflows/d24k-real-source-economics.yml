@@ -43,8 +43,8 @@ jobs:
           import json
           from pathlib import Path
           r=json.loads(Path('reports/d24k-economic-ci/economic-evidence.json').read_text())
-          assert r['native_observation']['passed']==4
-          assert r['native_observation']['total']==4
+          assert r['native_observation']['passed']==5
+          assert r['native_observation']['total']==5
           assert r['source_first_inference']=='DETERMINISTIC_PROPOSE_THEN_SEPARATE_EVM_ORACLE'
           assert r['derived_hypothesis']['identifier']=='asset_share_rate:donation_without_share_issuance'
           assert r['derived_hypothesis']['claim_of_new_vulnerability'] is False

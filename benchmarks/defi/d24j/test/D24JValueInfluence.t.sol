@@ -112,4 +112,30 @@ contract D24JValueInfluenceTest {
         require(vault.totalAssets()==101 && vault.totalSupply()==1,
                 "guarded rejection must not change vault state");
     }
+
+    function test_native_multiple_donation_sizes_still_reproduce_value_capture() public {
+        // Independent EVM replay across 15 non-identical initial states.
+        // The Python source proposer does not execute or supply outcomes.
+        for (uint256 gift = 2; gift <= 16; ++gift) {
+            D24JMockAsset freshToken = new D24JMockAsset();
+            D24JMinimalVault freshVault = new D24JMinimalVault(freshToken);
+            D24JLocalActor a = new D24JLocalActor(freshToken,freshVault);
+            D24JLocalActor v = new D24JLocalActor(freshToken,freshVault);
+            uint256 upfront = 1 + gift;
+            uint256 victimDeposit = 2 * upfront - 1;
+            freshToken.allocate(address(a),upfront);
+            freshToken.allocate(address(v),victimDeposit);
+            require(a.enter(1)==1,"initial one-share assumption broken");
+            a.donate(gift);
+            require(v.enter(victimDeposit)==1,"distinct scenario did not mint one share");
+            uint256 attackerPayout=a.exitAll();
+            uint256 victimPayout=v.exitAll();
+            require(attackerPayout>upfront,"no positive attacker redistribution");
+            require(victimPayout<victimDeposit,"no affected victim value");
+            require(attackerPayout-upfront==victimDeposit-victimPayout,
+                    "rounding gain and victim loss did not reconcile");
+            require(freshToken.totalSupply()==upfront+victimDeposit,
+                    "test fixture created/destroyed assets unexpectedly");
+        }
+    }
 }

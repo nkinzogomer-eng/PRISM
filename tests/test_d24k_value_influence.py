@@ -13,9 +13,9 @@ def result(*, failed=(), missing=(), extra=False):
 
 
 class EconomicWitnessGuards(unittest.TestCase):
-    def test_all_four_controls_must_pass(self):
+    def test_all_five_controls_must_pass(self):
         record=check_native_trial(result(),0)
-        self.assertEqual(record["passed"],4)
+        self.assertEqual(record["passed"],5)
         self.assertEqual(len(record["stdout_sha256"]),64)
 
     def test_missing_or_extra_control_cannot_be_a_witness(self):

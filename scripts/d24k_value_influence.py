@@ -28,6 +28,7 @@ TESTS={
     "test_native_unprotected_victim_loss_and_attacker_profit()",
     "test_native_undonated_control_has_no_victim_loss()",
     "test_native_minimum_share_guard_refuses_dilution()",
+    "test_native_multiple_donation_sizes_still_reproduce_value_capture()",
 }
 IMPORT=re.compile(r"\bimport\s+(?:[^;]*?\s+from\s+)?['\"]([^'\"]+)['\"]\s*;")
 
@@ -133,12 +134,14 @@ def run_value_trial(manifest: dict,root: Path,output: Path) -> dict:
         "schema":"scm.prism.d24k.erc4626-value-influence-observation.v1",
         "source_repository":target["repository"],"pinned_commit":target["commit"],
         "original_source_sha256":sha256(sources[target["path"]]).hexdigest(),
+        "independent_observer_source_sha256":sha256(fixture.read_bytes()).hexdigest(),
         "source_closure_git_blob_sha1":{k:git_blob_digest(v) for k,v in sorted(sources.items())},
         "proposer_schema":proposed["schema"],
         "derived_hypothesis":matches[0],
         "source_first_inference":"DETERMINISTIC_PROPOSE_THEN_SEPARATE_EVM_ORACLE",
         "hypothesis_was_developed_using_this_source":True,
         "native_observation":verified,
+        "native_distinct_parameter_variants":15,
         "units_in_local_scenario":{"attacker_upfront_assets":101,"victim_deposit_assets":199,
                                    "attacker_redeemed_assets":150,"victim_redeemed_assets":150,
                                    "attacker_gain":49,"victim_loss":49},
