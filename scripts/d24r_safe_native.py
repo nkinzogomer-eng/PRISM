@@ -14,6 +14,7 @@ import re
 import subprocess
 
 from prism.d24r_zero_capital_probe import propose_treasury_trials
+from prism.d24s_state_frontier import propose_state_frontier
 
 
 REPOSITORY = "safe-fndn/safe-smart-account"
@@ -67,7 +68,7 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _solidity(candidates: list[dict]) -> str:
+def _solidity(candidates: list[dict], state_candidates: list[dict] | None = None) -> str:
     cases = []
     for index, candidate in enumerate(candidates):
         mode = ("unapproved_module_execution", "unsigned_direct_treasury_execution",
@@ -75,9 +76,20 @@ def _solidity(candidates: list[dict]) -> str:
         amount = candidate["requested_transfer_units"]
         if amount not in (1, 1000, 1000000):
             raise ValueError("UNREGISTERED_AMOUNT")
-        cases.append(f'''        uint8 result{index} = _tryCandidate({mode}, {amount});
+        cases.append(f'''        uint8 result{index} = _tryCandidate(true, {mode}, {amount});
         if ((result{index} & 1) != 0) emit log_string("D24R_UNAUTHORIZED_WITNESS_{index}");
         if ((result{index} & 2) != 0) emit log_string("D24R_AUTHORITY_WITNESS_{index}");''')
+    state_cases = []
+    for index, candidate in enumerate(state_candidates or []):
+        mode = ("unapproved_module_execution", "unsigned_direct_treasury_execution",
+                "unauthorized_owner_or_threshold_change", "reinitialization_after_legitimate_setup").index(candidate["family"])
+        amount = candidate["requested_transfer_units"]
+        initialized = "true" if candidate["initialized_by_legitimate_owners"] else "false"
+        if amount not in (1, 1000, 1000000):
+            raise ValueError("UNREGISTERED_FRONTIER_AMOUNT")
+        state_cases.append(f'''        uint8 trial{index} = _tryCandidate({initialized}, {mode}, {amount});
+        if ((trial{index} & 1) != 0) emit log_string("D24S_STATE_ASSET_WITNESS_{index}");
+        if ((trial{index} & 2) != 0) emit log_string("D24S_STATE_AUTHORITY_WITNESS_{index}");''')
     return '''// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity >=0.7.0 <0.9.0;
 import "safe/contracts/Safe.sol";
@@ -140,8 +152,8 @@ contract D24RNative {
         return abi.encodeWithSignature("transfer(address,uint256)", recipient, amount);
     }
 
-    function _tryCandidate(uint8 mode, uint256 amount) internal returns (uint8 result) {
-        (Safe wallet, D24RToken token) = _newSafe(true);
+    function _tryCandidate(bool correctlyInitialized, uint8 mode, uint256 amount) internal returns (uint8 result) {
+        (Safe wallet, D24RToken token) = _newSafe(correctlyInitialized);
         bytes memory payment = _transferCalldata(ATTACKER, amount);
         bytes memory callData;
         if (mode == 0) {
@@ -171,7 +183,8 @@ contract D24RNative {
         vm.prank(ATTACKER);
         (bool accepted,) = address(wallet).call(callData);
         bool unauthorizedTransfer = token.balanceOf(ATTACKER) > 0;
-        bool authorityChanged = wallet.isOwner(ATTACKER) || wallet.getThreshold() != 2;
+        bool authorityChanged = wallet.isOwner(ATTACKER) ||
+                                wallet.getThreshold() != (correctlyInitialized ? 2 : 0);
         if (unauthorizedTransfer) result |= 1;
         if (authorityChanged) result |= 2;
         require(!accepted || !unauthorizedTransfer || authorityChanged ||
@@ -184,6 +197,39 @@ contract D24RNative {
     function test_frozen_bounded_safe_hypotheses() public {
 '''+"\n".join(cases)+'''
         emit log_string("D24R_FROZEN_TRIALS_EXECUTED");
+    }
+
+    function test_exploratory_generated_state_frontier() public {
+'''+"\n".join(state_cases)+'''
+        emit log_string("D24S_GENERATED_STATE_FRONTIER_EXECUTED");
+    }
+
+    function test_legitimate_owner_approvals_and_nonce_replay() public {
+        (Safe wallet, D24RToken token) = _newSafe(true);
+        bytes memory transferData = _transferCalldata(OWNER_A, 1000);
+        bytes32 digest = wallet.getTransactionHash(address(token), 0, transferData,
+            Enum.Operation.Call, 0, 0, 0, address(0), address(0), wallet.nonce());
+        vm.prank(OWNER_A);
+        wallet.approveHash(digest);
+        vm.prank(OWNER_B);
+        wallet.approveHash(digest);
+        // Safe accepts sorted owner addresses, encoded as preapproved hashes.
+        bytes memory signatures = abi.encodePacked(
+            bytes32(uint256(uint160(OWNER_B))), bytes32(0), uint8(1),
+            bytes32(uint256(uint160(OWNER_A))), bytes32(0), uint8(1));
+        vm.prank(ATTACKER);  // Any relayer may submit *authorized* signatures.
+        bool accepted = wallet.execTransaction(address(token), 0, transferData,
+            Enum.Operation.Call, 0, 0, 0, address(0), payable(address(0)), signatures);
+        require(accepted && token.balanceOf(OWNER_A) == 1000 &&
+                token.balanceOf(ATTACKER) == 0, "AUTHORIZED_CONTROL_FAILED");
+        vm.prank(ATTACKER);
+        (bool replayed,) = address(wallet).call(abi.encodeWithSignature(
+            "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)",
+            address(token), 0, transferData, uint8(0), 0, 0, 0,
+            address(0), address(0), signatures));
+        require(!replayed && token.balanceOf(OWNER_A) == 1000,
+                "SIGNATURE_REPLAY_CONTROL_FAILED");
+        emit log_string("D24S_LEGITIMATE_AUTHORIZATION_SUCCEEDED_AND_REPLAY_REJECTED");
     }
 
     function test_positive_auth_bypass_control_detected() public {
@@ -219,6 +265,7 @@ def prepare(repo: Path, output: Path) -> dict:
     plan = propose_treasury_trials(ABI)
     if plan["status"] != "FROZEN_HYPOTHESES_AWAIT_NATIVE_EVM":
         raise ValueError("UNSUPPORTED_NATIVE_INTERFACE")
+    frontier = propose_state_frontier(ABI)
     _write(output / "foundry.toml", '''[profile.default]
 src = "src"
 test = "test"
@@ -227,25 +274,36 @@ optimizer = true
 optimizer_runs = 200
 remappings = ["safe/=lib/safe/"]
 ''')
-    _write(output / "test" / "D24RSafeNative.t.sol", _solidity(plan["candidates"]))
+    _write(output / "test" / "D24RSafeNative.t.sol", _solidity(plan["candidates"], frontier["candidates"]))
     _write(output / "trial_plan.json", json.dumps(plan, indent=2, sort_keys=True) + "\n")
+    _write(output / "state_frontier_plan.json", json.dumps(frontier, indent=2, sort_keys=True) + "\n")
     _write(output / "source_attestation.json", json.dumps(source, indent=2, sort_keys=True) + "\n")
     return {"status": "NATIVE_PENDING_NO_ZERO_DAY_CLAIM",
-            "frozen_candidates": len(plan["candidates"]), "source": source}
+            "frozen_candidates": len(plan["candidates"]),
+            "exploratory_state_candidates": len(frontier["candidates"]), "source": source}
 
 
 def score(output: Path) -> dict:
     trace = (output / "forge-output.txt").read_text(encoding="utf-8")
     required = ("D24R_FROZEN_TRIALS_EXECUTED", "D24R_AUTHORED_POSITIVE_CONTROL_WITNESS",
-                "D24R_KNOWN_UNINITIALIZED_PROXY_CONFIGURATION_WITNESS")
+                "D24R_KNOWN_UNINITIALIZED_PROXY_CONFIGURATION_WITNESS",
+                "D24S_GENERATED_STATE_FRONTIER_EXECUTED",
+                "D24S_LEGITIMATE_AUTHORIZATION_SUCCEEDED_AND_REPLAY_REJECTED")
     if "Suite result: ok." not in trace or any(trace.count(marker) != 1 for marker in required):
         raise ValueError("INCOMPLETE_OR_FAILED_NATIVE_TEST_EVIDENCE")
     witness_indices = [int(i) for i in re.findall(r"\bD24R_UNAUTHORIZED_WITNESS_(\d+)\b", trace)]
     authority_indices = [int(i) for i in re.findall(r"\bD24R_AUTHORITY_WITNESS_(\d+)\b", trace)]
+    frontier_asset_indices = [int(i) for i in re.findall(r"\bD24S_STATE_ASSET_WITNESS_(\d+)\b", trace)]
+    frontier_authority_indices = [int(i) for i in re.findall(r"\bD24S_STATE_AUTHORITY_WITNESS_(\d+)\b", trace)]
     n = len(json.loads((output / "trial_plan.json").read_text())["candidates"])
+    frontier = json.loads((output / "state_frontier_plan.json").read_text())
+    m = len(frontier["candidates"])
     if (len(set(witness_indices)) != len(witness_indices) or
         len(set(authority_indices)) != len(authority_indices) or
-        any(not 0 <= i < n for i in witness_indices + authority_indices)):
+        len(set(frontier_asset_indices)) != len(frontier_asset_indices) or
+        len(set(frontier_authority_indices)) != len(frontier_authority_indices) or
+        any(not 0 <= i < n for i in witness_indices + authority_indices) or
+        any(not 0 <= i < m for i in frontier_asset_indices + frontier_authority_indices)):
         raise ValueError("MALFORMED_WITNESS_LOGS")
     if authority_indices:
         status = "POTENTIAL_UNEXPECTED_AUTHORIZATION_WITNESS_REQUIRES_REPLAY"
@@ -263,6 +321,11 @@ def score(output: Path) -> dict:
         "frozen_authorization_witness_count": len(authority_indices),
         "frozen_treasury_witness_indices": witness_indices,
         "frozen_authorization_witness_indices": authority_indices,
+        "exploratory_state_candidate_count": m,
+        "exploratory_state_asset_witness_indices": frontier_asset_indices,
+        "exploratory_state_authority_witness_indices": frontier_authority_indices,
+        "exploratory_state_witnesses_are_novelty_claims": False,
+        "legitimate_signature_approval_and_nonce_replay_control_passed": True,
         "insecure_authored_control_detected": True,
         "uninitialized_proxy_original_source_known_deployment_risk_reproduced": True,
         "uninitialized_proxy_is_preregistered_blind_discovery": False,
