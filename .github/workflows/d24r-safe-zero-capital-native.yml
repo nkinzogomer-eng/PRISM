@@ -1,0 +1,74 @@
+name: D2.4R preregistered third-party Safe native zero-capital authorization gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24r-safe-zero-capital]
+    paths:
+      - "benchmarks/defi/d24r/preregistration.json"
+      - "prism/d24r_zero_capital_probe.py"
+      - "scripts/d24r_safe_native.py"
+      - "tests/test_d24r_*.py"
+      - ".github/workflows/d24r-safe-zero-capital-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Verify hypothesis budget and strict independent scoring controls
+        run: python -m unittest discover -s tests -p 'test_d24r_*.py' -v
+      - name: Fetch pinned unmodified official Safe v1.4.1 source
+        run: |
+          mkdir -p reports/d24r-native-ci/lib
+          git clone --quiet --filter=blob:none https://github.com/safe-fndn/safe-smart-account.git reports/d24r-native-ci/lib/safe
+          git -C reports/d24r-native-ci/lib/safe checkout --quiet bf943f80fec5ac647159d26161446ac5d716a294
+      - name: Check original source attestation and generate frozen native-EVM candidates
+        run: |
+          python -m scripts.d24r_safe_native prepare \
+            --repo reports/d24r-native-ci/lib/safe \
+            --out reports/d24r-native-ci
+      - name: Run all cases on original Safe Solidity with local-only assets
+        run: |
+          set -o pipefail
+          forge test --root reports/d24r-native-ci --match-contract D24RNative -vv \
+            | tee reports/d24r-native-ci/forge-output.txt
+      - name: Report precisely separated blind candidates and known insecure deployment
+        run: |
+          python -m scripts.d24r_safe_native score --out reports/d24r-native-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('reports/d24r-native-ci/result.json').read_text())
+          assert result['native_evm_executed']
+          assert result['real_third_party_unmodified_code_attested']
+          assert result['frozen_candidate_count']==12
+          assert result['confirmed_novel_public_vulnerabilities']==0
+          assert result['confirmed_zero_days']==0
+          assert result['gas_fee_or_sponsorship_verified'] is False
+          assert result['uninitialized_proxy_is_preregistered_blind_discovery'] is False
+          print('D24R_RESULT',result['status'])
+          print('D24R_AUTH_WITNESSES',result['frozen_authorization_witness_count'])
+          print('D24R_ASSET_WITNESSES',result['frozen_treasury_witness_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24r-original-safe-native-treasury-evidence
+          path: |
+            reports/d24r-native-ci/forge-output.txt
+            reports/d24r-native-ci/source_attestation.json
+            reports/d24r-native-ci/trial_plan.json
+            reports/d24r-native-ci/result.json
+          retention-days: 30
+          if-no-files-found: warn
