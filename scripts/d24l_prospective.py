@@ -137,6 +137,10 @@ def evaluate(reg: dict, engine: bytes, *, fetch=fetch_pinned, compiler=compile_a
                        compiler_contracts=hypothesis["contract_count"],
                        compiler_functions=hypothesis["function_count"],
                        unsupported_functions=hypothesis["unsupported_function_count"],
+                       unverified_candidate_summaries=[{
+                           "contract":c["contract"],"signature":c["signature"],
+                           "family":c["family"],"status":c["status"]}
+                           for c in hypothesis["candidates"]],
                        family_counts={family:sum(c["family"]==family for c in hypothesis["candidates"])
                            for family in sorted({c["family"] for c in hypothesis["candidates"]})})
         row["wall_seconds"]=perf_counter()-started
@@ -167,4 +171,11 @@ if __name__=="__main__":
     print("D24L_PROSPECTIVE",json.dumps({
         "statuses":{r["id"]:r["status"] for r in data["target_results"]},
         "candidates":{r["id"]:r["candidates"] for r in data["target_results"]},
+        "details":{r["id"]:{
+            "reason":r.get("reason"),
+            "contracts":r.get("compiler_contracts"),
+            "functions":r.get("compiler_functions"),
+            "unknown_functions":r.get("unsupported_functions"),
+            "hypotheses":r.get("unverified_candidate_summaries",[])}
+            for r in data["target_results"]},
         "real_vulns":0,"zero_days":0},sort_keys=True))
