@@ -27,30 +27,31 @@ jobs:
           version: v1.3.6
       - name: Fail-closed unit and adversarial isolation controls
         run: python -m unittest discover -s tests -p 'test_d24p_*.py' -v
-      - name: Generate randomized withheld-label ETH vault cohort (no live chains)
+      - name: Three fresh-seed blind-generation, ABI-only search and native-EVM rounds
         run: |
-          python -m scripts.d24p_blind_native generate \
-            --out reports/d24p-native-ci --seed "${{ github.run_id }}"
-      - name: Prepare autonomous candidate sequences from public ABI ONLY
-        run: python -m scripts.d24p_blind_native plan --out reports/d24p-native-ci
-      - name: Run actual bounded ETH-balance search on the local Solidity EVM
+          set -o pipefail
+          for offset in 0 1 2; do
+            case_dir="reports/d24p-native-ci/round${offset}"
+            seed=$(( ${{ github.run_id }} + offset * 65537 ))
+            python -m scripts.d24p_blind_native generate --out "$case_dir" --seed "$seed"
+            python -m scripts.d24p_blind_native plan --out "$case_dir"
+            forge test --root "$case_dir" \
+              --match-contract D24PAutonomousNativeProbe -vv \
+              | tee "$case_dir/forge-output.txt"
+            python -m scripts.d24p_blind_native grade --out "$case_dir"
+          done
+      - name: Enforce matched positive/negative controls and hard scientific limits
         run: |
-          forge test --root reports/d24p-native-ci \
-            --match-contract D24PAutonomousNativeProbe -vv \
-            | tee reports/d24p-native-ci/forge-output.txt
-      - name: Reveal private labels AFTER EVM execution and grade independently
-        run: |
-          python -m scripts.d24p_blind_native grade --out reports/d24p-native-ci
+          python -m scripts.d24p_blind_native aggregate --out reports/d24p-native-ci
           python - <<'PY'
           import json
           from pathlib import Path
-          r=json.loads(Path('reports/d24p-native-ci/result.json').read_text())
-          assert r['independently_observed_evm_case_count']==21
-          assert r['true_positive']==6, r
-          assert r['true_negative']==15, r
+          r=json.loads(Path('reports/d24p-native-ci/aggregate.json').read_text())
+          assert r['rounds']==3 and r['independent_native_ethereum_case_observations']==63
+          assert r['true_positive']==18, r
+          assert r['true_negative']==45, r
           assert r['false_positive']==r['false_negative']==0, r
-          assert r['native_witness_count']==6, r
-          assert r['zero_days']==r['novel_vulnerability_families']==0
+          assert r['zero_days']==r['novel_classes']==r['real_world_vulnerabilities']==0
           print('D24P_SEEDED_LAB_ONLY_NOT_ZERO_DAY',r)
           PY
       - uses: actions/upload-artifact@v4
