@@ -1,0 +1,66 @@
+name: D2.4K real-source ERC4626 economic behavior and counterfactual gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "benchmarks/defi/d24j/test/D24JValueInfluence.t.sol"
+      - "scripts/d24k_value_influence.py"
+      - "tests/test_d24k_value_influence.py"
+      - ".github/workflows/d24k-real-source-economics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-original-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Verify evidence integrity and parser controls
+        run: |
+          python -m unittest discover -s tests -p 'test_d24k_*.py' -v
+          forge --version
+      - name: Execute isolated native EVM with unchanged published Solmate source
+        run: |
+          python -m scripts.d24k_value_influence \
+            --preregistration benchmarks/defi/d24j/preregistration.json \
+            --root . \
+            --out reports/d24k-economic-ci
+      - name: Check all cash flows and state negative controls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24k-economic-ci/economic-evidence.json').read_text())
+          assert r['native_observation']['passed']==4
+          assert r['native_observation']['total']==4
+          assert r['units_in_local_scenario']['attacker_gain']==49
+          assert r['units_in_local_scenario']['victim_loss']==49
+          assert r['counterfactual_without_donation_has_no_loss']
+          assert r['slippage_guard_defeats_this_local_scenario']
+          assert r['is_zero_day'] is False
+          assert r['is_new_vulnerability_class'] is False
+          assert r['no_real_chain_or_funds'] is True
+          print('D24K_ECONOMIC_GATE',json.dumps({
+              'native_tests':r['native_observation']['passed'],
+              'attacker_gain':49,'victim_loss':49,
+              'wall_seconds':round(r['wall_seconds'],4),
+              'known_public_economic_pattern':True,
+              'zero_days':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24k-pinned-real-solmate-economic-proof
+          path: reports/d24k-economic-ci/
+          retention-days: 30
+          if-no-files-found: warn
