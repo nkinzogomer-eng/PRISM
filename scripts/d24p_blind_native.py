@@ -264,9 +264,36 @@ def grade(out:Path) -> dict:
     return result
 
 
+def aggregate(root:Path) -> dict:
+    """Independent seeded rounds; missing/duplicate/failing rounds fail closed."""
+    paths=sorted(root.glob('round*/result.json'))
+    if len(paths)!=3 or [p.parent.name for p in paths]!=['round0','round1','round2']:
+        raise ValueError('EXPECTED_EXACTLY_THREE_INDEPENDENT_ROUNDS')
+    rows=[json.loads(p.read_text()) for p in paths]
+    seeds={r['generator_seed'] for r in rows}
+    if len(seeds)!=3:
+        raise ValueError('DUPLICATE_SEEDED_HOLDOUT')
+    result={"schema":"scm.prism.d24p.multi-seed-lab-validation.v1",
+            "rounds":3,"generator_seeds":sorted(seeds),"abi_only_planner":True,
+            "independent_native_ethereum_case_observations":sum(r['independently_observed_evm_case_count'] for r in rows),
+            "native_fresh_deployment_trial_upper_bound":3*21*18,
+            "true_positive":sum(r['true_positive'] for r in rows),
+            "true_negative":sum(r['true_negative'] for r in rows),
+            "false_positive":sum(r['false_positive'] for r in rows),
+            "false_negative":sum(r['false_negative'] for r in rows),
+            "real_world_vulnerabilities":0,"novel_classes":0,"zero_days":0,
+            "status":"BOUNDED_LAB_VALIDATION_ONLY"}
+    if (any(r['native_evm_tests_passed']!=1 or r['independently_observed_evm_case_count']!=21
+            or r['true_positive']!=6 or r['true_negative']!=15 or r['false_positive']!=0
+            or r['false_negative']!=0 for r in rows)):
+        raise ValueError('ONE_OR_MORE_BLIND_LAB_ROUNDS_FAILED')
+    _write(root/'aggregate.json',json.dumps(result,sort_keys=True,indent=2)+'\n')
+    return result
+
+
 def main() -> None:
     cli=argparse.ArgumentParser()
-    cli.add_argument('stage',choices=['generate','plan','grade'])
+    cli.add_argument('stage',choices=['generate','plan','grade','aggregate'])
     cli.add_argument('--out',type=Path,required=True)
     cli.add_argument('--seed',type=int)
     args=cli.parse_args()
@@ -275,7 +302,8 @@ def main() -> None:
         result=generate(args.out,seed=args.seed)
         _write(args.out/'registration.json',json.dumps(result,sort_keys=True,indent=2)+'\n')
     elif args.stage=='plan':result=plan(args.out)
-    else:result=grade(args.out)
+    elif args.stage=='grade':result=grade(args.out)
+    else:result=aggregate(args.out)
     print('D24P_'+args.stage.upper(),json.dumps(result,sort_keys=True))
 
 
