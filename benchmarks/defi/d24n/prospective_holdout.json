@@ -1,0 +1,29 @@
+{
+  "schema": "scm.prism.d24n.v1-untouched-verified-path-cohort",
+  "frozen_on": "2026-10-26",
+  "method": "Both source paths verified to exist using GitHub directory metadata only; no source inspected before engine and cohort freeze",
+  "frozen_cfg_blob": "b35077d62b9e2f7583ec07aeb53838900379a4ad",
+  "frozen_semver_blob": "0f57d3424439d2b9a65885dd975e9739d4abed97",
+  "semver_fix_published_prior_to_selection": "78fe47005c0de3af186bb28d31e04d85822ac92c",
+  "allowed_solc": ["0.8.24", "0.8.33"],
+  "max_source_files": 60,
+  "max_source_bytes": 1000000,
+  "max_cfg_paths_per_function": 64,
+  "max_candidates": 64,
+  "native_target_vulnerability_oracle_precommitted": false,
+  "unknown_means": "NO SECURITY CONCLUSION",
+  "cohort": [
+    {
+      "id": "N1",
+      "repository": "compound-finance/comet",
+      "commit": "f766f51583c23acc33b2a7824654ef2029a96804",
+      "path": "contracts/CometRewards.sol"
+    },
+    {
+      "id": "N2",
+      "repository": "OpenZeppelin/openzeppelin-contracts",
+      "commit": "11565e5f6277a320408025e649240056ba6a3919",
+      "path": "contracts/governance/extensions/GovernorTimelockControl.sol"
+    }
+  ]
+}
