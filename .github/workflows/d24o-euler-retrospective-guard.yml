@@ -1,0 +1,57 @@
+name: D2.4O Euler historical source-only post-debit obligation
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout, research/scm-cyber-d24o-euler-historical-cpu]
+    paths:
+      - "prism/d24o_guard_consistency.py"
+      - "scripts/d24o_historical_euler.py"
+      - "tests/test_d24o_*.py"
+      - ".github/workflows/d24o-euler-retrospective-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-original-euler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Adversarial controls without LLM/API/GPU
+        run: python -m unittest discover -s tests -p 'test_d24o_*.py' -v
+      - name: Retrieve public, full-history Euler V1 repository
+        run: git clone --quiet --filter=blob:none https://github.com/euler-legacy-xyz/euler-contracts.git euler-original
+      - name: Source-only pinned incident-root-cause candidate
+        run: |
+          python -m scripts.d24o_historical_euler \
+            --upstream euler-original \
+            --out reports/d24o-ci/euler-retrospective.json
+      - name: Fail closed on provenance, source, or false claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          row=json.loads(Path('reports/d24o-ci/euler-retrospective.json').read_text())
+          assert row['commit']=='b1ee3265853628d5a529081d7908c38404201b4e'
+          assert row['source_sha256']=='e16bcbe5efa32f3b0538ed3f6ec29a2d64dbbff622b9712d129191731a79cd8b'
+          p=row['source_first_candidate_engine']
+          assert p['source_functions']==25
+          assert p['inferred_peer_checks']['checkLiquidity']==['burn','transferFrom','withdraw']
+          assert [x['function'] for x in p['candidates']]==['donateToReserves']
+          assert p['verified_real_vulnerabilities']==p['verified_zero_days']==0
+          assert row['native_evm_transactions']==0 and not row['exploit_constructed']
+          assert row['verdict']=='RETROSPECTIVE_SOURCE_HYPOTHESIS_ONLY'
+          print('D24O_SOURCE_GATE: exact known historical source signal, NOT an EVM proof or blind discovery')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24o-euler-pinned-source-hypothesis
+          path: reports/d24o-ci/
+          retention-days: 30
+          if-no-files-found: warn
