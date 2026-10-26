@@ -1,0 +1,61 @@
+{
+  "schema": "scm.prism.d24r.preregistered-safe-treasury.v1",
+  "registered_date": "2026-10-26",
+  "status": "FROZEN_BEFORE_TARGET_SOURCE_INSPECTION",
+  "target": {
+    "repository": "safe-fndn/safe-smart-account",
+    "tag": "v1.4.1",
+    "revision": "bf943f80fec5ac647159d26161446ac5d716a294",
+    "primary_contract": "contracts/Safe.sol",
+    "mode": "locally_deployed_unmodified_original_smart_account",
+    "selection": "official_public_release_metadata_only_before_target_source_inspection"
+  },
+  "threat_model": {
+    "actor": "external_nonowner_nonmodule_without_owner_signature",
+    "attacker_start_eth": 0,
+    "attacker_start_tokens": 0,
+    "treasury_initial_token_units": 1000000,
+    "treasury_initial_eth_wei": 0,
+    "initial_authorized_owners": 2,
+    "signature_threshold": 2,
+    "authorized_modules": 0,
+    "attacker_only_uses_local_test_addresses": true,
+    "out_of_scope": [
+      "mainnet_transactions_and_real_assets",
+      "phishing_credentials_or_live_private_keys",
+      "attacker_controls_setup_or_owner_signatures",
+      "real_market_pricing_and_gas_sponsorship"
+    ]
+  },
+  "preregistered_candidate_families": [
+    "unapproved_module_execution",
+    "reinitialization_after_legitimate_setup",
+    "unauthorized_owner_or_threshold_change",
+    "unsigned_direct_treasury_execution",
+    "signature_replay_without_fresh_authorization"
+  ],
+  "positive_control": "locally_authored_insecure_account_sharing_the_observed_treasury_interface",
+  "negative_control": "original_safe_with_frozen_expected_owner_and_module_state",
+  "criterion": {
+    "economic_witness": "attacker_receives_more_than_zero_treasury_assets_after_native_EVM_execution_without_an_owner_signature_or_a_trusted_module",
+    "authorization_violation": "treasury_outflow_is_not_covered_by_original_owner_threshold_or_approved_module_authority",
+    "zero_capital": "attacker_pays_no_principal_and_has_zero_starting_assets_in_the_local_EVM_state",
+    "zero_actual_expense": "NOT_CLAIMED_without_independent_fee_or_sponsorship_evidence",
+    "replay": "original_contract_code_at_frozen_revision_and_full_source_attestation_required",
+    "novelty": "no_zero_day_claim_without_independent_vulnerability_triage_and_responsible_disclosure"
+  },
+  "resource_budgets": {
+    "maximum_native_candidate_sequences": 64,
+    "maximum_ci_minutes": 20,
+    "maximum_python_test_seconds": 60,
+    "gpu": false,
+    "paid_model_calls": 0
+  },
+  "interpretation": [
+    "No witness means UNKNOWN outside the bounded grammar, never global safety.",
+    "A vulnerable authored positive control is not evidence of a third-party flaw.",
+    "A failed compilation or altered target source invalidates the experiment.",
+    "A witness must be independently reproduced in unmodified native EVM source.",
+    "Previous D2.4Q ERC4626 donation witness does not satisfy zero capital."
+  ]
+}
