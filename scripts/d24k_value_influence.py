@@ -19,6 +19,7 @@ from tempfile import TemporaryDirectory
 from time import perf_counter
 from urllib.request import Request, urlopen
 
+from prism.d24k_structural import propose_value_influence
 from scripts.d24j_label_free_trial import fetch_public_source,git_blob_digest
 
 
@@ -95,6 +96,13 @@ def run_value_trial(manifest: dict,root: Path,output: Path) -> dict:
     if not fixture.is_file():
         raise ValueError("independently authored local economic observer missing")
     sources=_dependencies(target)
+    # This work queue is automatically derived from the original source,
+    # before native EVM execution. The verifier is separate authored code.
+    proposed=propose_value_influence(sources[target["path"]].decode("utf-8"))
+    candidate_id="asset_share_rate:donation_without_share_issuance"
+    matches=[item for item in proposed["candidates"] if item["identifier"]==candidate_id]
+    if len(matches)!=1:
+        raise ValueError("structural economic hypothesis not derivable: UNKNOWN")
     output.mkdir(parents=True,exist_ok=True)
     started=perf_counter()
     before=resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -126,6 +134,10 @@ def run_value_trial(manifest: dict,root: Path,output: Path) -> dict:
         "source_repository":target["repository"],"pinned_commit":target["commit"],
         "original_source_sha256":sha256(sources[target["path"]]).hexdigest(),
         "source_closure_git_blob_sha1":{k:git_blob_digest(v) for k,v in sorted(sources.items())},
+        "proposer_schema":proposed["schema"],
+        "derived_hypothesis":matches[0],
+        "source_first_inference":"DETERMINISTIC_PROPOSE_THEN_SEPARATE_EVM_ORACLE",
+        "hypothesis_was_developed_using_this_source":True,
         "native_observation":verified,
         "units_in_local_scenario":{"attacker_upfront_assets":101,"victim_deposit_assets":199,
                                    "attacker_redeemed_assets":150,"victim_redeemed_assets":150,
