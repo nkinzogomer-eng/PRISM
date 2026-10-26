@@ -1,0 +1,63 @@
+name: D2.4L strictly frozen new-contract-family Solidity AST holdout
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "prism/d24l_typed_graph.py"
+      - "benchmarks/defi/d24l/prospective_holdout.json"
+      - "scripts/d24l_prospective.py"
+      - "tests/test_d24l_prospective.py"
+      - ".github/workflows/d24l-frozen-new-family-holdout.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-frozen-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Enforce immutable engine and unseen target selection
+        run: python -m unittest discover -s tests -p 'test_d24l_prospective.py' -v
+      - name: Evaluate frozen graph without modifying engine or dropping failures
+        run: |
+          python -m scripts.d24l_prospective \
+            --registration benchmarks/defi/d24l/prospective_holdout.json \
+            --engine prism/d24l_typed_graph.py \
+            --out reports/d24l-prospective-ci/outcome.json
+      - name: Enforce whole cohort, abstentions and no vulnerability overclaim
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('reports/d24l-prospective-ci/outcome.json').read_text())
+          assert r['frozen_targets']==2
+          assert len(r['target_results'])==2
+          assert [x['id'] for x in r['target_results']]==['L1','L2']
+          assert r['confirmed_new_vulnerabilities']==0
+          assert r['confirmed_zero_days']==0
+          assert r['real_evm_oracles_executed']==0
+          assert r['no_post_target_engine_tuning'] is True
+          print('D24L_HOLDOUT_GATE',json.dumps({
+              'statuses':{x['id']:x['status'] for x in r['target_results']},
+              'candidates':{x['id']:x['candidates'] for x in r['target_results']},
+              'compiled':r['compiled_count'],
+              'abstained':r['abstained_count'],
+              'novel':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24l-prospective-untouched-sources-evidence
+          path: reports/d24l-prospective-ci/
+          retention-days: 30
+          if-no-files-found: warn
