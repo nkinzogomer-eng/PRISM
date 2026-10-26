@@ -68,13 +68,14 @@ def propose_value_influence(source: str, *, max_candidates: int = 20) -> dict:
         raise ValueError("invalid cognitive candidate budget")
     functions=function_records(source)
     by_name={}
+    declared_names={row["name"] for row in functions}
     for row in functions:
         if row["implemented"]:
             by_name.setdefault(row["name"],[]).append(row["body"])
     candidates=[]
     converter=by_name.get("convertToShares",[])
     consumption=by_name.get("deposit",[])
-    if (converter and consumption and "totalAssets" in by_name
+    if (converter and consumption and "totalAssets" in declared_names
             and "convertToAssets" in by_name):
         depends_on_outstanding=any(re.search(r"\btotalSupply\b",body) for body in converter)
         depends_on_assets=any(re.search(r"\btotalAssets\s*\(",body) for body in converter)
@@ -100,6 +101,7 @@ def propose_value_influence(source: str, *, max_candidates: int = 20) -> dict:
                     "victim_total_deposited_and_redeemed",
                     "undonated_counterfactual_and_minimum_share_guard"],
                 "status":"UNVERIFIED_CONDITIONAL_ECONOMIC_HYPOTHESIS",
+                "aggregate_semantics_resolved":False,
                 "known_public_class_possible":True,
                 "claim_of_new_vulnerability":False,
             })

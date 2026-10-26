@@ -35,6 +35,15 @@ class StructuralV2(unittest.TestCase):
         b=propose_value_influence(SOURCE+"\ncontract Y { function alternative() public {} }")
         self.assertEqual(a["candidates"],b["candidates"])
 
+    def test_abstract_total_assets_declaration_is_an_unresolved_dependency(self):
+        abstract=SOURCE.replace(
+            "function totalAssets() public view returns(uint) { return 2; }",
+            "function totalAssets() public view virtual returns(uint);")
+        result=propose_value_influence(abstract)
+        self.assertEqual(len(result["candidates"]),1)
+        self.assertFalse(result["candidates"][0]["aggregate_semantics_resolved"])
+        self.assertTrue(result["unknown_semantics"])
+
     def test_overloaded_nonmatching_methods_are_not_whole_file_failure(self):
         src=SOURCE.replace("}\n",'''    function _isHealthy(uint x) public pure returns(bool) { return true; }
     function _isHealthy(address x) public pure returns(bool) { return true; }
