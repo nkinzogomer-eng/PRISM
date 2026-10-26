@@ -161,6 +161,35 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
                       "expression or shell command without a verified boundary"),
                     priority=4, probe_contract="REQUIRES_SANDBOXED_EXECUTION_STUB",
                 ))
+        # External authorization workflows: infer an obligation on a route
+        # performing state changes if NO obvious authorization evidence exists.
+        # This is an *absence-of-local-evidence* candidate only, not a bug.
+        decorator_text = [ast.unparse(x) for x in fn.decorator_list]
+        route_markers = (".post(", ".put(", ".patch(", ".delete(",
+                         ".post", ".put", ".patch", ".delete", "api_view(")
+        looks_mutating_route = any(any(marker in d for marker in route_markers)
+                                   for d in decorator_text)
+        write_signals = sorted(c for c in calls if c.endswith(
+            (".save", ".delete", ".update", ".commit", ".execute"))
+            or c in {"os.remove","os.unlink"})
+        auth_signals = ("is_authenticated","has_permission","permission_required",
+                        "get_current_user","require_admin","verify_token",
+                        "require_permission","Depends","current_user")
+        known_auth = any(k in ast.unparse(fn) or
+                         any(k in d for d in decorator_text)
+                         for k in auth_signals)
+        if looks_mutating_route and write_signals and not known_auth:
+            prior.append(Hypothesis(
+                identifier=f"auth_review:{name}",
+                family="authorization_boundary",
+                function=name, line=fn.lineno,
+                source_signals=tuple(write_signals),
+                property_statement=(
+                    "A state-changing HTTP operation should enforce the "
+                    "appropriate caller authorization before its side effects"),
+                priority=3, probe_contract="UNSUPPORTED_POLICY_ORACLE",
+                scope="HEURISTIC_ABSENCE_OF_OBVIOUS_LOCAL_AUTH_CHECK",
+            ))
         # Potential exfiltration via logs: only positive data flow from an
         # explicitly named sensitive input is considered. No implicit flows.
         sensitive = {n for n in arg_names if any(k in n.lower()
@@ -194,7 +223,7 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
         "candidates": [asdict(h) for h in prior],
         "counts_by_family": {
             family: sum(c.family==family for c in prior)
-            for family in ("path_boundary","untrusted_execution","secret_logging")
+            for family in ("path_boundary","untrusted_execution","secret_logging","authorization_boundary")
         },
         "all_candidates_are_unverified": True,
         "new_vulnerabilities_confirmed": 0,

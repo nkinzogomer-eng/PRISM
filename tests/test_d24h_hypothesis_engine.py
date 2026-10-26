@@ -82,6 +82,39 @@ class HypothesisCompiler(unittest.TestCase):
         self.assertEqual(r["candidates"],[])
         self.assertTrue(r["all_candidates_are_unverified"])
 
+    def test_mutating_web_route_without_visible_auth_is_an_unverified_work_item(self):
+        code = """
+@app.post("/delete")
+def remove(request):
+    store.delete(request.item_id)
+    return {"ok": True}
+"""
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["authorization_boundary"],1)
+        self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
+        self.assertEqual(result["new_vulnerabilities_confirmed"],0)
+
+    def test_visible_auth_guard_suppresses_missing_guard_heuristic(self):
+        code = """
+@app.post("/delete")
+def remove(request):
+    if not request.user.is_authenticated:
+        return {"denied": True}
+    store.delete(request.item_id)
+    return {"ok": True}
+"""
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["authorization_boundary"],0)
+
+    def test_read_only_route_is_not_claimed_auth_violation(self):
+        code = """
+@app.get("/status")
+def status(request):
+    return {"version": 2}
+"""
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["authorization_boundary"],0)
+
     def test_unknown_syntax_fails_closed(self):
         with self.assertRaises(SyntaxError):
             compile_python_hypotheses("def corrupt(:\n")
