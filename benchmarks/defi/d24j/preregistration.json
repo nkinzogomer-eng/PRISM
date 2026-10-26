@@ -1,0 +1,53 @@
+{
+  "schema": "scm.prism.d24j.blind-defi-preregistration.v1",
+  "frozen_on": "2026-10-26",
+  "research_stage": "D2.4J",
+  "locked_before_inspecting_selected_source": true,
+  "cohort": [
+    {
+      "id": "A",
+      "repository": "transmissions11/solmate",
+      "commit": "89365b880c4f3c786bdd453d4b8e8fe410344a69",
+      "path": "src/tokens/ERC4626.sol",
+      "source_kind": "public_open_source_solidity"
+    },
+    {
+      "id": "B",
+      "repository": "OpenZeppelin/openzeppelin-contracts",
+      "commit": "11565e5f6277a320408025e649240056ba6a3919",
+      "path": "contracts/token/ERC20/extensions/ERC4626.sol",
+      "source_kind": "public_open_source_solidity"
+    },
+    {
+      "id": "C",
+      "repository": "Uniswap/v2-core",
+      "commit": "6a9e7c97860676e0992f22a49665760444c1cdf5",
+      "path": "contracts/UniswapV2Pair.sol",
+      "source_kind": "public_open_source_solidity"
+    }
+  ],
+  "decision_rule": {
+    "engine_inputs": ["frozen_source", "derived_interface", "user_defined_resource_budget"],
+    "forbidden_engine_inputs": ["vulnerability_label", "commit_patch_diff", "exploit_trace", "external_CVE_classification", "expected_positive_count"],
+    "unseen_family_requirement": "A candidate family not in the D2.3 three named templates must be measurable separately",
+    "confirmation_requires": ["native_local_EVM_observation", "independent_property_semantics", "reproduction", "negative_control"],
+    "unknown_is_not_safe": true,
+    "no_confirmed_finding_on_static_hypothesis_alone": true
+  },
+  "budgets": {
+    "max_candidates_per_source": 20,
+    "max_stateful_sequences_per_source": 1024,
+    "max_steps_per_sequence": 128,
+    "max_native_wall_seconds_per_source": 180,
+    "max_total_cpu_minutes": 15,
+    "model_api_calls": 0
+  },
+  "evaluation_plan": {
+    "primary": ["confirmed_property_counterexamples", "unverified_candidate_count", "abstentions"],
+    "secondary": ["observed_false_positives", "native_wall_seconds", "peak_memory_kib", "cost_of_candidate_generation"],
+    "predeclared_negative_controls": ["unchanged_original_behavior", "malformed_source_and_unsupported_semantics", "observer_data_integrity"],
+    "comparison_baselines": ["manual_generic_ERC4626_or_AMM_invariants", "available_static_analyzer_when_reproducible"],
+    "failure_policy": "preserve_negative_results_and_investigate_during_next_iteration_no_benchmark_label_tuning"
+  },
+  "scientific_caveat": "This is a frozen label-free public source cohort, not a proof of new zero-day discovery or fully independent third-party adjudication."
+}
