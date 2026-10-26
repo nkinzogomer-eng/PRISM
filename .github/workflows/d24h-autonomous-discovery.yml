@@ -9,6 +9,7 @@ on:
       - "prism/cyber_solidity_hypotheses.py"
       - "scripts/d24h_autonomous_discover.py"
       - "scripts/d24h_solidity_catalog.py"
+      - "scripts/d24h_real_auth_boundary.py"
       - "tests/test_d24h_*.py"
       - ".github/workflows/d24h-autonomous-discovery.yml"
       - "docs/scm-cyber-d24h-build-gate.md"
@@ -25,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Adversarial hypothesis inference and bounded runner tests
         run: |
           python -m unittest discover -s tests -p 'test_d24h_*.py' -v
@@ -81,6 +82,20 @@ jobs:
                 --source "$2" --max-probes 64 --max-candidates 128 \
                 --out "reports/d24h-ci/$1.json"
           done
+      - name: Independent current FastAPI route and authentication dependency provenance
+        run: |
+          mkdir -p external/fastapi-current
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/fastapi/full-stack-fastapi-template/b1125d8839482cb7bbae603ddc6d0081bf87532e/backend/app/api/routes/items.py \
+            -o external/fastapi-current/items.py
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/fastapi/full-stack-fastapi-template/b1125d8839482cb7bbae603ddc6d0081bf87532e/backend/app/api/deps.py \
+            -o external/fastapi-current/deps.py
+          /usr/bin/time -v -o reports/d24h-ci/fastapi-auth-resources.txt \
+            python -m scripts.d24h_real_auth_boundary \
+              --route external/fastapi-current/items.py \
+              --deps external/fastapi-current/deps.py \
+              --out reports/d24h-ci/fastapi-auth-current.json
       - name: Report conservative independent results and potential unknowns
         run: |
           python - <<'PY'
@@ -109,6 +124,15 @@ jobs:
           assert not solidity["complete_semantics"]
           assert all(h["status"]=="UNVERIFIED" for h in solidity["hypotheses"])
           print("D24H_SOLIDITY_INVARIANTS_NOT_PROOFS",solidity["families"])
+          auth=json.loads((root/"fastapi-auth-current.json").read_text())
+          assert auth["status"]=="LOCAL_AUTH_BOUNDARY_OBSERVED"
+          assert auth["route_name"]=="delete_item"
+          assert len(auth["independent_runtime_checks"])==4
+          assert all(auth["independent_runtime_checks"].values())
+          assert auth["auth_dependency_provenance"]["verification_state"]=="STATIC_PROVENANCE_UNVERIFIED"
+          assert auth["new_unpublished_vulnerability_confirmed"] is False
+          assert auth["auth_resolver_actually_executed"] is False
+          print("D24H_CURRENT_FASTAPI_AUTH_BOUNDARY",auth["independent_runtime_checks"])
           metrics={key:{
               "status":r["status"],
               "hypotheses":r["compiler"]["candidate_count"],
@@ -124,6 +148,7 @@ jobs:
               "historical_source_selection_blind":False,
               "current_django_findings_beyond_tested_property":"UNKNOWN",
               "ciel_development":"PAUSED",
+              "current_fastapi_auth_checks":auth["independent_runtime_checks"],
               "solidity_proposals_unverified":solidity["families"],
               "records":metrics,
           }
