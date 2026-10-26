@@ -1,0 +1,62 @@
+name: D2.4M frozen unheard-of DeFi/governance target compiler graph holdout
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "benchmarks/defi/d24m/prospective_holdout.json"
+      - "scripts/d24m_blind.py"
+      - "tests/test_d24m_blind.py"
+      - ".github/workflows/d24m-prospective-blind.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prospective-locked:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Validate engine and compiler were frozen before code inspection
+        run: python -m unittest discover -s tests -p 'test_d24m_blind.py' -v
+      - name: Read both uninspected source closures once and score WITHOUT tuning
+        run: |
+          python -m scripts.d24m_blind \
+            --registration benchmarks/defi/d24m/prospective_holdout.json \
+            --cfg prism/d24m_cfg.py \
+            --compiler scripts/d24m_compiler_matrix.py \
+            --out reports/d24m-prospective-ci/outcome.json
+      - name: Enforce honest zeros, abstentions and target-specific attribution
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24m-prospective-ci/outcome.json').read_text())
+          assert r['target_count']==2
+          assert [x['id'] for x in r['recorded_targets']]==['M1','M2']
+          assert r['confirmed_new_vulnerabilities']==0
+          assert r['confirmed_zero_days']==0
+          assert r['native_oracles_executed']==0
+          assert r['frozen_without_posthoc_engine_tuning'] is True
+          print('D24M_BLIND_GATE',json.dumps({
+            'compiled':r['compiled_count'],
+            'statuses':{x['id']:x['status'] for x in r['recorded_targets']},
+            'target_hypotheses':r['target_hypotheses_total'],
+            'dependency_hypotheses':r['dependency_hypotheses_total'],
+            'new_verified_flaws':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24m-untouched-new-source-artifacts
+          path: reports/d24m-prospective-ci/
+          retention-days: 30
+          if-no-files-found: warn
