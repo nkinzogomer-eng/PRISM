@@ -31,10 +31,20 @@ fails. Each budget runs all four variants, with no silent filtering of errors.
 
 After that first evidence gate, the **second, harder** gate repeats the
 experiment over eight preregistered seeds (1–8), beginning with only 32 runs
-× 16 steps, then 64 × 32 and finally 256 × 64 as required. The seed and
-Foundry version are recorded with raw stdout for replay. All initial misses
-are kept in the result even when a later budget catches them; per-seed cost
-and coverage are recorded separately.
+× 16 steps, then 64 × 32 and finally 256 × 64 **unconditionally, even if
+every smaller profile is green**. This prevents an early success from hiding
+failures on longer stateful sequences. The seed and Foundry version are
+recorded with raw stdout for replay. All initial and later misses are kept;
+the high-budget per-seed result is a separate mandatory acceptance gate.
+Per-seed cost and coverage are recorded separately.
+
+Each native invocation has a distinct temporary invariant/fuzz failure
+replay directory. The first seeded campaign revealed Foundry's persistent
+failure-cache contamination: an old invariant witness was replayed across
+different seeds and depths and produced an `invariant_... replay failure`,
+which PRISM correctly refused to treat as a property-specific witness.
+Isolation removes this confound while retaining the raw evidence and the
+failure history from the unsuccessful workflow runs.
 No human tuning of search seeds or oracle after reading results is allowed
 without documenting the effect on the benchmark; this cohort is prelabelled
 and is never counted as a blind holdout.

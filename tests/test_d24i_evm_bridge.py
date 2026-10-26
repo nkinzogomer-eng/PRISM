@@ -97,7 +97,7 @@ class EVMProofControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"negative control"):
             parse_native_evm(synthetic_json(["repayment"]),case="safe",returncode=1)
 
-    def test_adaptive_seed_ladder_keeps_early_misses(self):
+    def test_full_seed_budget_sweep_keeps_early_misses(self):
         def fake_run(root,output,case,*,runs,depth,seed):
             props={family:{"property_holds": not(case==expected and runs>=64)}
                    for family,expected in EXPECTED_CASE.items()}
@@ -110,10 +110,29 @@ class EVMProofControls(unittest.TestCase):
         self.assertEqual(r["status"],"ENGINEERING_SEED_GATE_PASS")
         self.assertEqual(r["initial_profile_full_detection"],0)
         self.assertEqual(r["seeds_recovered"],3)
+        self.assertEqual(r["high_profile_full_detection"],3)
         for row in r["results"]:
-            self.assertEqual(len(row["attempts"]),2)
+            self.assertEqual(len(row["attempts"]),3)
             self.assertEqual(len(row["attempts"][0]["missed_known_mutants"]),3)
             self.assertEqual(row["attempts"][1]["missed_known_mutants"],[])
+            self.assertEqual(row["attempts"][2]["missed_known_mutants"],[])
+            self.assertEqual(row["first_successful_profile"],{"runs":64,"depth":32})
+
+    def test_high_budget_regression_fails_even_after_green_low_budget(self):
+        def fake_run(root,output,case,*,runs,depth,seed):
+            props={family:{"property_holds":not(case==expected and runs<256)}
+                   for family,expected in EXPECTED_CASE.items()}
+            return {"properties":props,"stdout_sha256":"0"*64,
+                    "wall_seconds":0.01,"child_cpu_seconds":0.01}
+        with TemporaryDirectory() as tmp, patch(
+            "scripts.d24i_evm_bridge._run_forge",side_effect=fake_run
+        ):
+            r=run_seeded_stress(Path(tmp),Path(tmp),seeds=(1,2))
+        self.assertEqual(r["status"],"KNOWN_MUTANT_SEED_RECALL_NOT_COMPLETE")
+        self.assertEqual(r["initial_profile_full_detection"],2)
+        self.assertEqual(r["high_profile_full_detection"],0)
+        self.assertEqual(r["seeds_recovered"],0)
+        self.assertEqual(len(r["results"][0]["attempts"]),3)
 
     def test_seed_stress_hard_fail_is_recorded(self):
         def blind(root,output,case,*,runs,depth,seed):

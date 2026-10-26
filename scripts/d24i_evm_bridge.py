@@ -243,10 +243,11 @@ def run_evm_campaign(root: Path, output: Path) -> dict:
 
 
 def run_seeded_stress(root: Path, output: Path, *, seeds: tuple[int,...] = tuple(range(1,9))) -> dict:
-    """Pre-fixed low-budget adversity across many genuine EVM fuzz seeds.
+    """Pre-fixed adversity at *all* budgets, even when low-budget tests pass.
 
-    Every initial miss is preserved even if a later budget rescues it. This
-    is a labelled development control; it is not a blind vulnerability trial.
+    Every low/intermediate/high-budget miss is retained. Re-running each seed
+    with deeper sequences catches defects hidden by a reassuring early green.
+    This is a labelled development control; not a blind vulnerability trial.
     """
     if not 1 <= len(seeds) <= 16 or len(seeds)!=len(set(seeds)):
         raise ValueError("fixed non-duplicated seed inventory required")
@@ -266,13 +267,13 @@ def run_seeded_stress(root: Path, output: Path, *, seeds: tuple[int,...] = tuple
             scored=score_native_matrix(cases)
             record["attempts"].append({"budget":{"runs":runs,"depth":depth},
                                       **scored,
-                                      "source_hashes":{case:value["stdout_sha256"]
+                                      "native_stdout_hashes":{case:value["stdout_sha256"]
                                                        for case,value in cases.items()},
                                       "total_wall_seconds":sum(v["wall_seconds"] for v in cases.values()),
                                       "total_child_cpu_seconds":sum(v["child_cpu_seconds"] for v in cases.values())})
-            if not scored["missed_known_mutants"] and not scored["spurious_counterexamples"]:
-                record["recovered_all"]=True
-                break
+        record["recovered_all"]=not record["attempts"][-1]["missed_known_mutants"] and not record["attempts"][-1]["spurious_counterexamples"]
+        record["first_successful_profile"]=next((a["budget"] for a in record["attempts"]
+            if not a["missed_known_mutants"] and not a["spurious_counterexamples"]),None)
         report["results"].append(record)
         # Do not lose partial observations when a later seed cannot run.
         (output/"seeded-stress.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
@@ -283,6 +284,11 @@ def run_seeded_stress(root: Path, output: Path, *, seeds: tuple[int,...] = tuple
         not r["attempts"][0]["missed_known_mutants"] and
         not r["attempts"][0]["spurious_counterexamples"]
         for r in report["results"])
+    report["intermediate_profile_full_detection"] = sum(
+        not r["attempts"][1]["missed_known_mutants"] and
+        not r["attempts"][1]["spurious_counterexamples"]
+        for r in report["results"])
+    report["high_profile_full_detection"] = report["seeds_recovered"]
     (output/"seeded-stress.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
     return report
 
@@ -310,8 +316,10 @@ if __name__ == "__main__":
             "status":stress["status"],"seed_count":args.stress_seeds,
             "seed_recovered":stress["seeds_recovered"],
             "low_budget_full_detection":stress["initial_profile_full_detection"],
-            "recovery_budget_profiles":{
-                str(r["seed"]):r["attempts"][-1]["budget"] for r in stress["results"]},
+            "intermediate_budget_full_detection":stress["intermediate_profile_full_detection"],
+            "high_budget_full_detection":stress["high_profile_full_detection"],
+            "first_successful_profiles":{
+                str(r["seed"]):r["first_successful_profile"] for r in stress["results"]},
         },sort_keys=True))
         if stress["status"]!="ENGINEERING_SEED_GATE_PASS":
             raise SystemExit(1)

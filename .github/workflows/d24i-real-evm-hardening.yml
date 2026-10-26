@@ -80,9 +80,15 @@ jobs:
           assert seeded['status']=='ENGINEERING_SEED_GATE_PASS'
           assert seeded['seeds_recovered']==8
           assert all(r['recovered_all'] for r in seeded['results'])
+          assert all(len(r['attempts'])==3 for r in seeded['results'])
+          assert seeded['high_profile_full_detection']==8
+          assert all(r['attempts'][-1]['budget']=={'runs':256,'depth':64}
+                     for r in seeded['results'])
           print('D24I_EVM_SEED_MATRIX',json.dumps({
               'initial_profile_successes':seeded['initial_profile_full_detection'],
-              'recovery_profiles':{str(r['seed']):r['attempts'][-1]['budget']
+              'intermediate_profile_successes':seeded['intermediate_profile_full_detection'],
+              'high_profile_successes':seeded['high_profile_full_detection'],
+              'first_success_profiles':{str(r['seed']):r['first_successful_profile']
                                    for r in seeded['results']},
               'total_native_wall_seconds':round(sum(a['total_wall_seconds']
                                       for r in seeded['results'] for a in r['attempts']),4),
