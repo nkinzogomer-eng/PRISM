@@ -6,6 +6,7 @@ on:
     paths:
       - "prism/d24l_typed_graph.py"
       - "scripts/d24l_typed_trial.py"
+      - "scripts/d24l_baseline.py"
       - "tests/test_d24l_*.py"
       - "benchmarks/defi/d24j/test/D24LBankValue.t.sol"
       - ".github/workflows/d24l-compiler-typed-evidence.yml"
@@ -54,6 +55,25 @@ jobs:
             'unsupported_functions':r['graph_unsupported_functions'],
             'wall_seconds':round(r['wall_seconds'],4),
             'novel_vulns':0},sort_keys=True))
+          PY
+      - name: Install pinned public external reference analyzer
+        run: python -m pip install 'slither-analyzer==0.11.6'
+      - name: Compare Slither on identical synthetic benchmark and pinned Solidity compiler
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.d24l_baseline import run_baseline
+          compilers=list((Path.home()/'.svm').glob('*/solc-0.8.24'))
+          if len(compilers)!=1:
+              raise ValueError(f'Pinned baseline compiler unavailable: {len(compilers)}')
+          result=run_baseline(
+              Path('benchmarks/defi/d24j/test/D24LBankValue.t.sol'),
+              Path('reports/d24l-typed-ci'),compilers[0])
+          assert result['run_finished_with_parseable_output']
+          assert result['same_synthetic_source_sha256'] == __import__('hashlib').sha256(
+              Path('benchmarks/defi/d24j/test/D24LBankValue.t.sol').read_bytes()).hexdigest()
+          print('D24L_SLITHER_GATE',result['detector_total'],
+                result['unsafe_withdraw_detections'],result['fixed_withdraw_detections'])
           PY
       - uses: actions/upload-artifact@v4
         if: always()
