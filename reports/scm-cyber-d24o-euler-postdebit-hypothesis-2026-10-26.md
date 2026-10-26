@@ -1,7 +1,8 @@
 # PRISM D2.4O — Euler V1, post-debit guard discovery calibration
 
-**26 October 2026 — narrow positive source-level result, NOT a validated
-economic exploit, novel class or zero-day.** This is a **retrospective** test:
+**26 October 2026 — narrow positive source-level result AND an independently
+executed historical EVM account-health regression, NOT an extracted-profit
+exploit, novel class or zero-day.** This is a **retrospective** test:
 the Euler incident and its missing post-donation health check were already
 publicly known when the rule was developed. The implementation was also
 improved after inspecting Euler's source, so this is not a blind holdout.
@@ -38,7 +39,8 @@ improved after inspecting Euler's source, so this is not a blind holdout.
 | Exactly one historical source-level candidate | PASS (`donateToReserves`) |
 | Guard post-position and conditional negatives | PASS |
 | Hypothesis derivation independent of function's incident name | PASS on constructed rename |
-| Actual Euler V1 EVM exploit replay | **NOT RUN / UNKNOWN** |
+| Native Euler V1 EVM debt-health regression | **PASS: 1 original + 1 guard-control** |
+| Full flash-loan/liquidation protocol-drain reproduction | **NOT PROVEN** |
 | Demonstrated drain/profit with limited upfront capital | **NOT PROVEN** |
 | Novel vulnerability or zero-day | **0** |
 | Matched baseline advantage | **NOT MEASURED** |
@@ -52,14 +54,41 @@ independent proof of economic impact or scientific generalization.
 
 - Baseline local Python suite before D2.4O: 404 tests, with one previously
   expected failure.
-- D2.4O introduces ten additional adversarial/unit tests.
+- D2.4O introduces thirteen additional adversarial/unit tests.
 - The historic public Euler V1 repository was successfully cloned into a
   temporary directory and read from the pinned commit; read-only status.
-- An attempt to execute Euler's original Hardhat `reservesDonate.js` tests
-  stopped before Solidity compilation: Hardhat requires compiler 0.8.10,
-  whose download failed via the execution environment proxy. The installed
-  Hardhat 2.11.2 also warns that Node 24 is unsupported. This is a **blocked
-  verification**, never to be counted as a passed EVM test.
+- A first local attempt to execute Euler's original Hardhat tests stopped
+  before compilation: the 0.8.10 compiler download failed via the local
+  environment proxy, and Hardhat warned that Node 24 is unsupported.
+- The first **CI** native attempt failed before testing because the pinned
+  2022 repository lacks a `package-lock.json`, making `npm ci` inapplicable.
+- Repair: pin Node 18 on CI, install historical dependencies without lifecycle
+  scripts using `npm install`, then run the real historical Solidity code
+  on a local Hardhat EVM. This check **passed** with two independently
+  executed JavaScript tests.
+
+### Independently executed historical behavior
+
+The original protocol's `EToken.sol` is verified against the exact historical
+SHA-256 before execution. The native assertions first establish a healthy
+account, with its TST2 collateral value approximately `0.6225` and the
+TST debt liability value approximately `0.5`. Donating its collateral shares
+to reserves then succeeds **on original Euler V1**, leaving collateral value
+`0` while the debt liability remains approximately `0.5`.
+
+The separate counterfactual adds **one** human-authored `checkLiquidity(account)`
+call within `donateToReserves`, recompiles, and proves that the same proposed
+donation is rejected with `e/collateral-violation`; the account's prior
+collateral and debt values remain intact. Both tests execute Euler's real
+module sources and normal test deployment harness on a local native EVM. The
+counterfactual is not presented as an independently published patched revision.
+
+**Independent green run:**
+https://github.com/nkinzogomer-eng/PRISM/actions/runs/40335609330
+
+This proves the historical missing-health-check consequence for a small
+predeclared scenario; it does **not** reproduce the complete flash-loan,
+liquidation bonus, full drainage, attacker profit or fee-neutrality sequence.
 
 ## Engineering changes
 
@@ -68,6 +97,9 @@ independent proof of economic impact or scientific generalization.
 - `scripts/d24o_historical_euler.py`: pinned upstream, source SHA, verdict
   schema, JSON artifact, no capacity to upgrade source hypothesis to exploit.
 - `tests/test_d24o_*`: multiple positive and adversarial negative controls.
+- `benchmarks/defi/d24o/*.js` and `scripts/d24o_euler_native.py`: real protocol
+  EVM regression, same-input guarded negative control, source restoration and
+  full before/after stdout/stderr audit artifacts.
 - `.github/workflows/d24o-euler-retrospective-guard.yml`: CPU-only remote
   reproduction, including immutable hash and no-false-claims assertions.
 
@@ -78,13 +110,16 @@ post-debit obligation from three methods and highlight a historically real
 source omission without matching an incident-specific function name. But the
 rule was tailored during a retrospective analysis and is lexical; it cannot
 yet reason over all inheritance, aliases, check paths or debt valuations.
+An external native Ethereum execution has now **validated the resulting
+known-class behavioral anomaly** on real historical code, but the scenario
+and verification condition were human-authored in full awareness of the bug.
 
-Next, supply an independent EVM test of an indebted account donating
-collateral on the **exact original historical sources**, measure account
-health and liquidity/liquidation feasibility before and after, then run an
-identical control with the guard restored. This requires a pinned suitable
-compiler and complete protocol harness. Only after that proof can we test a
-**separately frozen, previously uninspected** family for real generalization.
+Next, automate a source-derived action sequence and cost-aware threat model
+with real account/asset ledgers and a flash-loan repayment check, rather than
+providing the sensitive sequence in a fixture. For independent generalization,
+register a **separately frozen, previously uninspected** family and demand
+actual EVM witnesses, patched controls, honest abstention and normalized
+resource comparisons. Do not use this Euler run as a blinded score.
 
 All source-only results MUST remain **UNVERIFIED** with respect to exploitable
 vulnerabilities, irrespective of whether the automated source test passes.
