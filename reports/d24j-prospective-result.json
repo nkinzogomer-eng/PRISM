@@ -1,0 +1,64 @@
+{
+  "abstained_or_unavailable": 1,
+  "baseline_comparisons_performed": 0,
+  "candidates_total": 6,
+  "cohort_count": 3,
+  "interpretation": "Prospective source-only generalization diagnostic; not a vulnerability recall benchmark",
+  "native_evm_tests_performed": 0,
+  "new_vulnerability_classes_verified": 0,
+  "new_zero_days_confirmed": 0,
+  "no_candidate_unknown": 1,
+  "no_post_hoc_engine_tuning": true,
+  "precommitted_engine_git_blob_sha1": "16e303970ad36e63f4126572efa2b6fdad718de5",
+  "results": [
+    {
+      "commit": "258f67cc71e39cff307b726939ade17e9d8bcf5c",
+      "confirmed_real_vulnerabilities": 0,
+      "family_counts": {
+        "PREVIEW_TRANSITION_RELATION": 4,
+        "ROUND_TRIP_NONEXPANSION": 2
+      },
+      "function_count": 29,
+      "generated": 6,
+      "id": "P1",
+      "omitted_for_budget": 0,
+      "path": "src/tokens/ERC4626.sol",
+      "repository": "Vectorized/solady",
+      "source_git_blob_sha1": "ba74e9e439149d9e33145c3dd24ee9f74caa6bef",
+      "source_sha256": "8dcd95f84ede03ecf5cb072ab1abe30a8e9ff4e9074bf3423f6847ff75273536",
+      "source_trial_wall_seconds": 0.23180700599914417,
+      "status": "HYPOTHESES_UNVERIFIED"
+    },
+    {
+      "commit": "9cf6d5b844625ba108e36d1cf911f5d2faf7c136",
+      "confirmed_real_vulnerabilities": 0,
+      "error_type": "ValueError",
+      "family_counts": {},
+      "generated": 0,
+      "id": "P2",
+      "path": "src/Morpho.sol",
+      "reason": "FRONTEND_UNSUPPORTED",
+      "repository": "morpho-org/morpho-blue",
+      "source_git_blob_sha1": "ab064b646bf161b1510e2575a99412cdc2a43ebb",
+      "source_sha256": "bc0f0e49d54ccc94557b20b1a1d962f6b64bb3cd7c57c1e74f76e51a47ffa0f6",
+      "source_trial_wall_seconds": 0.14120169099987834,
+      "status": "UNKNOWN_NOT_SAFE"
+    },
+    {
+      "commit": "5ea68a77cb541c6b3812df783be71ba8c081e25f",
+      "confirmed_real_vulnerabilities": 0,
+      "family_counts": {},
+      "function_count": 17,
+      "generated": 0,
+      "id": "P3",
+      "omitted_for_budget": 0,
+      "path": "contracts/UniswapV3Pool.sol",
+      "repository": "Uniswap/v3-core",
+      "source_git_blob_sha1": "9e0982127248a69e3bf054049c7db966497793f9",
+      "source_sha256": "d515775b7f3ffe921dd70aca86b8bad16280fa4c122425d82b4dbea4dc564a7a",
+      "source_trial_wall_seconds": 0.16852058699987538,
+      "status": "NO_CANDIDATES_UNKNOWN"
+    }
+  ],
+  "schema": "scm.prism.d24j.prospective-output-v1"
+}

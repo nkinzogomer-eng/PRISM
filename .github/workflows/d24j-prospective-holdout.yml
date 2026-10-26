@@ -1,0 +1,64 @@
+name: D2.4J prospective never-before-seen DeFi source holdout
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "benchmarks/defi/d24j/prospective_holdout.json"
+      - "prism/defi_blind_proposer.py"
+      - "scripts/d24j_prospective_trial.py"
+      - "tests/test_d24j_prospective.py"
+      - ".github/workflows/d24j-prospective-holdout.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-proposer-unseen-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Validate immutability and all negative/unknown controls
+        run: |
+          python -m unittest discover -s tests -p 'test_d24j_*.py' -v
+      - name: Run the unchanged public-source proposer on frozen unseen projects
+        run: |
+          python -m scripts.d24j_prospective_trial \
+            --preregistration benchmarks/defi/d24j/prospective_holdout.json \
+            --engine prism/defi_blind_proposer.py \
+            --out reports/d24j-prospective-ci/evaluation.json
+      - name: Preserve abstentions and prohibit discovery claims
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('reports/d24j-prospective-ci/evaluation.json').read_text())
+          assert x['schema']=='scm.prism.d24j.prospective-output-v1'
+          assert x['cohort_count']==3
+          assert [r['id'] for r in x['results']]==['P1','P2','P3']
+          assert all(r['status'] in ('HYPOTHESES_UNVERIFIED','NO_CANDIDATES_UNKNOWN','UNKNOWN_NOT_SAFE')
+                     for r in x['results'])
+          assert x['new_zero_days_confirmed']==0
+          assert x['new_vulnerability_classes_verified']==0
+          assert x['baseline_comparisons_performed']==0
+          assert x['no_post_hoc_engine_tuning'] is True
+          print('D24J_PROSPECTIVE_GATE',json.dumps({
+              'status_by_target':{r['id']:r['status'] for r in x['results']},
+              'candidate_count_by_target':{r['id']:r['generated'] for r in x['results']},
+              'unmodeled_or_unavailable':x['abstained_or_unavailable'],
+              'no_candidate_unknown':x['no_candidate_unknown'],
+              'validated_real_new_vulnerabilities':0,
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24j-prospective-frozen-holdout-evidence
+          path: reports/d24j-prospective-ci/
+          retention-days: 30
+          if-no-files-found: warn
