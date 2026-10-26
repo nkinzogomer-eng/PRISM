@@ -6,6 +6,8 @@ on:
     paths:
       - "prism/d24o_guard_consistency.py"
       - "scripts/d24o_historical_euler.py"
+      - "scripts/d24o_euler_native.py"
+      - "benchmarks/defi/d24o/*.js"
       - "tests/test_d24o_*.py"
       - ".github/workflows/d24o-euler-retrospective-guard.yml"
   workflow_dispatch:
@@ -53,5 +55,53 @@ jobs:
         with:
           name: d24o-euler-pinned-source-hypothesis
           path: reports/d24o-ci/
+          retention-days: 30
+          if-no-files-found: warn
+
+  historical-native-account-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Native result fail-closed controls
+        run: python -m unittest discover -s tests -p 'test_d24o_native.py' -v
+      - name: Clone pre-incident original Euler V1
+        run: |
+          git clone --quiet --filter=blob:none https://github.com/euler-legacy-xyz/euler-contracts.git euler-native
+          git -C euler-native checkout --quiet b1ee3265853628d5a529081d7908c38404201b4e
+      - name: Install historical project test dependencies (no lifecycle scripts)
+        working-directory: euler-native
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Reproduce real protocol accounting/health outcome on local EVM
+        run: |
+          python -m scripts.d24o_euler_native \
+            --upstream euler-native \
+            --fixtures benchmarks/defi/d24o \
+            --out reports/d24o-native-ci
+      - name: Reject fabricated success and zero-day claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24o-native-ci/native-evidence.json').read_text())
+          assert r['original_historical_healthy_debt_becomes_unhealthy_after_donation']['passed']==1
+          assert r['human_authored_postcheck_rejects_same_donation']['passed']==1
+          assert r['real_historical_known_health_check_omission_observed'] is True
+          assert r['blind_autonomous_vulnerability_discovery'] is False
+          assert r['new_zero_days']==0
+          assert r['actual_financial_profit_demonstrated'] is False
+          print('D24O_NATIVE: historical health condition confirmed, no novel claim')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24o-euler-historical-local-evm-evidence
+          path: reports/d24o-native-ci/
           retention-days: 30
           if-no-files-found: warn
