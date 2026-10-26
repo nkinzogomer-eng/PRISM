@@ -27,10 +27,12 @@ TESTS={
     "test_external_balance_drift_is_observed_before_sync()",
     "test_post_sync_reconciles_burns_and_asymmetric_balances()",
 }
+SYNC_UPDATE=("_update(IERC20(token0).balanceOf(address(this)), "
+             "IERC20(token1).balanceOf(address(this)), reserve0, reserve1);")
 _IMPORT=re.compile(r"\bimport\s+(?:[^;]*?\s+from\s+)?['\"]([^'\"]+)['\"]\s*;")
 
 
-def parse_foundry_lab(raw: str, exit_code: int) -> dict:
+def _native_rows(raw: str) -> dict:
     try:
         root=json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -50,11 +52,37 @@ def parse_foundry_lab(raw: str, exit_code: int) -> dict:
             rows[name]=value
     if set(rows)!=TESTS:
         raise ValueError("missing or unexpected independently executed native tests")
+    return rows
+
+
+def parse_foundry_lab(raw: str, exit_code: int) -> dict:
+    rows=_native_rows(raw)
     if exit_code!=0 or any(rows[name].get("status")!="Success" for name in TESTS):
         raise ValueError("native read-after-write or negative control failed")
     return {"passed":len(TESTS),"total":len(TESTS),
             "native_test_names":sorted(rows),
             "native_stdout_sha256":sha256(raw.encode()).hexdigest()}
+
+
+def parse_mutant_sensitivity(raw: str, exit_code: int) -> dict:
+    """A deliberately no-op sync must be noticed by the same original oracle."""
+    rows=_native_rows(raw)
+    failures=sorted(name for name in TESTS if rows[name].get("status")=="Failure")
+    if exit_code==0 or not failures or any(rows[name].get("status") not in ("Success","Failure")
+                                          for name in TESTS):
+        raise ValueError("native negative mutation escaped the invariant oracle")
+    if "test_post_sync_reserves_reconcile_eight_external_mutations()" not in failures:
+        raise ValueError("primary synchronization counterexample was not detected")
+    return {"status":"DELIBERATE_LOCAL_MUTATION_DETECTED",
+            "detected_failing_tests":failures,
+            "native_stdout_sha256":sha256(raw.encode()).hexdigest(),
+            "is_a_real_world_vulnerability":False}
+
+
+def neutralize_sync_for_negative_control(source: str) -> str:
+    if source.count(SYNC_UPDATE)!=1:
+        raise ValueError("cannot construct isolated sync mutation without ambiguity")
+    return source.replace(SYNC_UPDATE,"/* D24J isolated sensitivity control: no state update */",1)
 
 
 def _relative_imports(path: str, data: bytes) -> list[str]:
@@ -132,17 +160,31 @@ def run_native_evm(manifest: dict, source_root: Path, output: Path) -> dict:
         environment=dict(os.environ)
         environment.pop("ETH_RPC_URL",None)
         environment.pop("FOUNDRY_ETH_RPC_URL",None)
+        command=["forge","test","--match-contract","D24JReadAfterWriteTest","--json"]
         try:
             process=subprocess.run(
-                ["forge","test","--match-contract","D24JReadAfterWriteTest","--json"],
+                command,
                 cwd=sandbox,env=environment,text=True,capture_output=True,
                 timeout=180,check=False)
         except (OSError,subprocess.TimeoutExpired) as exc:
             raise RuntimeError("native EVM fixture unavailable or timed out") from exc
+        # Inspect the passing primary trial BEFORE introducing a mutation.
+        # Never let a failure of the primary source be reinterpreted as proof.
+        checked=parse_foundry_lab(process.stdout,process.returncode)
+        source_path=sandbox/"src"/target["path"].removeprefix("contracts/")
+        original=source_path.read_text(encoding="utf-8")
+        source_path.write_text(neutralize_sync_for_negative_control(original),encoding="utf-8")
+        try:
+            mutation=subprocess.run(command,cwd=sandbox,env=environment,
+                                    text=True,capture_output=True,timeout=180,check=False)
+        except (OSError,subprocess.TimeoutExpired) as exc:
+            raise RuntimeError("mutated EVM oracle sensitivity run unavailable") from exc
     after=resource.getrusage(resource.RUSAGE_CHILDREN)
     (output/"native.stdout.json").write_text(process.stdout,encoding="utf-8")
     (output/"native.stderr.txt").write_text(process.stderr,encoding="utf-8")
-    checked=parse_foundry_lab(process.stdout,process.returncode)
+    (output/"mutation.stdout.json").write_text(mutation.stdout,encoding="utf-8")
+    (output/"mutation.stderr.txt").write_text(mutation.stderr,encoding="utf-8")
+    sensitivity=parse_mutant_sensitivity(mutation.stdout,mutation.returncode)
     report={
         "schema":"scm.prism.d24j.native-evm-state-reconciliation.v1",
         "cohort_id":"C","source_sha256":sha256(sources[target["path"]]).hexdigest(),
@@ -152,11 +194,13 @@ def run_native_evm(manifest: dict, source_root: Path, output: Path) -> dict:
         "observation_method":"independent_native_foundry_solidity_fixture",
         "negative_control":"pre-sync difference observed before reconciling",
         "native_test_result":checked,
+        "deliberate_mutation_sensitivity":sensitivity,
         "wall_seconds":perf_counter()-t,
         "child_cpu_seconds":after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
         "ciel_actual_proposer_used":False,"confirmed_new_vulnerabilities":0,
         "status":"LOCAL_NATIVE_RELATION_OBSERVED_NOT_WHOLE_PROGRAM_SAFETY",
         "limitations":["Only one of three frozen projects received native EVM testing",
+                       "Mutated transient sync is a labelled sensitivity control, not blind bug discovery",
                        "Three hand-authored semantic observer cases, not a blind dynamic oracle",
                        "Foundry verdicts rather than raw transaction state traces",
                        "A passing contract is not evidence that no other vulnerabilities exist"],

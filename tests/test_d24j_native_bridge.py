@@ -2,7 +2,9 @@
 import json
 import unittest
 
-from scripts.d24j_native_evm import TESTS, _relative_imports, parse_foundry_lab
+from scripts.d24j_native_evm import (TESTS, _relative_imports, parse_foundry_lab,
+                                     parse_mutant_sensitivity,
+                                     neutralize_sync_for_negative_control, SYNC_UPDATE)
 
 
 def forged(status="Success", *, missing=(), extra=False):
@@ -47,6 +49,29 @@ class NativeEvidenceGuards(unittest.TestCase):
                      b"import 'https://host.tld/m.sol';"):
             with self.assertRaisesRegex(ValueError,"import"):
                 _relative_imports("contracts/UniswapV2Pair.sol",code)
+
+    def test_deliberate_mutation_must_be_caught_not_accepted_as_success(self):
+        rows={name:{"status":"Success"} for name in TESTS}
+        key="test_post_sync_reserves_reconcile_eight_external_mutations()"
+        rows[key]={"status":"Failure","reason":"observer: token0 mismatch"}
+        raw=json.dumps({"test/D24J.t.sol:Suite":{"test_results":rows}})
+        observed=parse_mutant_sensitivity(raw,1)
+        self.assertIn(key,observed["detected_failing_tests"])
+        self.assertFalse(observed["is_a_real_world_vulnerability"])
+        with self.assertRaisesRegex(ValueError,"escaped"):
+            parse_mutant_sensitivity(forged(),0)
+        with self.assertRaisesRegex(ValueError,"counterexample"):
+            pass_only_other={name:{"status":"Success"} for name in TESTS}
+            pass_only_other[next(name for name in TESTS if name != key)]={"status":"Failure"}
+            parse_mutant_sensitivity(json.dumps({"SUITE":{"test_results":pass_only_other}}),1)
+
+    def test_mutation_sensitivity_uses_exact_single_sync_location(self):
+        original="function sync() external { "+SYNC_UPDATE+" }"
+        changed=neutralize_sync_for_negative_control(original)
+        self.assertNotIn(SYNC_UPDATE,changed)
+        self.assertIn("isolated sensitivity control",changed)
+        with self.assertRaisesRegex(ValueError,"ambiguity"):
+            neutralize_sync_for_negative_control(original+SYNC_UPDATE)
 
 
 if __name__=="__main__":

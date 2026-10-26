@@ -63,10 +63,15 @@ jobs:
           assert native['native_test_result']['total']==3
           assert native['status']=='LOCAL_NATIVE_RELATION_OBSERVED_NOT_WHOLE_PROGRAM_SAFETY'
           assert native['confirmed_new_vulnerabilities']==0
+          mutation=native['deliberate_mutation_sensitivity']
+          assert mutation['status']=='DELIBERATE_LOCAL_MUTATION_DETECTED'
+          assert not mutation['is_a_real_world_vulnerability']
+          assert 'test_post_sync_reserves_reconcile_eight_external_mutations()' in mutation['detected_failing_tests']
           print('D24J_FINAL_ACCOUNTING',json.dumps({
               'sources':source['source_count'],
               'candidate_counts':{x['id']:x['generated'] for x in source['cases']},
               'native_independent_oracle_tests':native['native_test_result']['passed'],
+              'deliberate_native_mutation_detected':True,
               'native_wall_seconds':round(native['wall_seconds'],4),
               'new_confirmed_vulnerabilities':0,
               'comparison_baseline_executed':False,
