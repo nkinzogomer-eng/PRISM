@@ -45,9 +45,9 @@ jobs:
           import json
           from pathlib import Path
           r=json.loads(Path('reports/d24p-native-ci/result.json').read_text())
-          assert r['independently_observed_evm_case_count']==18
+          assert r['independently_observed_evm_case_count']==21
           assert r['true_positive']==6, r
-          assert r['true_negative']==12, r
+          assert r['true_negative']==15, r
           assert r['false_positive']==r['false_negative']==0, r
           assert r['native_witness_count']==6, r
           assert r['zero_days']==r['novel_vulnerability_families']==0
