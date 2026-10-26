@@ -1,0 +1,81 @@
+name: D2.4J preregistered label-free DeFi source and native EVM gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "benchmarks/defi/d24j/**"
+      - "prism/defi_blind_proposer.py"
+      - "scripts/d24j_*.py"
+      - "tests/test_d24j_*.py"
+      - ".github/workflows/d24j-preregistered-defi-blind.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preregistered-source-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Validate hypotheses, resource budgets, source provenance and adversarial controls
+        run: |
+          python -m unittest discover -s tests -p 'test_d24j_*.py' -v
+          python -m unittest discover -s tests -p 'test_d24i_*.py' -q
+      - name: Inspect only preregistered pinned public sources
+        run: |
+          python -m scripts.d24j_label_free_trial \
+            --preregistration benchmarks/defi/d24j/preregistration.json \
+            --out reports/d24j-ci/label-free-evaluation.json
+      - name: Native independently authored EVM oracle for one generated relation
+        run: |
+          forge --version
+          python -m scripts.d24j_native_evm \
+            --preregistration benchmarks/defi/d24j/preregistration.json \
+            --root . \
+            --out reports/d24j-ci
+      - name: Scientific GO and honest negative-result accounting
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('reports/d24j-ci')
+          source=json.loads((root/'label-free-evaluation.json').read_text())
+          assert source['source_count']==3
+          assert set(x['id'] for x in source['cases'])=={'A','B','C'}
+          assert source['confirmed_real_world_zero_days']==0
+          assert source['confirmed_new_vulnerability_classes']==0
+          assert source['real_ciel_hypotheses_tested']==0
+          assert not source['classical_baseline_compared']
+          assert all(x['actual_native_evm_verification']=='NOT_PERFORMED'
+                     for x in source['cases'])
+          native=json.loads((root/'native-evaluation.json').read_text())
+          assert native['cohort_id']=='C'
+          assert native['native_test_result']['passed']==3
+          assert native['native_test_result']['total']==3
+          assert native['status']=='LOCAL_NATIVE_RELATION_OBSERVED_NOT_WHOLE_PROGRAM_SAFETY'
+          assert native['confirmed_new_vulnerabilities']==0
+          print('D24J_FINAL_ACCOUNTING',json.dumps({
+              'sources':source['source_count'],
+              'candidate_counts':{x['id']:x['generated'] for x in source['cases']},
+              'native_independent_oracle_tests':native['native_test_result']['passed'],
+              'native_wall_seconds':round(native['wall_seconds'],4),
+              'new_confirmed_vulnerabilities':0,
+              'comparison_baseline_executed':False,
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24j-preregistered-label-free-evidence
+          path: reports/d24j-ci/
+          retention-days: 30
+          if-no-files-found: warn

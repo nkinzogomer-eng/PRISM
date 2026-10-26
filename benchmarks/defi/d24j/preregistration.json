@@ -9,6 +9,7 @@
       "repository": "transmissions11/solmate",
       "commit": "89365b880c4f3c786bdd453d4b8e8fe410344a69",
       "path": "src/tokens/ERC4626.sol",
+      "git_blob_sha1": "0a34ac9855a4ea371319c882e392428432a27ab2",
       "source_kind": "public_open_source_solidity"
     },
     {
@@ -16,6 +17,7 @@
       "repository": "OpenZeppelin/openzeppelin-contracts",
       "commit": "11565e5f6277a320408025e649240056ba6a3919",
       "path": "contracts/token/ERC20/extensions/ERC4626.sol",
+      "git_blob_sha1": "8fbf21462d2a66209871d06c2b1ce077db4b70ab",
       "source_kind": "public_open_source_solidity"
     },
     {
@@ -23,6 +25,7 @@
       "repository": "Uniswap/v2-core",
       "commit": "6a9e7c97860676e0992f22a49665760444c1cdf5",
       "path": "contracts/UniswapV2Pair.sol",
+      "git_blob_sha1": "f87a1db262fba132862eae377d8cdaef74c79f97",
       "source_kind": "public_open_source_solidity"
     }
   ],
