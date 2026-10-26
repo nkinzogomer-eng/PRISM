@@ -1,0 +1,83 @@
+name: D2.4I real EVM property verification and adversarial mutation gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "scripts/d24i_evm_bridge.py"
+      - "tests/test_d24i_evm_bridge.py"
+      - "prism/hypothesis_contract.py"
+      - "benchmarks/defi/d22/**"
+      - ".github/workflows/d24i-real-evm-hardening.yml"
+      - "docs/scm-cyber-d24i-evm-gate.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controlled-real-evm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Verify local parser/oracle guards plus whole PRISM regression suite
+        run: |
+          python -m unittest discover -s tests -p 'test_d24i_*.py' -v
+          python -m unittest discover -s tests -p 'test_d24h_*.py' -v
+          forge --version
+      - name: Run separate bounded native Foundry invariant experiments
+        run: |
+          mkdir -p reports/d24i-evm-ci
+          /usr/bin/time -v -o reports/d24i-evm-ci/process_resources.txt \
+            python -m scripts.d24i_evm_bridge \
+              --root benchmarks/defi/d22 \
+              --out reports/d24i-evm-ci
+      - name: Independently score known-mutation sensitivity and Ciel honesty
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24i-evm-ci/evm-evaluation.json').read_text())
+          assert r['schema']=='scm.prism.d24i.real-evm-adversarial-campaign.v1'
+          assert r['status']=='ENGINEERING_GATE_PASS'
+          assert r['all_known_mutants_observed'] is True
+          assert r['blind_holdout'] is False
+          assert r['actual_independent_vulnerabilities_confirmed']==0
+          assert 1 <= len(r['attempts']) <= 2
+          final=r['attempts'][-1]
+          assert final['known_mutants_detected']==3
+          assert not final['missed_known_mutants']
+          assert not final['spurious_counterexamples']
+          bridge=final['proof_bridge']
+          assert bridge['schema']=='scm.prism.d24i.real-evm-lab-bridge.v1'
+          assert bridge['new_vulnerabilities_confirmed']==0
+          assert bridge['ciel_really_generated_hypotheses'] is False
+          assert bridge['known_mutants_prelabelled'] is True
+          for h in bridge['hypotheses'].values():
+              assert h['ciel_verification_state']=='UNVERIFIED'
+              assert h['claim_of_new_vulnerability'] is False
+              assert h['observation']['status']=='LOCAL_TRACE_COUNTEREXAMPLE_NOT_VULNERABILITY'
+              assert h['observation']['witness'] is not None
+          print('D24I_EVM_GATE',json.dumps({
+              'attempts':len(r['attempts']),
+              'budgets':[a['budget'] for a in r['attempts']],
+              'detected_known_mutants':final['known_mutants_detected'],
+              'verified_new_vulnerabilities':0,
+              'native_seconds_by_case':{k:round(v['wall_seconds'],4)
+                       for k,v in final['native'].items()},
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24i-controlled-real-evm-evidence
+          path: reports/d24i-evm-ci/
+          retention-days: 30
+          if-no-files-found: warn
