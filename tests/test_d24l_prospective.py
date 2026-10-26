@@ -41,6 +41,10 @@ class ProspectiveFreezeTests(unittest.TestCase):
              compiler=lambda *_:compilation())
         self.assertEqual(result["compiled_count"],2)
         self.assertEqual(result["unverified_candidate_total"],4)
+        self.assertEqual(result["unverified_target_candidate_total"],0)
+        self.assertEqual(result["unverified_dependency_candidate_total"],4)
+        self.assertTrue(all(x["status"]=="DEPENDENCY_ONLY_HYPOTHESES_TARGET_UNKNOWN"
+                            for x in result["target_results"]))
         self.assertEqual(result["confirmed_new_vulnerabilities"],0)
         self.assertEqual(result["real_evm_oracles_executed"],0)
 

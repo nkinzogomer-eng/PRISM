@@ -99,7 +99,8 @@ def compile_ast(sources: dict[str,bytes], target: dict) -> dict:
         run=subprocess.run(["forge","build","--force","--build-info","--ast"],
                            cwd=root,text=True,capture_output=True,check=False,timeout=180)
         if run.returncode:
-            raise ValueError("ORIGINAL_SOLIDITY_COMPILATION_FAILED")
+            diagnostic=(run.stderr.strip() or run.stdout.strip())[-700:]
+            raise ValueError("ORIGINAL_SOLIDITY_COMPILATION_FAILED: "+diagnostic)
         selected=[]
         for item in (root/"out/build-info").glob("*.json"):
             content=json.loads(item.read_text())
@@ -128,11 +129,16 @@ def evaluate(reg: dict, engine: bytes, *, fetch=fetch_pinned, compiler=compile_a
             compiled=compiler(sources,target)
             hypothesis=typed_graph(compiled,max_candidates=reg["policy"]["max_candidates"])
         except (ValueError,OSError,UnicodeError,subprocess.SubprocessError,KeyError) as exc:
-            row.update(reason=str(exc)[:160],error_class=type(exc).__name__)
+            row.update(reason=str(exc)[:900],error_class=type(exc).__name__)
         else:
-            row.update(status="HYPOTHESES_UNVERIFIED" if hypothesis["candidates"]
-                       else "NO_CANDIDATES_UNKNOWN",
-                       candidates=len(hypothesis["candidates"]),
+            target_only=[c for c in hypothesis["candidates"] if c["source"]==target["path"]]
+            dependencies=[c for c in hypothesis["candidates"] if c["source"]!=target["path"]]
+            row.update(status="TARGET_HYPOTHESES_UNVERIFIED" if target_only
+                       else ("DEPENDENCY_ONLY_HYPOTHESES_TARGET_UNKNOWN" if dependencies
+                       else "NO_TARGET_CANDIDATES_UNKNOWN"),
+                       candidates=len(target_only),
+                       closure_candidates=len(hypothesis["candidates"]),
+                       dependency_only_candidates=len(dependencies),
                        generated_before_budget=hypothesis["candidate_count_before_budget"],
                        compiler_contracts=hypothesis["contract_count"],
                        compiler_functions=hypothesis["function_count"],
@@ -145,13 +151,16 @@ def evaluate(reg: dict, engine: bytes, *, fetch=fetch_pinned, compiler=compile_a
                            for family in sorted({c["family"] for c in hypothesis["candidates"]})})
         row["wall_seconds"]=perf_counter()-started
         records.append(row)
-    return {"schema":"scm.prism.d24l.prospective-compiler-coverage-result.v1",
+    return {"schema":"scm.prism.d24l.prospective-compiler-coverage-result.v2",
             "frozen_engine_blob_sha1":reg["frozen_engine_blob_sha1"],
             "frozen_targets":2,"target_results":records,
             "compiled_count":sum("compiler_contracts" in x for x in records),
             "abstained_count":sum(x["status"]=="UNKNOWN_NOT_SAFE" for x in records),
-            "no_candidates_unknown":sum(x["status"]=="NO_CANDIDATES_UNKNOWN" for x in records),
-            "unverified_candidate_total":sum(x["candidates"] for x in records),
+            "no_candidates_unknown":sum(x["status"]=="NO_TARGET_CANDIDATES_UNKNOWN" for x in records),
+            "unverified_target_candidate_total":sum(x["candidates"] for x in records),
+            "unverified_dependency_candidate_total":sum(x.get("dependency_only_candidates",0)
+                                                        for x in records),
+            "unverified_candidate_total":sum(x.get("closure_candidates",0) for x in records),
             "confirmed_new_vulnerabilities":0,"confirmed_zero_days":0,
             "real_evm_oracles_executed":0,
             "baseline_on_these_targets_executed":False,
@@ -176,6 +185,7 @@ if __name__=="__main__":
             "contracts":r.get("compiler_contracts"),
             "functions":r.get("compiler_functions"),
             "unknown_functions":r.get("unsupported_functions"),
+            "dependency_candidates":r.get("dependency_only_candidates",0),
             "hypotheses":r.get("unverified_candidate_summaries",[])}
             for r in data["target_results"]},
         "real_vulns":0,"zero_days":0},sort_keys=True))
