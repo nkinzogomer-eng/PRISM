@@ -1,0 +1,32 @@
+{
+  "schema": "scm.prism.d24m.frozen-typed-cfg-generalization.v1",
+  "preregistration_date": "2026-10-26",
+  "frozen_engine_path": "prism/d24m_cfg.py",
+  "frozen_engine_blob_sha1": "b35077d62b9e2f7583ec07aeb53838900379a4ad",
+  "frozen_compiler_selector_path": "scripts/d24m_compiler_matrix.py",
+  "frozen_compiler_selector_blob_sha1": "ebfc2feaf5dedd56a0fd5f49601474613f9945e2",
+  "engine_published_before_target_selection": "478a029d3e09e8b4c00cc147c0f2b48618b93cab",
+  "engine_unchanged_after_source_selection": true,
+  "allowed_tool_versions": ["0.8.24", "0.8.33"],
+  "max_source_files_per_target": 60,
+  "max_source_closure_bytes": 1000000,
+  "max_paths_per_function": 64,
+  "max_candidates_per_source": 64,
+  "fail_closed": "UNKNOWN_NOT_SAFE; retain missing targets and dependency-only candidates",
+  "new_vulnerability_verdict_without_real_oracle": false,
+  "original_source_read_prior_to_target_freeze": false,
+  "cohort": [
+    {
+      "id": "M1",
+      "repository": "compound-finance/comet",
+      "commit": "f766f51583c23acc33b2a7824654ef2029a96804",
+      "path": "contracts/Comet.sol"
+    },
+    {
+      "id": "M2",
+      "repository": "OpenZeppelin/openzeppelin-contracts",
+      "commit": "11565e5f6277a320408025e649240056ba6a3919",
+      "path": "contracts/governance/Governor.sol"
+    }
+  ]
+}
