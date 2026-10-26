@@ -27,11 +27,15 @@ NATIVE_TESTS={
 
 
 def _build_info(project:Path, selected: str, relative: str) -> dict:
+    # The frozen 2026 OpenZeppelin source uses the Osaka CLZ opcode through
+    # inline Yul; selecting the correct compiler alone is not sufficient.
+    # This does not execute bytecode or alter the security target source.
+    target_evm='evm_version = "osaka"\n' if selected=="0.8.33" else ""
     (project/"foundry.toml").write_text(
         '[profile.default]\nsrc = "contracts"\ntest = "test"\n'
         'out = "out"\nlibs = []\n'
         f'solc_version = "{selected}"\n'
-        'ffi = false\nbuild_info = true\n',encoding="utf-8")
+        +target_evm+'ffi = false\nbuild_info = true\n',encoding="utf-8")
     run=subprocess.run(["forge","build","--force","--build-info","--ast"],
                        cwd=project,text=True,capture_output=True,check=False,timeout=180)
     if run.returncode:
