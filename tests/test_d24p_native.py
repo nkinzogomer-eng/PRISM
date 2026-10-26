@@ -16,7 +16,7 @@ class D24PNativeHarnessTests(unittest.TestCase):
             self.assertEqual(x['source_sha256'],y['source_sha256'])
             self.assertEqual(x['labels_sha256'],y['labels_sha256'])
             p=plan(a)
-            self.assertEqual(p['cases'],18)
+            self.assertEqual(p['cases'],21)
             self.assertEqual(p['plans_per_case'],18)
             self.assertFalse(p['scanner_received_ground_truth'])
             native=(a/'test'/'D24PBlindProbe.t.sol').read_text()
@@ -42,7 +42,7 @@ class D24PNativeHarnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             for seed in (-1,2**64,True):
                 with self.assertRaises(ValueError):generate(Path(folder),seed=seed)
-            for cases in (0,7,31):
+            for cases in (0,8,36):
                 with self.assertRaises(ValueError):generate(Path(folder),seed=10,cases=cases)
 
 
