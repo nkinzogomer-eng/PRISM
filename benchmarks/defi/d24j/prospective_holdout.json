@@ -1,0 +1,39 @@
+{
+  "schema": "scm.prism.d24j.prospective-unknown-defi.v1",
+  "freeze_date": "2026-10-26",
+  "engine_frozen_before_target_source_inspection": true,
+  "frozen_proposer_commit": "a1ac84271726e8a38870f0670ff54d5992249a09",
+  "frozen_proposer_git_blob_sha1": "16e303970ad36e63f4126572efa2b6fdad718de5",
+  "max_candidates_per_source": 20,
+  "source_budget_bytes": 1000000,
+  "allowed_engine_inputs": ["source_text", "fixed_candidate_budget"],
+  "forbidden_inputs": ["vulnerability_classification", "patch_diff", "known_exploit", "expected_positive_count", "prior_target_specific_property"],
+  "tuning_policy": "NO_CHANGES_TO_FROZEN_ENGINE_FOR_THIS_EVALUATION; preserve every UNKNOWN and zero-candidate source",
+  "corpus": [
+    {
+      "id": "P1",
+      "repository": "Vectorized/solady",
+      "commit": "258f67cc71e39cff307b726939ade17e9d8bcf5c",
+      "path": "src/tokens/ERC4626.sol"
+    },
+    {
+      "id": "P2",
+      "repository": "morpho-org/morpho-blue",
+      "commit": "9cf6d5b844625ba108e36d1cf911f5d2faf7c136",
+      "path": "src/Morpho.sol"
+    },
+    {
+      "id": "P3",
+      "repository": "Uniswap/v3-core",
+      "commit": "5ea68a77cb541c6b3812df783be71ba8c081e25f",
+      "path": "contracts/UniswapV3Pool.sol"
+    }
+  ],
+  "acceptance": {
+    "must_record_all_3_targets": true,
+    "missing_or_parser_error_status": "UNKNOWN_NOT_SAFE",
+    "candidate_status": "UNVERIFIED_NOT_A_VULNERABILITY",
+    "new_zero_days_verified": 0,
+    "independent_oracle_required_before_any_violation_claim": true
+  }
+}
