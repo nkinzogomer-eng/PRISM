@@ -1,0 +1,371 @@
+{
+  "candidates_total": 16,
+  "cases": [
+    {
+      "actual_native_evm_verification": "NOT_PERFORMED",
+      "candidates": [
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewDeposit:deposit",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewDeposit",
+            "deposit"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "deposit",
+            "previewDeposit"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewMint:mint",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewMint",
+            "mint"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "mint",
+            "previewMint"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewRedeem:redeem",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewRedeem",
+            "redeem"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "previewRedeem",
+            "redeem"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewWithdraw:withdraw",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewWithdraw",
+            "withdraw"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "previewWithdraw",
+            "withdraw"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "Two downward-rounded inverse unit conversions should not increase the original quantity",
+          "family": "ROUND_TRIP_NONEXPANSION",
+          "identifier": "ROUND_TRIP_NONEXPANSION:convertToAssets:convertToShares",
+          "independent_trace_requirements": "Evaluate the two real view functions on the same local EVM state and bounded input",
+          "operations": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "semantic_assumptions": [
+            "Functions convert inverse units",
+            "Both functions round downward",
+            "Valid input does not revert"
+          ],
+          "source_signals": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "Two downward-rounded inverse unit conversions should not increase the original quantity",
+          "family": "ROUND_TRIP_NONEXPANSION",
+          "identifier": "ROUND_TRIP_NONEXPANSION:convertToShares:convertToAssets",
+          "independent_trace_requirements": "Evaluate the two real view functions on the same local EVM state and bounded input",
+          "operations": [
+            "convertToShares",
+            "convertToAssets"
+          ],
+          "semantic_assumptions": [
+            "Functions convert inverse units",
+            "Both functions round downward",
+            "Valid input does not revert"
+          ],
+          "source_signals": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        }
+      ],
+      "function_count": 16,
+      "generated": 6,
+      "id": "A",
+      "omitted_for_budget": 0,
+      "source_git_blob_sha1": "0a34ac9855a4ea371319c882e392428432a27ab2",
+      "source_only_cpu_wall_seconds": 0.002892155999688839,
+      "source_sha256": "f7febaa5999e4b4255e5c4fb3f898428fe74a7b153110064f44d973e85479276",
+      "status": "HYPOTHESES_NOT_FINDINGS"
+    },
+    {
+      "actual_native_evm_verification": "NOT_PERFORMED",
+      "candidates": [
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewDeposit:deposit",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewDeposit",
+            "deposit"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "deposit",
+            "previewDeposit"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewMint:mint",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewMint",
+            "mint"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "mint",
+            "previewMint"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewRedeem:redeem",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewRedeem",
+            "redeem"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "previewRedeem",
+            "redeem"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "A pre-state quote and its matching transition should reconcile according to protocol fees and rounding",
+          "family": "PREVIEW_TRANSITION_RELATION",
+          "identifier": "PREVIEW_TRANSITION_RELATION:previewWithdraw:withdraw",
+          "independent_trace_requirements": "Pre-state quote plus actual asset/share changes after isolated EVM call",
+          "operations": [
+            "previewWithdraw",
+            "withdraw"
+          ],
+          "semantic_assumptions": [
+            "Quotes are valid in same initial state",
+            "Fees and rounding semantics require an external specification"
+          ],
+          "source_signals": [
+            "previewWithdraw",
+            "withdraw"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "Two downward-rounded inverse unit conversions should not increase the original quantity",
+          "family": "ROUND_TRIP_NONEXPANSION",
+          "identifier": "ROUND_TRIP_NONEXPANSION:convertToAssets:convertToShares",
+          "independent_trace_requirements": "Evaluate the two real view functions on the same local EVM state and bounded input",
+          "operations": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "semantic_assumptions": [
+            "Functions convert inverse units",
+            "Both functions round downward",
+            "Valid input does not revert"
+          ],
+          "source_signals": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "Two downward-rounded inverse unit conversions should not increase the original quantity",
+          "family": "ROUND_TRIP_NONEXPANSION",
+          "identifier": "ROUND_TRIP_NONEXPANSION:convertToShares:convertToAssets",
+          "independent_trace_requirements": "Evaluate the two real view functions on the same local EVM state and bounded input",
+          "operations": [
+            "convertToShares",
+            "convertToAssets"
+          ],
+          "semantic_assumptions": [
+            "Functions convert inverse units",
+            "Both functions round downward",
+            "Valid input does not revert"
+          ],
+          "source_signals": [
+            "convertToAssets",
+            "convertToShares"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        }
+      ],
+      "function_count": 25,
+      "generated": 6,
+      "id": "B",
+      "omitted_for_budget": 0,
+      "source_git_blob_sha1": "8fbf21462d2a66209871d06c2b1ce077db4b70ab",
+      "source_only_cpu_wall_seconds": 0.004841797000153747,
+      "source_sha256": "0a4ca64178439e75f8415a48c46d060cb86e4afafbfda8c86a0dce8ecf0d6cfb",
+      "status": "HYPOTHESES_NOT_FINDINGS"
+    },
+    {
+      "actual_native_evm_verification": "NOT_PERFORMED",
+      "candidates": [
+        {
+          "candidate_property": "An accepted transition invoking its state updater should reconcile subsequent accessor values with the updated state",
+          "family": "READ_AFTER_WRITE_RECONCILIATION",
+          "identifier": "READ_AFTER_WRITE_RECONCILIATION:burn:_update:getReserves",
+          "independent_trace_requirements": "Capture native-EVM before/after accessor results, transition calls and state deltas",
+          "operations": [
+            "burn",
+            "_update",
+            "getReserves"
+          ],
+          "semantic_assumptions": [
+            "Getter and updater refer to the same storage under local EVM semantics",
+            "Intermediate calls or hooks may affect the state"
+          ],
+          "source_signals": [
+            "blockTimestampLast",
+            "reserve0",
+            "reserve1"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "An accepted transition invoking its state updater should reconcile subsequent accessor values with the updated state",
+          "family": "READ_AFTER_WRITE_RECONCILIATION",
+          "identifier": "READ_AFTER_WRITE_RECONCILIATION:mint:_update:getReserves",
+          "independent_trace_requirements": "Capture native-EVM before/after accessor results, transition calls and state deltas",
+          "operations": [
+            "mint",
+            "_update",
+            "getReserves"
+          ],
+          "semantic_assumptions": [
+            "Getter and updater refer to the same storage under local EVM semantics",
+            "Intermediate calls or hooks may affect the state"
+          ],
+          "source_signals": [
+            "blockTimestampLast",
+            "reserve0",
+            "reserve1"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "An accepted transition invoking its state updater should reconcile subsequent accessor values with the updated state",
+          "family": "READ_AFTER_WRITE_RECONCILIATION",
+          "identifier": "READ_AFTER_WRITE_RECONCILIATION:swap:_update:getReserves",
+          "independent_trace_requirements": "Capture native-EVM before/after accessor results, transition calls and state deltas",
+          "operations": [
+            "swap",
+            "_update",
+            "getReserves"
+          ],
+          "semantic_assumptions": [
+            "Getter and updater refer to the same storage under local EVM semantics",
+            "Intermediate calls or hooks may affect the state"
+          ],
+          "source_signals": [
+            "blockTimestampLast",
+            "reserve0",
+            "reserve1"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        },
+        {
+          "candidate_property": "An accepted transition invoking its state updater should reconcile subsequent accessor values with the updated state",
+          "family": "READ_AFTER_WRITE_RECONCILIATION",
+          "identifier": "READ_AFTER_WRITE_RECONCILIATION:sync:_update:getReserves",
+          "independent_trace_requirements": "Capture native-EVM before/after accessor results, transition calls and state deltas",
+          "operations": [
+            "sync",
+            "_update",
+            "getReserves"
+          ],
+          "semantic_assumptions": [
+            "Getter and updater refer to the same storage under local EVM semantics",
+            "Intermediate calls or hooks may affect the state"
+          ],
+          "source_signals": [
+            "blockTimestampLast",
+            "reserve0",
+            "reserve1"
+          ],
+          "status": "UNVERIFIED_REQUIRES_INDEPENDENT_EVM"
+        }
+      ],
+      "function_count": 10,
+      "generated": 4,
+      "id": "C",
+      "omitted_for_budget": 0,
+      "source_git_blob_sha1": "f87a1db262fba132862eae377d8cdaef74c79f97",
+      "source_only_cpu_wall_seconds": 0.0031387300005008,
+      "source_sha256": "43a5421b31415868367b62bfa161ca10bcee03778873faad905f5a3e2cce9cbd",
+      "status": "HYPOTHESES_NOT_FINDINGS"
+    }
+  ],
+  "classical_baseline_compared": false,
+  "confidence": "HYPOTHESES_ONLY_NO_SEMANTIC_ATTESTATION",
+  "confirmed_new_vulnerability_classes": 0,
+  "confirmed_real_world_zero_days": 0,
+  "honest_limit": "Must still run independent native EVM observers before scoring bug recall",
+  "preregistration_sha256": "c36a826f280dd92eed265bcd75570cd4892e8ec9ecdd00290b718dc51f4defbf",
+  "process_max_rss_kib_linux": 51836,
+  "real_ciel_hypotheses_tested": 0,
+  "schema": "scm.prism.d24j.frozen-source-label-free-v1",
+  "source_count": 3,
+  "stage": "source_only_candidate_generation"
+}
