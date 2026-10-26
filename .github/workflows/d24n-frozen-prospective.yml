@@ -1,0 +1,62 @@
+name: D2.4N new untouched Compound/Governor files source-only generalization
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "scripts/d24n_blind.py"
+      - "tests/test_d24n_blind.py"
+      - "scripts/d24n_compiler_matrix.py"
+      - "benchmarks/defi/d24n/prospective_holdout.json"
+      - ".github/workflows/d24n-frozen-prospective.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-source-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Ensure frozen engine, compiler, targets, and negative controls
+        run: python -m unittest discover -s tests -p 'test_d24n_*.py' -v
+      - name: Run source-only analysis without touching frozen inference policy
+        run: |
+          python -m scripts.d24n_blind \
+            --registry benchmarks/defi/d24n/prospective_holdout.json \
+            --graph prism/d24m_cfg.py \
+            --compiler scripts/d24n_compiler_matrix.py \
+            --out reports/d24n-prospective-ci/outcome.json
+      - name: Preserve all unknowns; never conflate hypothesis and vulnerability
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('reports/d24n-prospective-ci/outcome.json').read_text())
+          assert r['cohort_size']==2
+          assert [x['id'] for x in r['targets']]==['N1','N2']
+          assert r['new_vulnerabilities_confirmed']==0
+          assert r['zero_days_confirmed']==0
+          assert r['real_public_target_EVM_oracles']==0
+          assert r['frozen_engine_policy']=='UNCHANGED_POST_SELECTION'
+          print('D24N_NEW_SOURCE_GATE',json.dumps({
+            'compiled':r['compiled_targets'],
+            'target_hypotheses':r['unverified_target_hypotheses'],
+            'abstentions':r['abstentions'],
+            'zero_days':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24n-true-unseen-source-coverage
+          path: reports/d24n-prospective-ci/
+          retention-days: 30
+          if-no-files-found: warn
