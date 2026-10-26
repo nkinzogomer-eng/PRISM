@@ -1,0 +1,35 @@
+{
+  "schema": "scm.prism.d24l.prospective-compiler-holdout.v1",
+  "registered_on": "2026-10-26",
+  "frozen_engine_blob_sha1": "40565cc336d85971b129f042b7fb1073470d6d73",
+  "frozen_engine_commit_before_target_selection": "a98af9cc960fa5861bc001af7cf7853648f867e0",
+  "engine_path": "prism/d24l_typed_graph.py",
+  "no_source_inspected_before_cohort_freeze": true,
+  "purpose": "Unseen contract family compiler/AST coverage; NOT blind vulnerability recall",
+  "policy": {
+    "source_count": 2,
+    "max_source_files_per_target": 60,
+    "max_source_closure_bytes": 1000000,
+    "max_wall_seconds_per_compile": 180,
+    "fixed_solc_version": "0.8.24",
+    "max_candidates": 64,
+    "failed_compilation_is": "UNKNOWN_NOT_SAFE",
+    "zero_hypothesis_is": "UNKNOWN_NOT_SAFE",
+    "prohibited_tuning": "No changes to frozen graph on these same targets after inspecting source",
+    "confirmed_real_world_vulnerabilities_before_native_oracle": 0
+  },
+  "targets": [
+    {
+      "id": "L1",
+      "repository": "OpenZeppelin/openzeppelin-contracts",
+      "commit": "11565e5f6277a320408025e649240056ba6a3919",
+      "path": "contracts/access/manager/AccessManager.sol"
+    },
+    {
+      "id": "L2",
+      "repository": "aave/aave-v3-core",
+      "commit": "782f51917056a53a2c228701058a6c3fb233684a",
+      "path": "contracts/protocol/pool/Pool.sol"
+    }
+  ]
+}
