@@ -41,7 +41,7 @@ def _refs(node: object, state_ids: set[int]) -> set[int]:
 
 
 def _external_call(node: dict) -> bool:
-    expr = node.get("expression", {})
+    expr = _unwrap_call_options(node.get("expression", {}))
     if expr.get("nodeType") != "MemberAccess":
         return False
     member = expr.get("memberName", "")
@@ -54,7 +54,7 @@ def _external_call(node: dict) -> bool:
 
 
 def _call_record(node: dict) -> dict | None:
-    expr = node.get("expression", {})
+    expr = _unwrap_call_options(node.get("expression", {}))
     if not isinstance(expr, dict):
         return None
     if expr.get("nodeType") not in {"MemberAccess", "Identifier"}:
@@ -66,6 +66,13 @@ def _call_record(node: dict) -> dict | None:
             "callee_declaration_id": reference,
             "member": expr.get("memberName", expr.get("name", "")),
             "source_location": node.get("src", "")}
+
+
+def _unwrap_call_options(expr: object) -> dict:
+    """Solc wraps `target.call{value: x}(...)` in FunctionCallOptions."""
+    while isinstance(expr, dict) and expr.get("nodeType") == "FunctionCallOptions":
+        expr = expr.get("expression", {})
+    return expr if isinstance(expr, dict) else {}
 
 
 def _statement_events(stmt: dict, state_ids: set[int]) -> list[dict]:

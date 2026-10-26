@@ -80,6 +80,16 @@ class TypedGraphTests(unittest.TestCase):
         a["body"]["statements"][0]=call(external=False)
         self.assertEqual({c["function_id"] for c in typed_graph(data)["candidates"]},{80})
 
+    def test_actual_solidity_payable_call_options_are_unwrapped(self):
+        data=compilation()
+        a=data["sources"]["src/A.sol"]["ast"]["nodes"][0]["nodes"][1]
+        previous=a["body"]["statements"][0]["expression"]
+        previous["expression"]={"nodeType":"FunctionCallOptions",
+              "expression":previous["expression"],
+              "names":["value"],"options":[ident(99,"amount")]}
+        graph=typed_graph(data)
+        self.assertEqual({c["function_id"] for c in graph["candidates"]},{61,80})
+
     def test_modifier_or_unhandled_branch_causes_function_abstention(self):
         data=compilation()
         a=data["sources"]["src/A.sol"]["ast"]["nodes"][0]["nodes"][1]

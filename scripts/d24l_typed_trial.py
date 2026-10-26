@@ -111,7 +111,11 @@ def run_trial(registration: dict, project: Path, out: Path) -> dict:
         guarded=[x for x in graph["candidates"] if x["contract"]=="D24LGuardedBank"
                  and x["signature"].startswith("withdraw(")]
         if len(unsafe)!=1 or guarded:
-            raise ValueError("frozen synthetic typed positive/negative source recognition failed")
+            raise ValueError("frozen synthetic typed recognition failed: " + json.dumps({
+                "unsafe":unsafe,"guarded":guarded,
+                "bank_withdraw_functions":[r for r in graph["functions"]
+                  if r["contract"] in {"D24LUnsafeBank","D24LGuardedBank"}
+                  and r["signature"].startswith("withdraw(")]},sort_keys=True)[:12000])
         native=_command(["forge","test","--match-contract","D24LBankValueTest","--json"],
                         temp,240)
         (out/"native.stdout.json").write_text(native.stdout)
