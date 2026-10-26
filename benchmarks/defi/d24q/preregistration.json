@@ -1,0 +1,18 @@
+{
+  "schema": "scm.prism.d24q.first-uninspected-real-erc4626-source.v1",
+  "registered_date": "2026-10-26",
+  "target_repository": "transmissions11/solmate",
+  "target_full_git_commit": "89365b880c4f3c786bdd453d4b8e8fe410344a69",
+  "target_path": "src/tokens/ERC4626.sol",
+  "choice_basis": "Public DeFi ERC4626 vault library with metadata-confirmed target path; source text NOT inspected before source-only registration or probe publication",
+  "source_inspection_before_freeze": false,
+  "max_trials": 27,
+  "allowed_token_units": [1, 2, 5, 10, 100, 1000],
+  "search_class": "deposit, unmatched underlying asset transfer, third-party deposit, attacker redeem",
+  "financial_property": "Attacker net redeemed underlying exceeds seed deposit plus donation AND distinct victim loses positive underlying value, with no-donation counterfactual",
+  "native_verification": "Required; no source-only vulnerability verdict",
+  "adapters": "Basic ERC20 underlying token and minimal ERC4626 extension only; abort UNKNOWN if original source semantics do not support it",
+  "posthoc_tuning_policy": "Frozen planner and target do not change after external source inspection. Fixes to environment/adapter must be labeled posthoc, and any rerun is not blind.",
+  "zero_day_claimed": false,
+  "independent_baseline_measured": false
+}
