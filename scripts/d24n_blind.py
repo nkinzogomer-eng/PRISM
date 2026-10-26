@@ -12,10 +12,11 @@ import subprocess
 from time import perf_counter
 
 from prism.d24m_cfg import cfg_hypotheses
-from scripts.d24n_compiler_matrix import choose
+from scripts.d24n_compiler_matrix import choose, PINNED, permits, _PRAGMA
 from scripts.d24m_retrospective import _project
 from scripts.d24l_prospective import retrieve_closure
 from scripts.d24j_label_free_trial import git_blob_digest
+from scripts.d24c_structural_frontier import mask_noncode
 
 
 FROZEN_TARGETS=(
@@ -48,6 +49,7 @@ def evaluate(reg:dict,graph_source:bytes,semver_source:bytes,*,
     cases=[]
     for target in reg["cohort"]:
         begin=perf_counter()
+        files=None
         row={"id":target["id"],"repository":target["repository"],
              "commit":target["commit"],"path":target["path"],
              "status":"UNKNOWN_NOT_SAFE","target_candidates":0,
@@ -62,6 +64,18 @@ def evaluate(reg:dict,graph_source:bytes,semver_source:bytes,*,
             graph=cfg_hypotheses(ast,max_candidates=64,max_paths_per_function=64)
         except (ValueError,OSError,UnicodeError,subprocess.SubprocessError,KeyError) as exc:
             row.update(reason=str(exc)[:600],error_type=type(exc).__name__)
+            if str(exc)=="NO_PINNED_COMPILER_CAN_SATISFY_CLOSURE" and files is not None:
+                # Post-result DIAGNOSTIC only; never use it to retune frozen
+                # candidate logic or to silently discard this cohort member.
+                details=[]
+                for file,raw in sorted(files.items()):
+                    pragmas=_PRAGMA.findall(mask_noncode(raw.decode("utf-8")))
+                    if len(pragmas)!=1:
+                        continue
+                    spec=pragmas[0].strip()
+                    if not any(permits(spec,v) for v in PINNED):
+                        details.append({"path":file,"pragma":spec})
+                row["out_of_matrix_source_pragmas"]=details[:8]
         else:
             target_signals=[x for x in graph["candidates"] if x["source"]==target["path"]]
             dependencies=[x for x in graph["candidates"] if x["source"]!=target["path"]]
@@ -108,5 +122,8 @@ if __name__=="__main__":
         "compiled":report["compiled_targets"],
         "cases":{x["id"]:{"status":x["status"],"error":x.get("reason"),
                  "unsupported":x.get("cfg_unsupported"),
+                 "compiler":x.get("compiler_version"),
+                 "out_of_matrix_pragmas":x.get("out_of_matrix_source_pragmas",[]),
+                 "candidate_methods":x.get("candidate_methods",[]),
                  "target_candidates":x["target_candidates"]} for x in report["targets"]},
         "verified_zero_days":0},sort_keys=True))
