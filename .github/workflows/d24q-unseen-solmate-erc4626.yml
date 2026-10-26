@@ -1,0 +1,70 @@
+name: D2.4Q frozen third-party Solmate ERC4626 native economic-trial gate
+
+on:
+  push:
+    branches: [research/scm-cyber-d24q-unseen-solmate-native]
+    paths:
+      - "prism/d24q_asset_share_probe.py"
+      - "scripts/d24q_solmate_native.py"
+      - "tests/test_d24q_*.py"
+      - "benchmarks/defi/d24q/preregistration.json"
+      - ".github/workflows/d24q-unseen-solmate-erc4626.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  first-real-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Freeze-aware engine unit tests and native-observer fail closed controls
+        run: python -m unittest discover -s tests -p 'test_d24q_*.py' -v
+      - name: Obtain independently authored third-party original source, pinned SHA
+        run: |
+          mkdir -p reports/d24q-native-ci/lib
+          git clone --quiet --filter=blob:none https://github.com/transmissions11/solmate.git reports/d24q-native-ci/lib/solmate
+          git -C reports/d24q-native-ci/lib/solmate checkout --quiet 89365b880c4f3c786bdd453d4b8e8fe410344a69
+      - name: Generate EVM trials from prospectively frozen ERC4626 action grammar
+        run: |
+          python -m scripts.d24q_solmate_native prepare \
+            --repo reports/d24q-native-ci/lib/solmate \
+            --out reports/d24q-native-ci
+      - name: Execute original Solmate ERC4626 on native Solidity EVM
+        run: |
+          set -o pipefail
+          forge test --root reports/d24q-native-ci \
+            --match-contract D24QRealSourceNativeTrial -vv \
+            | tee reports/d24q-native-ci/forge-output.txt
+      - name: Score whether bounded economic redistribution exists (no novelty claim)
+        run: |
+          python -m scripts.d24q_solmate_native score --out reports/d24q-native-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('reports/d24q-native-ci/result.json')
+          r=json.loads(p.read_text())
+          assert r['native_executed'] and r['source_attestation']['source_attested']
+          assert r['source_attestation']['revision']=='89365b880c4f3c786bdd453d4b8e8fe410344a69'
+          assert r['confirmed_novel_public_vulnerabilities']==r['zero_days']==0
+          print('D24Q_THIRD_PARTY_BOUNDED_RESULT',r['risk_verdict'],r['economic_transfer_witness_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24q-thirdparty-native-erc4626-evidence
+          path: |
+            reports/d24q-native-ci/forge-output.txt
+            reports/d24q-native-ci/source_attestation.json
+            reports/d24q-native-ci/trial_plan.json
+            reports/d24q-native-ci/result.json
+          retention-days: 30
+          if-no-files-found: warn
