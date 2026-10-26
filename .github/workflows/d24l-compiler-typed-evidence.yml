@@ -1,0 +1,64 @@
+name: D2.4L compiler-typed source graph and independent native EVM controls
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "prism/d24l_typed_graph.py"
+      - "scripts/d24l_typed_trial.py"
+      - "tests/test_d24l_*.py"
+      - "benchmarks/defi/d24j/test/D24LBankValue.t.sol"
+      - ".github/workflows/d24l-compiler-typed-evidence.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compiler-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Check adversarial typed-AST and native-result controls
+        run: python -m unittest discover -s tests -p 'test_d24l_*.py' -v
+      - name: Generate AST on original pinned Solidity closure plus labelled native controls
+        run: |
+          python -m scripts.d24l_typed_trial \
+            --preregistration benchmarks/defi/d24j/preregistration.json \
+            --root . --out reports/d24l-typed-ci
+      - name: Reject incomplete confirmations and novelty overclaims
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('reports/d24l-typed-ci/evidence.json').read_text())
+          assert r['compiler_build_contains_source_ast'] is True
+          assert r['synthetic_vulnerable_candidate_count']==1
+          assert r['synthetic_fixed_candidate_count']==0
+          assert r['native_oracle']['tests_passed']==3
+          assert r['native_oracle']['tests_total']==3
+          assert r['novel_vulnerabilities_confirmed']==0
+          assert r['zero_days_confirmed']==0
+          assert r['baseline_run'] is False
+          print('D24L_COMPILER_GATE',json.dumps({
+            'contracts':r['graph_contract_count'],
+            'typed_functions':r['graph_function_count'],
+            'native_passed':r['native_oracle']['tests_passed'],
+            'unsupported_functions':r['graph_unsupported_functions'],
+            'wall_seconds':round(r['wall_seconds'],4),
+            'novel_vulns':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24l-typed-semantic-evidence
+          path: reports/d24l-typed-ci/
+          retention-days: 30
+          if-no-files-found: warn
