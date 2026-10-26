@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from scripts.d24h_real_auth_boundary import verify_current_owner_boundary
+from scripts.d24h_autonomous_discover import inspect_source
 
 ROUTE = """
 @router.delete("/{id}")
@@ -55,6 +56,18 @@ class SourceAuthorizationProof(unittest.TestCase):
         r=self.run_sources(route=bad)
         self.assertEqual(r["status"],"LOCAL_AUTH_PROPERTY_VIOLATION_OBSERVED")
         self.assertFalse(r["independent_runtime_checks"]["nonowner_denied_403_without_write"])
+
+    def test_discovery_compiles_and_checks_current_style_route_automatically(self):
+        with TemporaryDirectory() as temp:
+            route=Path(temp)/"items.py"
+            deps=Path(temp)/"deps.py"
+            route.write_text(ROUTE)
+            deps.write_text(DEPS)
+            record=inspect_source(route, authorized_local=True)
+            self.assertEqual(record["compiler"]["families"]["authorization_boundary"],1)
+            self.assertEqual(record["budget"]["used_probes"],4)
+            self.assertEqual(record["status"],"NO_WITNESS_NOT_SAFE")
+            self.assertFalse(record["claim_of_security_for_no_witness"])
 
     def test_dependency_not_resolvable_does_not_mean_safe(self):
         with self.assertRaisesRegex(ValueError,"dependency resolution UNKNOWN"):

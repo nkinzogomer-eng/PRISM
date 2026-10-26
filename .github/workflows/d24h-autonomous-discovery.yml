@@ -96,6 +96,12 @@ jobs:
               --route external/fastapi-current/items.py \
               --deps external/fastapi-current/deps.py \
               --out reports/d24h-ci/fastapi-auth-current.json
+          /usr/bin/time -v -o reports/d24h-ci/fastapi-automatic-resources.txt \
+            python -m scripts.d24h_autonomous_discover \
+              --authorized-local \
+              --source external/fastapi-current/items.py \
+              --max-probes 64 --max-candidates 128 \
+              --out reports/d24h-ci/fastapi-auto-hypotheses.json
       - name: Report conservative independent results and potential unknowns
         run: |
           python - <<'PY'
@@ -133,6 +139,16 @@ jobs:
           assert auth["new_unpublished_vulnerability_confirmed"] is False
           assert auth["auth_resolver_actually_executed"] is False
           print("D24H_CURRENT_FASTAPI_AUTH_BOUNDARY",auth["independent_runtime_checks"])
+          auto_auth=json.loads((root/"fastapi-auto-hypotheses.json").read_text())
+          assert auto_auth["mode"]=="SOURCE_ONLY_NO_USER_SUPPLIED_VULNERABILITY_OR_PROPERTY"
+          assert auto_auth["compiler"]["families"]["authorization_boundary"]>=1
+          assert auto_auth["budget"]["used_probes"]==4
+          assert auto_auth["status"]=="INCOMPLETE_UNKNOWN"
+          assert auto_auth["local_behavior_witnesses"]==0
+          assert any(e["synthesis_strategy"]=="CROSS_MODULE_AUTH_DEPENDENCY_AND_LOCAL_OWNER_ORACLE" for e in auto_auth["evaluations"] if "synthesis_strategy" in e)
+          assert auto_auth["unresolved_hypotheses"]>=1
+          print("D24H_AUTONOMOUS_FASTAPI_AUTH",auto_auth["compiler"]["families"],
+                auto_auth["budget"]["used_probes"],auto_auth["status"])
           metrics={key:{
               "status":r["status"],
               "hypotheses":r["compiler"]["candidate_count"],
@@ -149,6 +165,8 @@ jobs:
               "current_django_findings_beyond_tested_property":"UNKNOWN",
               "ciel_development":"PAUSED",
               "current_fastapi_auth_checks":auth["independent_runtime_checks"],
+              "automatically_generated_auth_hypotheses":auto_auth["compiler"]["families"]["authorization_boundary"],
+              "automatic_auth_status":auto_auth["status"],
               "solidity_proposals_unverified":solidity["families"],
               "records":metrics,
           }

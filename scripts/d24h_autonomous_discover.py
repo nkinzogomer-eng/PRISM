@@ -18,10 +18,16 @@ from time import perf_counter
 from prism.cyber_hypotheses import compile_python_hypotheses
 from scripts.d24g_source_only_discover import werkzeug_scan, django_scan
 from prism.cyber_path_grammar import run_generated_path_exploration
+from scripts.d24h_real_auth_boundary import verify_current_owner_boundary
 
 
 def _strategy(source: str, candidate: dict) -> str | None:
     name = candidate["function"]
+    if candidate["family"] == "authorization_boundary":
+        signals = candidate["source_signals"]
+        if any(x.endswith(".delete") for x in signals) and any(x.endswith(".commit") for x in signals):
+            return "owner_isolation_local"
+        return None
     if candidate["family"] != "path_boundary":
         return None
     if name.endswith(".lookup_path") and "StaticFiles." in name:
@@ -72,12 +78,39 @@ def inspect_source(source_file: Path, *,
                 # isolated local API contract may be executed.
                 # Remaining budget is strict: if candidate requires more,
                 # it returns UNKNOWN_RESOURCE_BUDGET rather than partial proof.
-                required = 6 if strategy=="staticfiles_local" else (
-                    17 if strategy=="windows_url_path" else 7)
+                required = (4 if strategy=="owner_isolation_local" else
+                            6 if strategy=="staticfiles_local" else
+                            17 if strategy=="windows_url_path" else 7)
                 if remaining < required:
                     decision["status"] = "UNKNOWN_RESOURCE_BUDGET"
                 else:
-                    if strategy=="staticfiles_local":
+                    if strategy=="owner_isolation_local":
+                        deps = next((p for p in (
+                            source_file.parent/"deps.py",
+                            source_file.parent.parent/"deps.py")
+                            if p.is_file()),None)
+                        if deps is None:
+                            raise ValueError("no statically resolvable auth dependency source")
+                        auth=verify_current_owner_boundary(source_file,deps)
+                        failed=[name for name,value in auth["independent_runtime_checks"].items()
+                                if not value]
+                        result={
+                            "status":("LOCAL_PROPERTY_WITNESS" if failed
+                                      else "NO_WITNESS_NOT_SAFE"),
+                            "budget":{"used_probes":len(auth["independent_runtime_checks"])},
+                            "observed_property_violations":len(failed),
+                            "minimal_observed_witness":(
+                                {"failed_local_check":failed[0]} if failed else None),
+                            "replay_sha256":sha256(json.dumps(auth["observations"],sort_keys=True).encode()).hexdigest(),
+                            "limitations":{
+                                "auth_resolver_actually_executed":False,
+                                "real_http_framework_tested":False,
+                                "auth_dependency_provenance":auth["auth_dependency_provenance"],
+                                "original_source_ast_executed":True,
+                            },
+                            "strategy":"CROSS_MODULE_AUTH_DEPENDENCY_AND_LOCAL_OWNER_ORACLE",
+                        }
+                    elif strategy=="staticfiles_local":
                         result=run_generated_path_exploration(source_file, max_probes=remaining)
                     elif strategy=="windows_url_path":
                         result=werkzeug_scan(source_file, remaining)
