@@ -6,6 +6,7 @@ on:
     paths:
       - "benchmarks/defi/d24r/preregistration.json"
       - "prism/d24r_zero_capital_probe.py"
+      - "prism/d24s_state_frontier.py"
       - "scripts/d24r_safe_native.py"
       - "tests/test_d24r_*.py"
       - ".github/workflows/d24r-safe-zero-capital-native.yml"
@@ -53,6 +54,8 @@ jobs:
           assert result['native_evm_executed']
           assert result['real_third_party_unmodified_code_attested']
           assert result['frozen_candidate_count']==12
+          assert result['exploratory_state_candidate_count']==24
+          assert result['legitimate_signature_approval_and_nonce_replay_control_passed']
           assert result['confirmed_novel_public_vulnerabilities']==0
           assert result['confirmed_zero_days']==0
           assert result['gas_fee_or_sponsorship_verified'] is False
@@ -69,6 +72,7 @@ jobs:
             reports/d24r-native-ci/forge-output.txt
             reports/d24r-native-ci/source_attestation.json
             reports/d24r-native-ci/trial_plan.json
+            reports/d24r-native-ci/state_frontier_plan.json
             reports/d24r-native-ci/result.json
           retention-days: 30
           if-no-files-found: warn
