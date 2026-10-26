@@ -1,0 +1,67 @@
+name: D2.4M pinned compiler matrix, branch-aware AST, independent EVM value controls
+
+on:
+  push:
+    branches: [research/scm-cyber-d24i-independent-holdout]
+    paths:
+      - "scripts/d24m_compiler_matrix.py"
+      - "scripts/d24m_retrospective.py"
+      - "prism/d24m_cfg.py"
+      - "tests/test_d24m_*.py"
+      - "benchmarks/defi/d24m/D24MBranchValue.t.sol"
+      - ".github/workflows/d24m-compiler-cfg-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compiler-and-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Hard negative control flow and compiler-budget tests
+        run: python -m unittest discover -s tests -p 'test_d24m_*.py' -v
+      - name: Replay old failed sources as RETROSPECTIVE and native branch witness
+        run: |
+          python -m scripts.d24m_retrospective \
+            --registration benchmarks/defi/d24l/prospective_holdout.json \
+            --root . --out reports/d24m-native-ci
+      - name: Enforce real compiler progress, semantic oracle, zero novelty claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('reports/d24m-native-ci/result.json').read_text())
+          assert x['methodology'].startswith('RETROSPECTIVE_')
+          assert x['compiled']==2, x['targets']
+          byid={r['id']:r for r in x['targets']}
+          assert byid['L1']['compiler']=='0.8.31'
+          assert byid['L2']['compiler']=='0.8.24'
+          assert all(r['d24m_unsupported'] <= r['d24l_unsupported'] for r in x['targets'])
+          assert x['native_branch']['known_synthetic_branch_candidates']==1
+          assert x['native_branch']['native']['passed']==3
+          assert x['confirmed_new_vulnerabilities']==0
+          assert x['confirmed_zero_days']==0
+          print('D24M_ENGINEERING_GATE',json.dumps({
+              'compiled':x['compiled'],
+              'old_unknown':{r['id']:r['d24l_unsupported'] for r in x['targets']},
+              'new_unknown':{r['id']:r['d24m_unsupported'] for r in x['targets']},
+              'target_hypotheses':{r['id']:r['scoped_target_hypotheses'] for r in x['targets']},
+              'native':x['native_branch']['native']['passed'],
+              'new_flaws':0},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24m-compiler-cfg-native-traces
+          path: reports/d24m-native-ci/
+          retention-days: 30
+          if-no-files-found: warn
