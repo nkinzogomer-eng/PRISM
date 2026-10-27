@@ -1,0 +1,76 @@
+name: D2.4T previously unseen ERC4337 original smart-wallet native authorization
+
+on:
+  push:
+    branches: [research/scm-cyber-d24t-unseen-erc4337]
+    paths:
+      - "prism/d24t_unseen_wallet_frontier.py"
+      - "scripts/d24t_unseen_erc4337_native.py"
+      - "tests/test_d24t_unseen_wallet.py"
+      - "benchmarks/defi/d24t/preregistration.json"
+      - ".github/workflows/d24t-unseen-erc4337-wallet.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-third-party:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+      - name: Run frozen discovery control tests
+        run: python -m unittest discover -s tests -p 'test_d24t_*.py' -v
+      - name: Fetch official previously unseen pinned ERC4337 source and dependency
+        run: |
+          mkdir -p reports/d24t-native-ci/lib
+          git clone --quiet --filter=blob:none https://github.com/eth-infinitism/account-abstraction.git reports/d24t-native-ci/lib/aa
+          git -C reports/d24t-native-ci/lib/aa checkout --quiet 7af70c8993a6f42973f520ae0752386a5032abe7
+          git clone --quiet --filter=blob:none https://github.com/OpenZeppelin/openzeppelin-contracts.git reports/d24t-native-ci/lib/openzeppelin
+          git -C reports/d24t-native-ci/lib/openzeppelin checkout --quiet dbb6104ce834628e473d2173bbc9d47f81a9eec3
+      - name: Attest original source SHA and generate source-independent trials
+        run: |
+          python -m scripts.d24t_unseen_erc4337_native prepare \
+            --repo reports/d24t-native-ci/lib/aa \
+            --dependency reports/d24t-native-ci/lib/openzeppelin \
+            --out reports/d24t-native-ci
+      - name: Execute native EVM without live assets or privileged keys
+        run: |
+          set -o pipefail
+          forge test --root reports/d24t-native-ci \
+            --match-contract D24TOriginalAccountNative -vv \
+            | tee reports/d24t-native-ci/forge-output.txt
+      - name: Independently classify factory-safe and improperly initialized states
+        run: |
+          python -m scripts.d24t_unseen_erc4337_native score --out reports/d24t-native-ci
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/d24t-native-ci/result.json').read_text())
+          assert r['native_evm_executed'] and r['source_verified']
+          assert r['candidate_count']==18
+          assert r['zero_days']==r['novel_confirmed_bugs']==0
+          assert r['adapter_written_after_source_inspection']
+          assert not r['zero_actual_expense_verified']
+          print('D24T_STATUS',r['status'])
+          print('D24T_OFFICIAL',r['official_factory_asset_witness_indices'])
+          print('D24T_UNINITIALIZED',r['unsafe_proxy_asset_witness_indices'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24t-unseen-original-erc4337-wallet-native
+          path: |
+            reports/d24t-native-ci/forge-output.txt
+            reports/d24t-native-ci/source_attestation.json
+            reports/d24t-native-ci/trial_plan.json
+            reports/d24t-native-ci/result.json
+          retention-days: 30
+          if-no-files-found: warn
