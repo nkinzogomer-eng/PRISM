@@ -1,0 +1,62 @@
+{
+  "schema": "scm.prism.d24t.unseen-smart-account-prereg.v1",
+  "frozen_on": "2026-10-27",
+  "inspected_target_source_before_freeze": false,
+  "basis_for_selection": "public repository and signed/unsigned tag metadata; prior PRISM source index checked for references",
+  "target": {
+    "repository": "eth-infinitism/account-abstraction",
+    "release_tag": "v0.7.0",
+    "tag_object_sha": "d99245ddb2d7bde4d2132757c4394818f1d11da0",
+    "git_commit": "7af70c8993a6f42973f520ae0752386a5032abe7",
+    "source_candidate": "contracts/accounts/SimpleAccount.sol",
+    "category": "ERC4337 smart account with standalone ownership and implementation/proxy initialization",
+    "source_and_dependency_sha_verification_required": true
+  },
+  "no_target_specific_bug_labels_provided_to_prism": true,
+  "states_to_cross": [
+    "factory_or_equivalently_legitimately_initialized",
+    "deployed_proxy_before_owner_initialization"
+  ],
+  "candidate_operation_families": [
+    "direct_execution_without_owner_authorization",
+    "batched_execution_without_owner_authorization",
+    "unauthorized_ownership_transfer",
+    "repeated_initialization_attempt"
+  ],
+  "amounts_mock_underlying_units": [1, 1000, 1000000],
+  "starting_treasury_mock_tokens": 1000000,
+  "starting_attacker_mock_tokens": 0,
+  "owner_signatures_provided_to_attacker": 0,
+  "external_entry_point_privileges_provided_to_attacker": false,
+  "budget": {
+    "max_native_candidates": 24,
+    "max_ci_runtime_minutes": 20,
+    "model_calls": 0,
+    "gpu": false
+  },
+  "native_oracle": {
+    "real_original_contract_required": true,
+    "token_mock_allowed_only_as_asset_holder": true,
+    "treasury_loss_witness": "attacker_observed_balance_increases_and_treasury_balance_decreases_during_real_EVM_execution",
+    "authorization_witness": "attacker_becomes_owner_without_preexisting_permission_in_tested_state",
+    "safe_control": "legitimately_initialized_account_does_not_lose_asset_on_unsigned_calls",
+    "positive_control": "explicit_local_unsafe_wallet_separate_from_target",
+    "uninitialized_proxy_risk_classification": "documented_or_design_deployment_risk_not_novel_source_vulnerability",
+    "zero_capital": "attacker_has_no_initial_treasury_assets_or_principal_in_private_lab",
+    "zero_actual_expense": "NOT_PROVED_without_full_gas_sponsorship_accounting"
+  },
+  "hard_fail_conditions": [
+    "inability_to_reproduce_original_source_and_deployment_model",
+    "source_or_dependency_modified_to_create_witness",
+    "missing_native_EVM_observation",
+    "false_attribution_of_attacker_as_legitimate_owner",
+    "claim_of_zero_day_without_independent_novelty_and_disclosure_review",
+    "classification_of_no_witness_as_global_safety"
+  ],
+  "limitations": [
+    "ABI_or_execution_semantics_may_differ_from_Safe_and_require_a_new_adapter",
+    "unfunded_uninitialized_wallet_is_not_an_economic_loss",
+    "live_chain_and_real_private_keys_are_excluded",
+    "the_uninspected_target_may_have_no_critical_bug"
+  ]
+}
