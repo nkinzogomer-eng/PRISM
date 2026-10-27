@@ -1,5 +1,7 @@
 # PRISM
 
+> **External review snapshot — 2026-10-27:** [Scientific status, ambitions, constraints, evidence and current blockers](docs/prism-external-review-2026-10-27.md) · [Review questions for Perplexity](docs/perplexity-review-prompt-2026-10-27.md). This snapshot documents D2.4T; **no new zero-day or novel vulnerability family is claimed**.
+
 PRISM is a domain-adaptable algorithm for discovering hidden distinctions in complex systems.
 
 Its purpose is not to replace domain tools. PRISM is a reasoning core that can sit above them and decide:
