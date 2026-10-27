@@ -50,7 +50,8 @@ class UnseenSmartAccountTests(unittest.TestCase):
             control = ["Suite result: ok. 3 passed; 0 failed",
                        "D24T_ALL_GENERATED_EXTERNAL_TRIALS_EXECUTED",
                        "D24T_ORIGINAL_AUTHORIZED_OWNER_CONTROL_SUCCESS",
-                       "D24T_AUTHORED_VULNERABLE_CONTROL_SUCCESS"]
+                       "D24T_AUTHORED_VULNERABLE_CONTROL_SUCCESS"] + [
+                           f"D24T_TRIAL_EXECUTED_{i}" for i in range(18)]
             (out / "forge-output.txt").write_text("\n".join(control + [
                 "D24T_ASSET_WITNESS_15", "D24T_AUTH_WITNESS_15"]))
             result = score(out)
@@ -59,6 +60,7 @@ class UnseenSmartAccountTests(unittest.TestCase):
             self.assertFalse(result["known_misdeployment_is_zero_day"])
             self.assertFalse(result["zero_actual_expense_verified"])
             self.assertEqual(result["zero_days"], 0)
+            self.assertTrue(result["every_candidate_native_execution_logged"])
             (out / "forge-output.txt").write_text("\n".join(control + [
                 "D24T_ASSET_WITNESS_0"]))
             self.assertEqual(score(out)["status"],
@@ -68,6 +70,9 @@ class UnseenSmartAccountTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 score(out)
             (out / "forge-output.txt").write_text("\n".join(control[:2]))
+            with self.assertRaises(ValueError):
+                score(out)
+            (out / "forge-output.txt").write_text("\n".join(control[:-1]))
             with self.assertRaises(ValueError):
                 score(out)
 
