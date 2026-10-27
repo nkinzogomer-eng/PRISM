@@ -76,6 +76,7 @@ def _solidity(plans: list[dict]) -> str:
         family = families.index(c["family"])
         ready = "true" if c["deployment_state"] == "official_initialized" else "false"
         calls.append(f'''        uint8 outcome{i} = _candidate({ready}, {family}, {c["requested_token_outflow"]});
+        emit log_string("D24T_TRIAL_EXECUTED_{i}");
         if ((outcome{i} & 1) != 0) emit log_string("D24T_ASSET_WITNESS_{i}");
         if ((outcome{i} & 2) != 0) emit log_string("D24T_AUTH_WITNESS_{i}");''')
     return '''// SPDX-License-Identifier: MIT
@@ -228,11 +229,18 @@ def score(out: Path) -> dict:
         raise ValueError("NATIVE_VERIFICATION_MISSING_OR_INCONSISTENT")
     asset = [int(x) for x in re.findall(r"\bD24T_ASSET_WITNESS_(\d+)\b", log)]
     authority = [int(x) for x in re.findall(r"\bD24T_AUTH_WITNESS_(\d+)\b", log)]
+    executed = [int(x) for x in re.findall(r"\bD24T_TRIAL_EXECUTED_(\d+)\b", log)]
     plan = json.loads((out / "trial_plan.json").read_text())
     max_idx = len(plan["candidates"])
-    if (len(set(asset)) != len(asset) or len(set(authority)) != len(authority) or
+    source_attestation = json.loads((out / "source_attestation.json").read_text())
+    origin = source_attestation.get("repositories", {}).get(TARGET, {})
+    if not (source_attestation.get("original_sources_attested") is True and
+            origin.get("revision") == TARGET_REV):
+        raise ValueError("SOURCE_ATTESTATION_NOT_INDEPENDENTLY_VERIFIED")
+    if (sorted(executed) != list(range(max_idx)) or
+        len(set(asset)) != len(asset) or len(set(authority)) != len(authority) or
         any(not 0 <= i < max_idx for i in asset + authority)):
-        raise ValueError("MALFORMED_EVM_WITNESS_INDEX")
+        raise ValueError("MISSING_DUPLICATE_OR_MALFORMED_EVM_TRIAL_EVIDENCE")
     official = [i for i in asset if plan["candidates"][i]["deployment_state"] == "official_initialized"]
     unsafe = [i for i in asset if plan["candidates"][i]["deployment_state"] == "proxy_uninitialized"]
     risk = "POTENTIAL_UNEXPECTED_OFFICIAL_FACTORY_OUTFLOW_REQUIRES_INDEPENDENT_TRIAGE" if official else (
@@ -245,6 +253,7 @@ def score(out: Path) -> dict:
         "external_target_version": TARGET_REV,
         "source_verified": True,
         "candidate_count": max_idx,
+        "every_candidate_native_execution_logged": True,
         "official_factory_asset_witness_indices": official,
         "unsafe_proxy_asset_witness_indices": unsafe,
         "authority_witness_indices": authority,
@@ -256,7 +265,7 @@ def score(out: Path) -> dict:
         "novel_confirmed_bugs": 0,
         "zero_days": 0,
         "uncovered_family": plan["unsupported_registered_families"],
-        "source_attestation": json.loads((out / "source_attestation.json").read_text()),
+        "source_attestation": source_attestation,
     }
     _write(out / "result.json", json.dumps(result, indent=2, sort_keys=True) + "\n")
     return result
