@@ -94,6 +94,32 @@ def _callee(node: ast.Call) -> str:
         return "<unsupported-call>"
 
 
+def _import_aliases(module: ast.Module) -> dict[str, str]:
+    """Resolve simple module-level import aliases for known dangerous APIs."""
+    aliases: dict[str, str] = {}
+    for node in module.body:
+        if isinstance(node, ast.Import):
+            for item in node.names:
+                bound = item.asname or item.name.split(".")[0]
+                target = item.name if item.asname else item.name.split(".")[0]
+                aliases[bound] = target
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for item in node.names:
+                bound = item.asname or item.name
+                aliases[bound] = f"{node.module}.{item.name}"
+    return aliases
+
+
+def _canonical_callee(callee: str, aliases: dict[str, str]) -> str:
+    """Normalize a callee through the longest simple imported-name prefix."""
+    parts = callee.split(".")
+    for end in range(len(parts), 0, -1):
+        prefix = ".".join(parts[:end])
+        if prefix in aliases:
+            return ".".join([aliases[prefix], *parts[end:]])
+    return callee
+
+
 def _scope_functions(module: ast.Module) -> Iterable[tuple[str, ast.AST]]:
     for node in module.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -111,6 +137,7 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
     from the code under test, and detected patterns do not prove vulnerabilities.
     """
     module = ast.parse(source)
+    import_aliases = _import_aliases(module)
     prior = []
     for name, fn in _scope_functions(module):
         calls = _calls(fn)
@@ -145,7 +172,7 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
         danger = {"os.system", "subprocess.run", "subprocess.Popen",
                   "subprocess.call", "subprocess.check_output", "eval", "exec"}
         for call in (n for n in ast.walk(fn) if isinstance(n, ast.Call)):
-            callee = _callee(call)
+            callee = _canonical_callee(_callee(call), import_aliases)
             if callee not in danger:
                 continue
             # Include keyword values (e.g. subprocess.run(args=user_input, shell=True));
