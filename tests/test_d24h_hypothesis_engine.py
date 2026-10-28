@@ -75,6 +75,26 @@ def compile_name(user_data):
         self.assertEqual(result["counts_by_family"]["untrusted_execution"],1)
         self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
 
+    def test_dynamic_shell_mode_with_tainted_command_stays_unverified_candidate(self):
+        code = '''
+import subprocess
+def run_command(user_data, use_shell):
+    command = user_data
+    subprocess.run(command, shell=use_shell)
+'''
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["untrusted_execution"],1)
+        self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
+
+    def test_dynamic_shell_flag_alone_does_not_taint_constant_command(self):
+        code = '''
+import subprocess
+def status(use_shell):
+    subprocess.run(["echo", "ok"], shell=use_shell)
+'''
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["untrusted_execution"],0)
+
     def test_parameterized_shell_false_is_not_falsely_accepted_as_a_bug(self):
         scan=compile_python_hypotheses(SHELL_SAFE)
         self.assertEqual(scan["counts_by_family"]["untrusted_execution"],0)
