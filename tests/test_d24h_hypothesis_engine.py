@@ -65,6 +65,16 @@ class HypothesisCompiler(unittest.TestCase):
         self.assertEqual(scan["counts_by_family"]["path_boundary"],0)
         self.assertEqual(scan["candidates"][0]["verification"],"UNVERIFIED")
 
+    def test_tainted_keyword_argument_to_shell_true_is_detected(self):
+        code = '''
+import subprocess
+def compile_name(user_data):
+    subprocess.run(args=user_data, shell=True)
+'''
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["untrusted_execution"],1)
+        self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
+
     def test_parameterized_shell_false_is_not_falsely_accepted_as_a_bug(self):
         scan=compile_python_hypotheses(SHELL_SAFE)
         self.assertEqual(scan["counts_by_family"]["untrusted_execution"],0)
