@@ -23,7 +23,7 @@ The patch now:
 - Import-alias test-first commit `0d0bf89ea931d062cfb7f294c4c5b3c3a007e319`: the new aliased-call test failed before the corresponding fix. Run: [40663940306](https://github.com/nkinzogomer-eng/PRISM/actions/runs/40663940306).
 - Current code commit `3877a2fc27d2b006b46cb5637fd84afcb3e461fa`: **32/32 targeted D2.4H tests passed**, including `import subprocess as sp`. Run: [40663967694](https://github.com/nkinzogomer-eng/PRISM/actions/runs/40663967694).
 
-The test-first failures are intentional evidence of a pre-existing blind spot, not failed final validation. The passing workflow also reran the existing bounded source-analysis checks and preserved the explicit outcome `verified_novel_issues = 0`.
+The test-first failures are intentional evidence of a pre-existing blind spot, not failed final validation. The passing workflow also reran the existing bounded source-analysis checks and preserved the explicit outcome `verified_novel_issues = 0`. The full repository regression workflow was then enabled on this research branch and passed **285/285 Python tests**, plus the synthetic policy comparison and decision-equivalence benchmark: [run 40664135766](https://github.com/nkinzogomer-eng/PRISM/actions/runs/40664135766).
 
 ## Scope and scientific interpretation
 
