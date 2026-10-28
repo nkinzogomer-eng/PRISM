@@ -148,7 +148,10 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
             callee = _callee(call)
             if callee not in danger:
                 continue
-            input_dependent = any(_taint_names(x,tainted) for x in call.args)
+            # Include keyword values (e.g. subprocess.run(args=user_input, shell=True));
+            # ignoring them creates a concrete false-negative class.
+            input_expressions = [*call.args, *(kw.value for kw in call.keywords)]
+            input_dependent = any(_taint_names(x, tainted) for x in input_expressions)
             if not input_dependent:
                 continue
             if callee in {"eval","exec","os.system"} or _is_enabled_shell_call(call):
