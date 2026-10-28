@@ -75,6 +75,16 @@ def compile_name(user_data):
         self.assertEqual(result["counts_by_family"]["untrusted_execution"],1)
         self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
 
+    def test_import_aliased_subprocess_call_is_normalized(self):
+        code = '''
+import subprocess as sp
+def compile_name(user_data):
+    sp.run(args=user_data, shell=True)
+'''
+        result=compile_python_hypotheses(code)
+        self.assertEqual(result["counts_by_family"]["untrusted_execution"],1)
+        self.assertEqual(result["candidates"][0]["verification"],"UNVERIFIED")
+
     def test_dynamic_shell_mode_with_tainted_command_stays_unverified_candidate(self):
         code = '''
 import subprocess
