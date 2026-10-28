@@ -38,6 +38,8 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 
 ## Code and research notes
 
+- [Continuous evidence-driven research loop (2026-10-28)](docs/continuous-research-loop-2026-10-28.md) — current protocol, acceptance gates, blind-holdout rules, and next experiments.
+
 - [Core specification](docs/core.md)
 - [SCM → PRISM roadmap](docs/scm-roadmap.md)
 - [SCM phase tracker](docs/scm-phase-status.md)
