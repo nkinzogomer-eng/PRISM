@@ -150,11 +150,25 @@ def compile_python_hypotheses(source: str, *, include_unverified: bool = True) -
                 continue
             # Include keyword values (e.g. subprocess.run(args=user_input, shell=True));
             # ignoring them creates a concrete false-negative class.
-            input_expressions = [*call.args, *(kw.value for kw in call.keywords)]
+            # `shell` controls execution mode; it is not itself command data.
+            # A dynamic shell flag must remain an unverified candidate when the
+            # command data is tainted, rather than being silently treated as False.
+            input_expressions = [*call.args, *(kw.value for kw in call.keywords
+                                                if kw.arg != "shell")]
             input_dependent = any(_taint_names(x, tainted) for x in input_expressions)
             if not input_dependent:
                 continue
-            if callee in {"eval","exec","os.system"} or _is_enabled_shell_call(call):
+            shell_value = next((kw.value for kw in call.keywords
+                                if kw.arg == "shell"), None)
+            dynamic_or_enabled_shell = (
+                callee.startswith("subprocess.")
+                and shell_value is not None
+                and not (isinstance(shell_value, ast.Constant)
+                         and not bool(shell_value.value))
+            )
+            if (callee in {"eval", "exec", "os.system"}
+                    or _is_enabled_shell_call(call)
+                    or dynamic_or_enabled_shell):
                 prior.append(Hypothesis(
                     identifier=f"untrusted_execution:{name}:{call.lineno}",
                     family="untrusted_execution", function=name,
