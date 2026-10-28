@@ -2,7 +2,7 @@ name: PRISM tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, research/scm-cyber-d24h-autonomous-hypothesis-engine]
   pull_request:
     branches: [main]
 

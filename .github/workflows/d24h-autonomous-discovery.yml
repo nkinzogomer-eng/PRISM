@@ -1,0 +1,182 @@
+name: D2.4H autonomous hypothesis discovery and bounded verification
+
+on:
+  push:
+    branches: [research/scm-cyber-d24h-autonomous-hypothesis-engine]
+    paths:
+      - "prism/cyber_hypotheses.py"
+      - "prism/cyber_path_grammar.py"
+      - "prism/cyber_solidity_hypotheses.py"
+      - "scripts/d24h_autonomous_discover.py"
+      - "scripts/d24h_solidity_catalog.py"
+      - "scripts/d24h_real_auth_boundary.py"
+      - "tests/test_d24h_*.py"
+      - ".github/workflows/d24h-autonomous-discovery.yml"
+      - "docs/scm-cyber-d24h-build-gate.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  derive-and-execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Adversarial hypothesis inference and bounded runner tests
+        run: |
+          python -m unittest discover -s tests -p 'test_d24h_*.py' -v
+      - name: Fetch independently authored historical sources without labels
+        run: |
+          mkdir -p external/starlette-old external/starlette-fixed
+          for pair in "starlette-old 8965f8849977b5752e415722a83aa00049f80ff3" "starlette-fixed 0c4b68ac4e179a788e38bac28f299dcad0f36e99"; do
+            set -- $pair
+            git -C "external/$1" init
+            git -C "external/$1" remote add origin https://github.com/Kludex/starlette.git
+            git -C "external/$1" fetch --depth 1 origin "$2"
+            git -C "external/$1" checkout --detach FETCH_HEAD
+            test "$(git -C "external/$1" rev-parse HEAD)" = "$2"
+          done
+          mkdir -p external/werkzeug-old external/werkzeug-fixed
+          for pair in "werkzeug-old e3d06f4b1f7ff40a63eba78f81d9cda18f805d6d" "werkzeug-fixed 04da1b5221b7a7b57e82246e4b5741d37a6b2e56"; do
+            set -- $pair
+            git -C "external/$1" init
+            git -C "external/$1" remote add origin https://github.com/pallets/werkzeug.git
+            git -C "external/$1" fetch --depth 1 origin "$2"
+            git -C "external/$1" checkout --detach FETCH_HEAD
+            test "$(git -C "external/$1" rev-parse HEAD)" = "$2"
+          done
+      - name: Fetch independent current-source Django method
+        run: |
+          mkdir -p external/django-current
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/django/django/0e128d524d0a7c55a955570d6e5da983ac6ce6c7/django/utils/_os.py \
+            -o external/django-current/_os.py
+      - name: Pinned real third-party Solidity for independent semantic candidate catalogue
+        run: |
+          mkdir -p external/ousd-current
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/scfuzzbench/origin-dollar-scfuzzbench/299ec6b6bf5401b43efc3e9f7ee5cab3e76167c4/contracts/contracts/token/OUSD.sol \
+            -o external/ousd-current/OUSD.sol
+          mkdir -p reports/d24h-ci
+          /usr/bin/time -v -o reports/d24h-ci/ousd-solidity-resources.txt \
+            python -m scripts.d24h_solidity_catalog \
+              --source external/ousd-current/OUSD.sol \
+              --out reports/d24h-ci/ousd-source-hypotheses.json
+      - name: Source-only self-selected hypotheses and conditional safe local replay
+        run: |
+          mkdir -p reports/d24h-ci
+          for pair in \
+            "starlette_old external/starlette-old/starlette/staticfiles.py" \
+            "starlette_fixed external/starlette-fixed/starlette/staticfiles.py" \
+            "werkzeug_old external/werkzeug-old/src/werkzeug/security.py" \
+            "werkzeug_fixed external/werkzeug-fixed/src/werkzeug/security.py" \
+            "django_current external/django-current/_os.py"; do
+            set -- $pair
+            /usr/bin/time -v -o "reports/d24h-ci/$1-resources.txt" \
+              python -m scripts.d24h_autonomous_discover --authorized-local \
+                --source "$2" --max-probes 64 --max-candidates 128 \
+                --out "reports/d24h-ci/$1.json"
+          done
+      - name: Independent current FastAPI route and authentication dependency provenance
+        run: |
+          mkdir -p external/fastapi-current
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/fastapi/full-stack-fastapi-template/b1125d8839482cb7bbae603ddc6d0081bf87532e/backend/app/api/routes/items.py \
+            -o external/fastapi-current/items.py
+          curl --fail --silent --show-error --retry 3 --location \
+            https://raw.githubusercontent.com/fastapi/full-stack-fastapi-template/b1125d8839482cb7bbae603ddc6d0081bf87532e/backend/app/api/deps.py \
+            -o external/fastapi-current/deps.py
+          /usr/bin/time -v -o reports/d24h-ci/fastapi-auth-resources.txt \
+            python -m scripts.d24h_real_auth_boundary \
+              --route external/fastapi-current/items.py \
+              --deps external/fastapi-current/deps.py \
+              --out reports/d24h-ci/fastapi-auth-current.json
+          /usr/bin/time -v -o reports/d24h-ci/fastapi-automatic-resources.txt \
+            python -m scripts.d24h_autonomous_discover \
+              --authorized-local \
+              --source external/fastapi-current/items.py \
+              --max-probes 64 --max-candidates 128 \
+              --out reports/d24h-ci/fastapi-auto-hypotheses.json
+      - name: Report conservative independent results and potential unknowns
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/d24h-ci")
+          records={key:json.loads((root/f"{key}.json").read_text()) for key in (
+              "starlette_old","starlette_fixed","werkzeug_old","werkzeug_fixed","django_current")}
+          for key,r in records.items():
+              assert r["schema"]=="scm.prism.d24h.autonomous.hypotheses.v1"
+              assert r["mode"]=="SOURCE_ONLY_NO_USER_SUPPLIED_VULNERABILITY_OR_PROPERTY"
+              assert r["compiler"]["candidate_count"] >= 1,(key,r["compiler"])
+              assert r["budget"]["used_probes"] <= r["budget"]["max_probes"]
+              assert r["independently_new_unknown_vulnerabilities"]==0
+          for key in ("starlette_old","werkzeug_old"):
+              assert records[key]["local_behavior_witnesses"] >= 1,(key,records[key]["evaluations"])
+              assert records[key]["status"]=="LOCAL_PROPERTY_WITNESS"
+          for key in ("starlette_fixed","werkzeug_fixed","django_current"):
+              assert records[key]["local_behavior_witnesses"]==0,(key,records[key]["evaluations"])
+              assert records[key]["status"] in ("NO_WITNESS_NOT_SAFE","INCOMPLETE_UNKNOWN")
+          solidity=json.loads((root/"ousd-source-hypotheses.json").read_text())
+          assert solidity["schema"]=="scm.prism.d24h.solidity-hypotheses.v1"
+          assert solidity["source_functions"]>=20
+          assert solidity["families"]["asset_conservation"]>=1
+          assert solidity["independent_vulnerability_witnesses"]==0
+          assert not solidity["complete_semantics"]
+          assert all(h["status"]=="UNVERIFIED" for h in solidity["hypotheses"])
+          print("D24H_SOLIDITY_INVARIANTS_NOT_PROOFS",solidity["families"])
+          auth=json.loads((root/"fastapi-auth-current.json").read_text())
+          assert auth["status"]=="LOCAL_AUTH_BOUNDARY_OBSERVED"
+          assert auth["route_name"]=="delete_item"
+          assert len(auth["independent_runtime_checks"])==4
+          assert all(auth["independent_runtime_checks"].values())
+          assert auth["auth_dependency_provenance"]["verification_state"]=="STATIC_PROVENANCE_UNVERIFIED"
+          assert auth["new_unpublished_vulnerability_confirmed"] is False
+          assert auth["auth_resolver_actually_executed"] is False
+          print("D24H_CURRENT_FASTAPI_AUTH_BOUNDARY",auth["independent_runtime_checks"])
+          auto_auth=json.loads((root/"fastapi-auto-hypotheses.json").read_text())
+          assert auto_auth["mode"]=="SOURCE_ONLY_NO_USER_SUPPLIED_VULNERABILITY_OR_PROPERTY"
+          assert auto_auth["compiler"]["families"]["authorization_boundary"]>=1
+          assert auto_auth["budget"]["used_probes"]==4
+          assert auto_auth["status"]=="INCOMPLETE_UNKNOWN"
+          assert auto_auth["local_behavior_witnesses"]==0
+          assert any(e["synthesis_strategy"]=="CROSS_MODULE_AUTH_DEPENDENCY_AND_LOCAL_OWNER_ORACLE" for e in auto_auth["evaluations"] if "synthesis_strategy" in e)
+          assert auto_auth["unresolved_hypotheses"]>=1
+          print("D24H_AUTONOMOUS_FASTAPI_AUTH",auto_auth["compiler"]["families"],
+                auto_auth["budget"]["used_probes"],auto_auth["status"])
+          metrics={key:{
+              "status":r["status"],
+              "hypotheses":r["compiler"]["candidate_count"],
+              "by_family":r["compiler"]["families"],
+              "observed_local_witnesses":r["local_behavior_witnesses"],
+              "unresolved":r["unresolved_hypotheses"],
+              "executed_probes":r["budget"]["used_probes"],
+          } for key,r in records.items()}
+          output={
+              "schema":"scm.prism.d24h.measurement.v1",
+              "verified_novel_issues":0,
+              "historical_vulnerability_labels_not_provided_to_runtime":True,
+              "historical_source_selection_blind":False,
+              "current_django_findings_beyond_tested_property":"UNKNOWN",
+              "ciel_development":"PAUSED",
+              "current_fastapi_auth_checks":auth["independent_runtime_checks"],
+              "automatically_generated_auth_hypotheses":auto_auth["compiler"]["families"]["authorization_boundary"],
+              "automatic_auth_status":auto_auth["status"],
+              "solidity_proposals_unverified":solidity["families"],
+              "records":metrics,
+          }
+          (root/"evaluated-outcomes.json").write_text(json.dumps(output,sort_keys=True,indent=2)+"\n")
+          print("D24H_AUTONOMOUS_OUTCOME",json.dumps(output,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d24h-autonomous-source-hypothesis-evidence
+          path: reports/d24h-ci/
+          retention-days: 30
+          if-no-files-found: warn
