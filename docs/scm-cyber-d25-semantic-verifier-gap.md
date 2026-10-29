@@ -5,6 +5,8 @@
 **Purpose:** resolve the demonstrated bottleneck, not increase test count.  
 **Core constraint:** PRISM must remain useful without an AI model. This experiment is restricted to pinned source, isolated local execution, and synthetic/local state; no live systems or real treasuries.
 
+**Crypto-domain scope and four-stage execution plan:** see [Crypto-authorization discovery charter](scm-crypto-authorization-discovery-charter.md). The charter narrows the first target family to authorization integrity from signed intent to actual asset effect; target selection is not yet complete.
+
 ## Decision from the preceding evidence
 
 D2.5 must not start by adding more AST pattern rules. The existing reports establish three specific limitations:
