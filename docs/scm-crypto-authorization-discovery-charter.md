@@ -87,13 +87,41 @@ A finding must include pinned source/build identifiers, the property and its jus
 
 Success is not a raw increase in candidates or tests. It is either (a) a valid discovery missed by strong references under comparable limits, or (b) a reproducible improvement in confirmed discovery per total cost, with uncertainty and failures reported. A single success authorizes a larger evaluation, not a claim of universal SCM superiority.
 
+## Stage-1 screening record — 2026-10-29
+
+A first public-source screening was performed. This is a repository-level screen only; no source was built or executed in this session, so local reproducibility remains an explicit open gate.
+
+| Candidate | Evidence from repository metadata | Decision |
+|---|---|---|
+| [Alchemy Modular Account](https://github.com/alchemyplatform/modular-account/tree/v2.0.0), tag `v2.0.0`, commit `bd75c9eca7ff5a66aaebc3cf2dab43ddc4622482` | Solidity/Foundry project; pinned compiler `0.8.26`; test, fuzz and invariant profiles; ERC-1271, modular validations, permission hooks and account execution. Release README points users to audited tags rather than the development branch. | **Provisional primary target.** Strong fit to authorization-context integrity; target must still pass a local clean build and dependency pin check. |
+| [Biconomy Nexus](https://github.com/bcnmy/nexus) | Foundry/Hardhat project with a substantial test suite, but the inspected current main commit `9007ba1352e606575e32456512e25c41a9bf449c` explicitly describes a disclosed same-transaction account reinitialization issue and its fix. | Exclude as primary blind target for this run: the known incident creates a serious contamination risk and overlaps the account-abstraction family already explored in PRISM. |
+| [Rhinestone Core Modules](https://github.com/rhinestonewtf/core-modules) | Foundry project with modules for ownership, recovery, cold storage, scheduled transfers and other smart-account capabilities. | Backup candidate if Alchemy fails the build/reproducibility gate; scope is broader and may require narrowing to one module. |
+
+### Provisional threat model for target screening
+
+- **Protected outcome:** an operation executed by the account must not exceed the authority and permissions actually established for that operation under the target's documented semantics.
+- **Attacker model to freeze before analysis:** an unprivileged external caller who can choose public-call inputs and submit/replay otherwise valid transactions; no private-key compromise, no privileged administrator compromise, and no production-network interaction in this first experiment.
+- **Potentially relevant distinctions:** validator/signer identity, operation selector, account and execution context, destination and calldata, spend limits, module/permission state, nonce/expiry/replay domain, and pre/post-execution effects. Include only dimensions that are meaningful in the pinned target.
+- **Property authority:** source structure can suggest a property, but cannot alone prove business intent. Each property must be grounded in an interface/standard, explicit target semantics, or an independent reviewer-approved security requirement. Unsupported properties remain unverified.
+- **Blindness:** use the pinned source/build artifacts as the engine input; do not provide audit reports, issue labels, disclosed-fix descriptions or known PoCs to the discovery process. Public-history review occurs only after output freeze.
+
+### Stage-1 status
+
+- [x] Define the initial asset-authorization outcome and excluded attacker capabilities.
+- [x] Screen three public repository candidates and record a provisional choice.
+- [ ] Fetch the exact `v2.0.0` source at commit `bd75c9eca7ff5a66aaebc3cf2dab43ddc4622482` into an isolated workspace.
+- [ ] Verify a clean, local, network-independent Foundry build/test path and pin dependency commits/hashes; do not broadcast or use RPC endpoints.
+- [ ] Check the exact scope against prior PRISM targets and freeze the target, property-authority rules, budget, baseline and reveal protocol before implementation.
+
+**Decision:** proceed with Alchemy Modular Account `v2.0.0` as the *provisional* target. If a clean local build or independent property adjudication is infeasible, reject it and evaluate the backup before coding. No vulnerability finding or scientific advantage has been established by this screening.
+
 ## Current execution record — 2026-10-29
 
 - [x] Charter and four-stage sequence defined.
-- [ ] Stage 1: threat model and candidate-selection criteria applied to concrete repositories.
-- [ ] Stage 1: candidate selected, pinned, and independently screenable.
+- [x] Stage 1: threat model and candidate-selection criteria applied to concrete repositories; provisional target selected.
+- [ ] Stage 1: target locally built/tested from the exact pin, dependencies frozen, and independently screenable.
 - [ ] Stage 2: semantic bridge implemented.
 - [ ] Stage 3: frozen comparison completed.
 - [ ] Stage 4: independent adjudication and go/no-go decision.
 
-**Current honest status:** Stage 1 has started at the level of criteria, but is not complete. No target has been selected or pinned; no code has been implemented for this charter; no new tests or vulnerability findings have been produced.
+**Current honest status:** Stage 1 is partially complete: the threat model is provisional, three candidates were screened, and Alchemy Modular Account v2.0.0 is the provisional pinned target. Stage 1 is not complete because a clean isolated build and dependency freeze have not been verified in a local workspace. No discovery-engine code has been implemented and no vulnerability findings have been produced.
