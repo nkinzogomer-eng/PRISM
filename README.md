@@ -48,3 +48,14 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 - [Initial research decision log](journal/2026-10-10.md)
 - [Adaptive finite runner](prism/adaptive.py)
 - [Adaptive runner tests](tests/test_adaptive.py)
+
+## D2.5 domain target
+
+D2.5 is a separate track from the SCM phases: it validates a real modular
+smart-contract account as a laboratory for PRISM, starting with target
+validation only.
+
+- [D2.5 validation charter](docs/d25-charter.md) — scope, prohibitions, pinned toolchain, error log, exit gates
+- [D2.5 Stage 1 target validation report (2026-10-30)](reports/d25-step1-target-validation-2026-10-30.md)
+- [Stage 1 environment lock](reports/d25-step1/environment.lock.json) and [artifact manifest](reports/d25-step1/artifacts.sha256)
+- [Stage 1 validation script](scripts/d25/validate_target.sh)

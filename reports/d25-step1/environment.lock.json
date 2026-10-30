@@ -1,0 +1,153 @@
+{
+  "$comment": "PRISM D2.5 Stage 1 environment lock. Generated 2026-10-30; see docs/d25-charter.md.",
+  "target": {
+    "repository": "https://github.com/alchemyplatform/modular-account",
+    "commit": "bd75c9eca7ff5a66aaebc3cf2dab43ddc4622482",
+    "tree": "30281664d0cf68eef171ebe5c7d230afe6ef70c8",
+    "tag": "v2.0.0",
+    "commit_date": "2024-12-20T15:59:17Z"
+  },
+  "environment": {
+    "os": "Debian GNU/Linux 12 (bookworm) x86_64",
+    "cpu_vcpus": 2,
+    "ram_gib": 3.9,
+    "gpu": null
+  },
+  "toolchain": {
+    "forge": {
+      "version": "1.7.1",
+      "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "source": "npm @foundry-rs/forge"
+    },
+    "solc": {
+      "version": "0.8.26+commit.8a97fa7a",
+      "flavor": "Linux.g++ native",
+      "sha256": "d5f23436f443edb85d8e76906d12f0a86ce0490e7663a9e608efeb7a93f149ef",
+      "source": "ethereum/solc-bin git, linux-amd64"
+    },
+    "pnpm": "9.15.0",
+    "node": "v22.22.3",
+    "npm": "10.9.8",
+    "git": "2.39.5",
+    "python": "3.11.2"
+  },
+  "target_file_hashes": {
+    "foundry.toml": "68d45ac69adbefc48b650d2c9e6aa6d3e8881f9ba0bb536ab46b134b25ba900e",
+    "remappings.txt": "896261b0f2cd10e56e6730e5e649b14f51671dbfc05ff13d92441bde11f1fcc9",
+    "package.json": "348b4762c7a1bc0bee80db60671417b7301dd78a7d32c7ae0b4a70f81bfdd509",
+    "pnpm-lock.yaml": "341034de48548df888d9531662c21e8eda958fb6c4ed7259ad55d4b5accc0bd0",
+    ".gitmodules": "0b5d79018b2d9da1ccdf09dcf132f84c5a9cdaf2d37dec324682ef1acf3e036f"
+  },
+  "submodules": {
+    "lib/forge-std": "1eea5bae12ae557d589f9f0f0edae2faa47cb262",
+    "lib/light-account": "dd4187d1d50751cd2b7a6d6079d87c3114b32f98",
+    "lib/light-account/lib/account-abstraction": "7af70c8993a6f42973f520ae0752386a5032abe7",
+    "lib/light-account/lib/forge-std": "ae570fec082bfe1c1f45b0acca4a2b4f84d345ce",
+    "lib/light-account/lib/forge-std/lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/light-account/lib/modular-account": "1ceb7935b3d8642283f0dc8fd0a7a7f00132be9d",
+    "lib/light-account/lib/modular-account/lib/account-abstraction": "187613b0172c3a21cf3496e12cdfa24af04fb510",
+    "lib/light-account/lib/modular-account/lib/forge-std": "bdea49f9bb3c58c8c35850c3bdc17eaeea756e9a",
+    "lib/light-account/lib/modular-account/lib/forge-std/lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/light-account/lib/modular-account/lib/light-account": "8f6e5978ee61495452f761400526ca2791b269dd",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/account-abstraction": "abff2aca61a8f0934e533d0d352978055fddbd96",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/forge-std": "066ff16c5c03e6f931cd041fd366bc4be1fae82a",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/forge-std/lib/ds-test": "cd98eff28324bfac652e63a239a60632a761790b",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/openzeppelin-contracts": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/openzeppelin-contracts/lib/erc4626-tests": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/openzeppelin-contracts/lib/forge-std": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+    "lib/light-account/lib/modular-account/lib/light-account/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+    "lib/light-account/lib/modular-account/lib/openzeppelin-contracts": "9329cfacd4c7d20bcb43d772d947ff9e39b65df9",
+    "lib/light-account/lib/modular-account/lib/openzeppelin-contracts/lib/erc4626-tests": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+    "lib/light-account/lib/modular-account/lib/openzeppelin-contracts/lib/forge-std": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+    "lib/light-account/lib/modular-account/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+    "lib/light-account/lib/openzeppelin-contracts": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+    "lib/light-account/lib/openzeppelin-contracts/lib/erc4626-tests": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+    "lib/light-account/lib/openzeppelin-contracts/lib/forge-std": "eb980e1d4f0e8173ec27da77297ae411840c8ccb",
+    "lib/light-account/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test": "cd98eff28324bfac652e63a239a60632a761790b",
+    "lib/openzeppelin-contracts": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+    "lib/openzeppelin-contracts/lib/erc4626-tests": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+    "lib/openzeppelin-contracts/lib/forge-std": "eb980e1d4f0e8173ec27da77297ae411840c8ccb",
+    "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test": "cd98eff28324bfac652e63a239a60632a761790b",
+    "lib/webauthn-sol": "619f20ab0f074fef41066ee4ab24849a913263b2",
+    "lib/webauthn-sol/lib/FreshCryptoLib": "76f3f135b7b27d2aa519f265b56bfc49a2573ab5",
+    "lib/webauthn-sol/lib/forge-std": "ae570fec082bfe1c1f45b0acca4a2b4f84d345ce",
+    "lib/webauthn-sol/lib/forge-std/lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/webauthn-sol/lib/openzeppelin-contracts": "5705e8208bc92cd82c7bcdfeac8dbc7377767d96",
+    "lib/webauthn-sol/lib/openzeppelin-contracts/lib/erc4626-tests": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+    "lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std": "ae570fec082bfe1c1f45b0acca4a2b4f84d345ce",
+    "lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/webauthn-sol/lib/solady": "e7024bee47b1623f436ee491ca9458a6dc8abce9"
+  },
+  "node_dependencies": {
+    "install": "pnpm install --frozen-lockfile",
+    "packages": 469,
+    "github_resolved": {
+      "account-abstraction": "d99245ddb2d7bde4d2132757c4394818f1d11da0",
+      "solady": "eb227ea1c5eaa56296e7dd713eb165d5d75891dd",
+      "@erc6900/reference-implementation": "c9b256cfd963a655179fa3cd9ea3f92c73cbfcdd"
+    }
+  },
+  "results": {
+    "build": {
+      "command": "forge clean && forge build",
+      "files": 228,
+      "seconds": 31.72,
+      "errors": 0,
+      "warnings": 0,
+      "artifacts": 232,
+      "artifact_manifest_sha256": "24b189ed4e24886dffbd03c78dca85de07d9ff5e6295bfd11244a4d245dc1325",
+      "determinism_note": "All 232 artifacts byte-identical across two clean builds in the same checkout path. Across a second checkout path, 231/232 identical; only out/build-info/<id>.json differs (path-derived id)."
+    },
+    "tests": [
+      {
+        "command": "forge test",
+        "suites": 46,
+        "tests": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 18.53
+      },
+      {
+        "command": "FOUNDRY_FUZZ_SEED=20261030 forge test",
+        "suites": 46,
+        "tests": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 20.14
+      }
+    ],
+    "optimized_build": {
+      "command": "FOUNDRY_PROFILE=optimized-build forge build -D never",
+      "files": 118,
+      "seconds": 58.62,
+      "exit": 0,
+      "note": "without -D never, Foundry 1.7.1's linter aborts on the profile's deny_warnings=true"
+    },
+    "optimized_deep_tests": {
+      "command": "FOUNDRY_PROFILE=optimized-test-deep forge test -D never",
+      "suites": 46,
+      "tests": 292,
+      "passed": 292,
+      "failed": 0,
+      "skipped": 0,
+      "test_seconds": 428.82,
+      "cpu_seconds": 812.82,
+      "wall_seconds_incl_compile": 460,
+      "exit": 0
+    },
+    "script_rerun": {
+      "command": "scripts/d25/validate_target.sh --workdir <second dir> --skip-deep",
+      "gates_passed": 13,
+      "gates_failed": 0,
+      "builds": "228 files x2, 0 errors",
+      "tests": "292/292 x2",
+      "artifacts_identical_vs_primary": "231 of 232 (build-info id differs: path-derived)"
+    }
+  },
+  "verdict": {
+    "stage1": "validated",
+    "replacement_target": "not required (Rhinestone unnecessary)"
+  }
+}
