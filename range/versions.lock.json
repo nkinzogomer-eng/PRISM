@@ -1,0 +1,608 @@
+{
+  "schema": "prism-range-lock/1",
+  "generated": "2026-10-31",
+  "scope": "PRISM Cyber Range \u2014 pinned component inventory for the design phase (Delivery 1).",
+  "policy": {
+    "license_preference": [
+      "Apache-2.0 / MIT / BSD / MPL-2.0 (permissive, safe to study and redistribute in docs)",
+      "GPL-3.0 / AGPL-3.0 accepted only as isolated services that are never linked into PRISM core",
+      "BUSL / SSPL / source-available rejected for anything we depend on"
+    ],
+    "pin_method": "container image by tag AND digest, or release tarball by version AND sha256. A tag alone is not a pin.",
+    "digest_state": "container digests are intentionally null here: they must be resolved and committed on the target host by range/scripts/pin_images.sh at first build, then never changed without a lock diff.",
+    "verification_source": "GitHub REST API (/releases/latest, /tags) queried 2026-10-31; licences as reported by the same API and cross-checked against each project's docs where noted",
+    "unknown_pin_policy": "any component whose pin cannot be verified is marked \"pin_confidence\": \"unverified\" and may not appear in an acceptance-tested layer"
+  },
+  "components": [
+    {
+      "id": "os-host",
+      "layer": "L0",
+      "role": "Hypervisor-adjacent host OS for the whole range",
+      "name": "Debian GNU/Linux",
+      "version": "12 (bookworm) \u2014 or 13 at first build, decision recorded in the install log",
+      "license": "DFSG-free",
+      "source_of_truth": "https://www.debian.org/releases/",
+      "footprint_ram_mb": [
+        350,
+        500
+      ],
+      "status": "chosen",
+      "verified": "existing host baseline (D2.5 used Debian 12 successfully)"
+    },
+    {
+      "id": "runtime-docker",
+      "layer": "L0",
+      "role": "Container runtime for layers L1\u2013L4",
+      "name": "Docker Engine (moby)",
+      "version": "29.9.2",
+      "published": "2026-10-20",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/moby/moby/releases/latest",
+      "footprint_ram_mb": [
+        120,
+        250
+      ],
+      "status": "chosen",
+      "notes": "Rootless Podman remains the documented alternative where Docker licensing/daemon model is unwanted; Podman is not pinned yet, so it is an alternative, not a dependency."
+    },
+    {
+      "id": "idp-keycloak",
+      "layer": "L1",
+      "role": "OIDC/SAML identity provider, TOTP and WebAuthn MFA, session and role model",
+      "name": "Keycloak",
+      "version": "26.8.1",
+      "published": "2026-10-13",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/keycloak/keycloak/releases/latest",
+      "footprint_ram_mb": [
+        700,
+        1400
+      ],
+      "status": "chosen for Tier B/C",
+      "notes": "Realistic enterprise IdP with real OIDC token lifetimes, refresh/revocation, WebAuthn and fine-grained roles. Heavy JVM footprint; Tier A uses Authelia instead."
+    },
+    {
+      "id": "idp-authelia",
+      "layer": "L1",
+      "role": "Lightweight SSO + TOTP/WebAuthn portal for Tier A",
+      "name": "Authelia",
+      "version": "v4.39.28",
+      "published": "2026-09-17",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/authelia/authelia/releases/latest",
+      "footprint_ram_mb": [
+        40,
+        120
+      ],
+      "status": "chosen for Tier A",
+      "notes": "Same protocol surface (OIDC + TOTP + WebAuthn) at ~5% of Keycloak's RAM. Lacks Keycloak's admin RBAC depth, so role-explosion experiments stay on Tier B."
+    },
+    {
+      "id": "idp-authentik",
+      "layer": "L1",
+      "role": "Alternative IdP",
+      "name": "Authentik",
+      "version": "2026.8.5",
+      "published": "2026-10-21",
+      "license": "reported as NOASSERTION by the GitHub API; core is MIT with separately licensed enterprise features",
+      "source_of_truth": "https://api.github.com/repos/goauthentik/authentik/releases/latest",
+      "footprint_ram_mb": [
+        500,
+        900
+      ],
+      "status": "alternative",
+      "notes": "Rejected as default because the licence split must be audited per feature; keeping it in the matrix documents why."
+    },
+    {
+      "id": "pki-stepca",
+      "layer": "L1",
+      "role": "Internal CA: service mTLS certificates and short-lived SSH user certificates",
+      "name": "step-ca (smallstep)",
+      "version": "v0.30.2",
+      "published": "2026-03-23",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/smallstep/certificates/releases/latest",
+      "footprint_ram_mb": [
+        30,
+        90
+      ],
+      "status": "chosen",
+      "notes": "Gives real certificate issuance, CRL/OCSP revocation and short-TTL SSH certs \u2014 the mechanisms a revocation drill needs."
+    },
+    {
+      "id": "secrets-openbao",
+      "layer": "L1",
+      "role": "Secrets manager: dynamic DB credentials, PKI, transit, token/session revocation",
+      "name": "OpenBao",
+      "version": "v2.7.2",
+      "published": "2026-10-26",
+      "license": "MPL-2.0",
+      "source_of_truth": "https://api.github.com/repos/openbao/openbao/releases/latest",
+      "footprint_ram_mb": [
+        120,
+        260
+      ],
+      "status": "chosen (replaces HashiCorp Vault)",
+      "notes": "Vault 2.x is BUSL-1.1 (API reports NOASSERTION), which conflicts with the licence policy. OpenBao is the MPL-2.0 fork with the same API surface, so the lab stays legally clean while teaching the real Vault API."
+    },
+    {
+      "id": "secrets-sops-age",
+      "layer": "L1",
+      "role": "Encrypted configuration secrets in git",
+      "name": "SOPS + age",
+      "version": "sops v3.13.3 / age v1.3.2",
+      "published": "2026-07-23",
+      "license": "MPL-2.0 / BSD-3-Clause",
+      "source_of_truth": "https://api.github.com/repos/getsops/sops/releases/latest",
+      "footprint_ram_mb": [
+        10,
+        30
+      ],
+      "status": "chosen",
+      "notes": "Keeps the repository free of plaintext secrets while allowing configuration to be versioned; the age identity lives only on the host. Used at L0 (host bootstrap) and L1 (config injection); tagged L1 because that is where its secrets land."
+    },
+    {
+      "id": "k8s-k3s",
+      "layer": "L2",
+      "role": "Kubernetes control plane for the app/sign/chain workloads",
+      "name": "k3s",
+      "version": "v1.37.1+k3s1",
+      "published": "2026-09-30",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/k3s-io/k3s/releases/latest",
+      "footprint_ram_mb": [
+        600,
+        1200
+      ],
+      "status": "chosen for Tier B/C only",
+      "notes": "Real Kubernetes API, RBAC, service accounts and NetworkPolicy without the weight of a full distribution. Tier A runs Compose and forgoes Kubernetes-specific findings \u2014 stated explicitly in the fidelity table."
+    },
+    {
+      "id": "k8s-k0s",
+      "layer": "L2",
+      "role": "Alternative Kubernetes distribution",
+      "name": "k0s",
+      "version": "v1.37.1+k0s.0",
+      "published": "2026-10-27",
+      "license": "reported NOASSERTION (project uses Apache-2.0 core + some components under other terms)",
+      "source_of_truth": "https://api.github.com/repos/k0sproject/k0s/releases/latest",
+      "footprint_ram_mb": [
+        500,
+        1000
+      ],
+      "status": "alternative",
+      "notes": "Comparable footprint; kept as the fallback if k3s packaging gets in the way."
+    },
+    {
+      "id": "k8s-kind",
+      "layer": "L2",
+      "role": "Ephemeral Kubernetes for CI-side policy tests",
+      "name": "kind",
+      "version": "v0.33.0",
+      "published": "2026-08-26",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/kubernetes-sigs/kind/releases/latest",
+      "footprint_ram_mb": [
+        400,
+        900
+      ],
+      "status": "chosen (test-only)",
+      "notes": "Only for running Kyverno/OPA policy tests in isolation; never the long-lived lab."
+    },
+    {
+      "id": "netpol-cilium",
+      "layer": "L2",
+      "role": "Network policy enforcement and flow visibility",
+      "name": "Cilium",
+      "version": "v1.20.4",
+      "published": "2026-10-23",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/cilium/cilium/releases/latest",
+      "footprint_ram_mb": [
+        300,
+        700
+      ],
+      "status": "chosen when k3s is used",
+      "notes": "eBPF policy + Hubble flows give the Blue Team real inter-service telemetry instead of synthetic logs."
+    },
+    {
+      "id": "policy-kyverno",
+      "layer": "L2",
+      "role": "Admission policy on the cluster",
+      "name": "Kyverno",
+      "version": "v1.19.2",
+      "published": "2026-10-20",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/kyverno/kyverno/releases/latest",
+      "footprint_ram_mb": [
+        150,
+        350
+      ],
+      "status": "chosen",
+      "notes": "Realistic guardrail: blocks privileged pods, unsigned images, and hostPath mounts \u2014 and gives the Red Team a real policy boundary to test."
+    },
+    {
+      "id": "policy-opa",
+      "layer": "L4",
+      "role": "Business authorisation policy for transactions (amount, destination, quorum, velocity)",
+      "name": "Open Policy Agent",
+      "version": "v1.22.0",
+      "published": "2026-10-29",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/open-policy-agent/opa/releases/latest",
+      "footprint_ram_mb": [
+        40,
+        120
+      ],
+      "status": "chosen",
+      "notes": "Rego policy is the same engine class real exchanges use for transaction controls; decisions are auditable and unit-testable."
+    },
+    {
+      "id": "ci-gitea",
+      "layer": "L3",
+      "role": "Internal source control with real team/permission model",
+      "name": "Gitea",
+      "version": "v28.2.0",
+      "published": "2026-10-18",
+      "license": "MIT",
+      "source_of_truth": "https://api.github.com/repos/go-gitea/gitea/releases/latest",
+      "footprint_ram_mb": [
+        150,
+        350
+      ],
+      "status": "chosen",
+      "notes": "Forgejo is the usual alternative but lives on Codeberg, so its releases cannot be pinned from this environment; Gitea is MIT and pinnable here."
+    },
+    {
+      "id": "ci-woodpecker",
+      "layer": "L3",
+      "role": "CI runner executing real pipelines with real secrets",
+      "name": "Woodpecker CI",
+      "version": "v3.20.1",
+      "published": "2026-10-29",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/woodpecker-ci/woodpecker/releases/latest",
+      "footprint_ram_mb": [
+        250,
+        600
+      ],
+      "status": "chosen",
+      "notes": "GitLab CE would be more realistic but needs ~6 GB RAM alone; Woodpecker keeps the authentic CI-authorisation problem (service accounts, deploy keys, secret scoping) inside the budget."
+    },
+    {
+      "id": "registry-docker-registry",
+      "layer": "L3",
+      "role": "Internal image registry",
+      "name": "Distribution (registry:2)",
+      "version": "registry:2 (pin digest at first pull)",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://hub.docker.com/_/registry",
+      "footprint_ram_mb": [
+        60,
+        150
+      ],
+      "status": "chosen",
+      "pin_confidence": "unverified",
+      "notes": "Version tag is coarse; the digest resolved on the host becomes the real pin."
+    },
+    {
+      "id": "supply-trivy",
+      "layer": "L3",
+      "role": "Image and dependency vulnerability scanning in the pipeline",
+      "name": "Trivy",
+      "version": "v0.76.1",
+      "published": "2026-10-21",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/aquasecurity/trivy/releases/latest",
+      "footprint_ram_mb": [
+        200,
+        600
+      ],
+      "status": "chosen"
+    },
+    {
+      "id": "supply-gitleaks",
+      "layer": "L3",
+      "role": "Secret scanning gate",
+      "name": "gitleaks",
+      "version": "v8.30.1",
+      "published": "2026-03-21",
+      "license": "MIT",
+      "source_of_truth": "https://api.github.com/repos/gitleaks/gitleaks/releases/latest",
+      "footprint_ram_mb": [
+        50,
+        150
+      ],
+      "status": "chosen"
+    },
+    {
+      "id": "supply-cosign",
+      "layer": "L3",
+      "role": "Artifact signing and verification (keyless or key-based)",
+      "name": "cosign (sigstore)",
+      "version": "v3.1.4",
+      "published": "2026-10-20",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/sigstore/cosign/releases/latest",
+      "footprint_ram_mb": [
+        60,
+        200
+      ],
+      "status": "chosen",
+      "notes": "Offline key pair only: the lab never reaches the public sigstore transparency log."
+    },
+    {
+      "id": "hsm-softhsm2",
+      "layer": "L4",
+      "role": "PKCS#11 cryptographic module emulating an HSM (key objects, sessions, CKA_EXTRACTABLE, CKA_SENSITIVE)",
+      "name": "SoftHSM v2",
+      "version": "2.6.1",
+      "license": "BSD-2-Clause",
+      "source_of_truth": "https://www.opendnssec.org/softhsm/",
+      "footprint_ram_mb": [
+        20,
+        60
+      ],
+      "status": "chosen",
+      "pin_confidence": "unverified",
+      "notes": "The GitHub API exposes no releases for this repository; the pin must be taken from the signed vendor tarball (sha256 + GPG) at build time. This is the single most important fidelity gap in the lab and is treated as such in 08-realism-limits.md."
+    },
+    {
+      "id": "chain-anvil",
+      "layer": "L5",
+      "role": "Local EVM chain with deterministic state, snapshots and time control",
+      "name": "Anvil (Foundry)",
+      "version": "1.7.1 (forge/anvil/cast), same build used for D2.5 Stage 1",
+      "published": "commit 4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "license": "Apache-2.0 / MIT",
+      "source_of_truth": "npm @foundry-rs/anvil@1.7.1",
+      "footprint_ram_mb": [
+        100,
+        300
+      ],
+      "status": "chosen",
+      "notes": "Pinned to the exact toolchain already validated in D2.5 Stage 1 so account artifacts stay comparable with reports/d25-step1/artifacts.sha256."
+    },
+    {
+      "id": "chain-account-impl",
+      "layer": "L5",
+      "role": "Programmable account (ERC-4337 / ERC-6900, incl. EIP-7702 variant) under study",
+      "name": "Alchemy Modular Account v2.0.0",
+      "version": "bd75c9eca7ff5a66aaebc3cf2dab43ddc4622482",
+      "published": "2024-12-20",
+      "license": "GPL-3.0 (LICENSE-GPL in the target)",
+      "source_of_truth": "https://github.com/alchemyplatform/modular-account",
+      "footprint_ram_mb": [
+        0,
+        0
+      ],
+      "status": "chosen, REUSED UNMODIFIED",
+      "notes": "Compiled from a read-only checkout; never edited, never vendored. The lab treats it as a third-party dependency whose behaviour is studied, matching the D2.5 constraint."
+    },
+    {
+      "id": "chain-aa-contracts",
+      "layer": "L5",
+      "role": "ERC-4337 EntryPoint and account interfaces",
+      "name": "eth-infinitism/account-abstraction",
+      "version": "v0.7.0 (commit d99245ddb2d7bde4d2132757c4394818f1d11da0)",
+      "license": "GPL-3.0",
+      "source_of_truth": "https://github.com/eth-infinitism/account-abstraction",
+      "status": "chosen",
+      "notes": "Exactly the version pinned by the D2.5 target's own pnpm-lock.yaml, so the lab inherits a validated dependency graph instead of inventing a new one. account-abstraction v0.9.0 exists and is deliberately not used (would break comparability)."
+    },
+    {
+      "id": "chain-bundler",
+      "layer": "L5",
+      "role": "ERC-4337 bundler / relayer",
+      "name": "Alto (Pimlico)",
+      "version": "@pimlico/alto@0.0.19",
+      "published": "2025-07-14",
+      "license": "GPL-3.0",
+      "source_of_truth": "https://github.com/pimlicolabs/alto",
+      "footprint_ram_mb": [
+        120,
+        300
+      ],
+      "status": "chosen",
+      "notes": "Maintained TypeScript bundler; eth-infinitism/bundler v0.6.0 (2023) is the fallback and is older than the EntryPoint version in use."
+    },
+    {
+      "id": "obs-suricata",
+      "layer": "L6",
+      "role": "Network intrusion detection on the zone-to-zone links",
+      "name": "Suricata",
+      "version": "8.0.8",
+      "published": "2026-10-29",
+      "license": "GPL-2.0",
+      "source_of_truth": "https://api.github.com/repos/OISF/suricata/releases/latest",
+      "footprint_ram_mb": [
+        300,
+        700
+      ],
+      "status": "chosen",
+      "notes": "Sees only what the architecture lets it see; the TLS-coverage limitation is documented rather than hidden."
+    },
+    {
+      "id": "obs-zeek",
+      "layer": "L6",
+      "role": "Connection/protocol metadata and file extraction",
+      "name": "Zeek",
+      "version": "v9.0.1",
+      "published": "2026-10-26",
+      "license": "BSD-3-Clause (project reports NOASSERTION via API)",
+      "source_of_truth": "https://api.github.com/repos/zeek/zeek/releases/latest",
+      "footprint_ram_mb": [
+        400,
+        800
+      ],
+      "status": "Tier B/C only",
+      "notes": "The richest source of 'incomplete logs' realism: Zeek's conn/protocol logs are genuinely partial during encryption and evasion."
+    },
+    {
+      "id": "obs-falco",
+      "layer": "L6",
+      "role": "Runtime detection in containers/Kubernetes",
+      "name": "Falco",
+      "version": "agent/0.85.1",
+      "published": "2026-10",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/falcosecurity/falco/tags",
+      "footprint_ram_mb": [
+        250,
+        500
+      ],
+      "status": "chosen",
+      "notes": "Real syscall-driven detection; produces the host-level events a Blue Team must triage."
+    },
+    {
+      "id": "obs-osquery",
+      "layer": "L6",
+      "role": "Host state inventory and periodic telemetry",
+      "name": "osquery",
+      "version": "5.24.0",
+      "published": "2026-10-09",
+      "license": "Apache-2.0 / GPL-2.0 dual",
+      "source_of_truth": "https://api.github.com/repos/osquery/osquery/releases/latest",
+      "footprint_ram_mb": [
+        50,
+        120
+      ],
+      "status": "chosen"
+    },
+    {
+      "id": "obs-loki",
+      "layer": "L6",
+      "role": "Log aggregation",
+      "name": "Grafana Loki",
+      "version": "v3.7.9",
+      "published": "2026-10-20",
+      "license": "AGPL-3.0",
+      "source_of_truth": "https://api.github.com/repos/grafana/loki/releases/latest",
+      "footprint_ram_mb": [
+        300,
+        700
+      ],
+      "status": "chosen",
+      "notes": "AGPL: runs as an unmodified service; no code is linked into PRISM."
+    },
+    {
+      "id": "obs-grafana",
+      "layer": "L6",
+      "role": "Dashboards and alerting",
+      "name": "Grafana",
+      "version": "v13.3.0",
+      "published": "2026-10-27",
+      "license": "AGPL-3.0",
+      "source_of_truth": "https://api.github.com/repos/grafana/grafana/releases/latest",
+      "footprint_ram_mb": [
+        200,
+        450
+      ],
+      "status": "chosen"
+    },
+    {
+      "id": "obs-prometheus",
+      "layer": "L6",
+      "role": "Metrics and detection-latency measurement",
+      "name": "Prometheus",
+      "version": "v3.15.1",
+      "published": "2026-10-21",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/prometheus/prometheus/releases/latest",
+      "footprint_ram_mb": [
+        250,
+        600
+      ],
+      "status": "chosen",
+      "notes": "MTTD/MTTR are only defensible if timestamps come from one clock domain; Prometheus plus a single NTP source is the mechanism."
+    },
+    {
+      "id": "obs-alloy",
+      "layer": "L6",
+      "role": "Log/metric collection agent",
+      "name": "Grafana Alloy",
+      "version": "v1.21.3",
+      "published": "2026-10-28",
+      "license": "Apache-2.0",
+      "source_of_truth": "https://api.github.com/repos/grafana/alloy/releases/latest",
+      "footprint_ram_mb": [
+        80,
+        200
+      ],
+      "status": "chosen",
+      "notes": "Successor to Promtail/grafana-agent; also the path for shipping Suricata/Falco/osquery output."
+    },
+    {
+      "id": "obs-wazuh",
+      "layer": "L6",
+      "role": "Full SIEM/HIDS alternative (manager + indexer + dashboard)",
+      "name": "Wazuh",
+      "version": "v4.14.9",
+      "published": "2026-10-15",
+      "license": "GPL-2.0",
+      "source_of_truth": "https://api.github.com/repos/wazuh/wazuh/releases/latest",
+      "footprint_ram_mb": [
+        4000,
+        8000
+      ],
+      "status": "alternative, Tier C only",
+      "notes": "More realistic SIEM semantics (decoders, rules, CDB lists) but consumes the entire Tier B budget by itself. Documented as the upgrade path, not the default."
+    },
+    {
+      "id": "dfir-velociraptor",
+      "layer": "L7",
+      "role": "Endpoint forensic collection and hunting",
+      "name": "Velociraptor",
+      "version": "v0.77.3",
+      "published": "2026-10-05",
+      "license": "AGPL-3.0",
+      "source_of_truth": "https://api.github.com/repos/Velocidex/velociraptor/releases/latest",
+      "footprint_ram_mb": [
+        250,
+        600
+      ],
+      "status": "Tier B/C only",
+      "notes": "Gives real VQL collection artefacts instead of hand-written log lines."
+    },
+    {
+      "id": "tool-tcpdump-tshark",
+      "layer": "L6",
+      "role": "Packet capture and PCAP forensics",
+      "name": "tcpdump / tshark",
+      "version": "host-distribution pinned versions (recorded in the install log)",
+      "license": "BSD-3-Clause / GPL-2.0",
+      "source_of_truth": "Debian packages",
+      "footprint_ram_mb": [
+        20,
+        400
+      ],
+      "status": "chosen",
+      "pin_confidence": "unverified",
+      "notes": "Distribution-pinned; the exact versions are written into the install log at build time so runs remain reproducible. Used at L6 (capture) and L7 (PCAP forensics); tagged L6 as the capture point."
+    }
+  ],
+  "rejected": [
+    {
+      "name": "HashiCorp Vault",
+      "version": "v2.2.1 (2026-10-22)",
+      "reason": "BUSL-1.1 licence conflicts with the open-source-only policy; OpenBao provides the same API under MPL-2.0."
+    },
+    {
+      "name": "HashiCorp Terraform",
+      "version": "v1.17.1 (2026-10-28)",
+      "reason": "BUSL-1.1; OpenTofu v1.13.5 (MPL-2.0) is the drop-in alternative if infrastructure-as-code is adopted in L2."
+    },
+    {
+      "name": "Security Onion",
+      "reason": "Needs 16 GB+ RAM minimum for a usable deployment; excluded from all tiers but kept in the matrix as the ceiling reference."
+    },
+    {
+      "name": "GitLab CE",
+      "reason": "6 GB+ RAM alone; the same CI-authorisation findings are obtainable with Gitea + Woodpecker at ~0.5 GB."
+    },
+    {
+      "name": "Cloud HSM / real HSM",
+      "reason": "Cost and third-party dependency; explicitly out of scope. SoftHSM emulation is documented as the fidelity gap, not papered over."
+    }
+  ]
+}

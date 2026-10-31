@@ -1,0 +1,7 @@
+# Python bytecode produced by running the test suite locally
+__pycache__/
+*.py[cod]
+
+# Local scratch space for external research targets (D2.5 keeps the validated
+# target checkout outside the repository; see docs/d25-charter.md)
+.cache/
