@@ -1,0 +1,6 @@
+{"rule":"coarse_secret_read","severity":"medium","service":"secrets","event":"secret_read","ts":1793448082.776055,"ts_utc":"2026-10-31T12:01:22Z","detail":{"subject":"service:ci-runner"}}
+{"rule":"coarse_secret_read","severity":"medium","service":"secrets","event":"secret_read","ts":1793448082.789545,"ts_utc":"2026-10-31T12:01:22Z","detail":{"subject":"service:ci-runner"}}
+{"rule":"sign_without_policy","severity":"high","service":"tx","event":"sign_only","ts":1793448082.8110042,"ts_utc":"2026-10-31T12:01:22Z","detail":{"key_id":"signer-1"}}
+{"rule":"coarse_secret_read","severity":"medium","service":"secrets","event":"secret_read","ts":1793448085.4153454,"ts_utc":"2026-10-31T12:01:25Z","detail":{"subject":"service:ci-runner"}}
+{"rule":"coarse_secret_read","severity":"medium","service":"secrets","event":"secret_read","ts":1793448085.4265196,"ts_utc":"2026-10-31T12:01:25Z","detail":{"subject":"service:ci-runner"}}
+{"rule":"sign_without_policy","severity":"high","service":"tx","event":"sign_only","ts":1793448085.4462292,"ts_utc":"2026-10-31T12:01:25Z","detail":{"key_id":"signer-1"}}

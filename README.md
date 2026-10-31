@@ -63,9 +63,13 @@ validation only.
 ## PRISM Cyber Range (D3)
 
 An isolated, reproducible security laboratory for Red Team, Blue Team and
-independent-verification research. **Delivery 1 (design) only — no layer is
-built yet, and this is measured, not assumed.**
+independent-verification research. **Delivery 2: operational** — 9 zones with
+kernel-enforced L3 isolation, 13 services, a real Anvil chain, 7 executable
+scenarios and a versioned control API (see
+[delivery 2 report](range/reports/2026-10-31-delivery2-range-operational.md) and
+[lab manual](range/lab/README.md)).
 
+- [AETHERION interface contract v1](docs/cyber-range/10-aetherion-interface.md) — control plane used by the orchestrator
 - [Range design index](docs/cyber-range/README.md) — scope, build order, what is and is not delivered
 - [Host inventory](docs/cyber-range/01-inventaire.md) · [Architecture](docs/cyber-range/02-architecture.md) · [Component matrix](docs/cyber-range/03-component-matrix.md)
 - [Resource budget](docs/cyber-range/04-resource-budget.md) · [Installation plan](docs/cyber-range/05-installation.md) · [Security boundaries](docs/cyber-range/06-security-boundaries.md)

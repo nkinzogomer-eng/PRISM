@@ -1,0 +1,1376 @@
+{
+  "started": 1793448061.9952238,
+  "host": {
+    "cpus": 2
+  },
+  "cold_start": {
+    "ok": true,
+    "state": "up",
+    "fabric": {
+      "zones": 9,
+      "links": 12,
+      "ip_pairs": 12,
+      "build_seconds": 1.15
+    },
+    "chain": {
+      "enabled": true,
+      "accounts": 4,
+      "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+    },
+    "health": {
+      "services": {
+        "idp": true,
+        "secrets": true,
+        "ci": true,
+        "dmz": true,
+        "gateway": true,
+        "tx": true,
+        "wallet": true,
+        "policy": true,
+        "signer": true,
+        "hsm": true,
+        "relayer": true,
+        "mon": true,
+        "decoy": true
+      },
+      "healthy": 13,
+      "total": 13
+    },
+    "run_id": "run-20261031T120101Z",
+    "reset": true
+  },
+  "up": {
+    "ok": true,
+    "state": "up",
+    "note": "already running",
+    "chain": {
+      "enabled": true
+    },
+    "health": {
+      "services": {
+        "idp": true,
+        "secrets": true,
+        "ci": true,
+        "dmz": true,
+        "gateway": true,
+        "tx": true,
+        "wallet": true,
+        "policy": true,
+        "signer": true,
+        "hsm": true,
+        "relayer": true,
+        "mon": true,
+        "decoy": true
+      },
+      "healthy": 13,
+      "total": 13
+    }
+  },
+  "isolation": {
+    "consistent": true,
+    "mismatches": [],
+    "pairs_checked": 72,
+    "links_declared": 12,
+    "observed": {
+      "wan": {
+        "wan": "self",
+        "dmz": "routed",
+        "edge": "unreachable:OSError",
+        "corp": "unreachable:OSError",
+        "prod": "unreachable:OSError",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "unreachable:OSError",
+        "mon": "unreachable:OSError"
+      },
+      "dmz": {
+        "wan": "routed",
+        "dmz": "self",
+        "edge": "unreachable:OSError",
+        "corp": "routed",
+        "prod": "routed",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "unreachable:OSError",
+        "mon": "routed"
+      },
+      "edge": {
+        "wan": "unreachable:OSError",
+        "dmz": "unreachable:OSError",
+        "edge": "self",
+        "corp": "routed",
+        "prod": "routed",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "unreachable:OSError",
+        "mon": "routed"
+      },
+      "corp": {
+        "wan": "unreachable:OSError",
+        "dmz": "routed",
+        "edge": "routed",
+        "corp": "self",
+        "prod": "unreachable:OSError",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "unreachable:OSError",
+        "mon": "routed"
+      },
+      "prod": {
+        "wan": "unreachable:OSError",
+        "dmz": "routed",
+        "edge": "routed",
+        "corp": "unreachable:OSError",
+        "prod": "self",
+        "signer": "routed",
+        "hsm": "unreachable:OSError",
+        "chain": "routed",
+        "mon": "routed"
+      },
+      "signer": {
+        "wan": "unreachable:OSError",
+        "dmz": "unreachable:OSError",
+        "edge": "unreachable:OSError",
+        "corp": "unreachable:OSError",
+        "prod": "routed",
+        "signer": "self",
+        "hsm": "routed",
+        "chain": "unreachable:OSError",
+        "mon": "unreachable:OSError"
+      },
+      "hsm": {
+        "wan": "unreachable:OSError",
+        "dmz": "unreachable:OSError",
+        "edge": "unreachable:OSError",
+        "corp": "unreachable:OSError",
+        "prod": "unreachable:OSError",
+        "signer": "routed",
+        "hsm": "self",
+        "chain": "unreachable:OSError",
+        "mon": "unreachable:OSError"
+      },
+      "chain": {
+        "wan": "unreachable:OSError",
+        "dmz": "unreachable:OSError",
+        "edge": "unreachable:OSError",
+        "corp": "unreachable:OSError",
+        "prod": "routed",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "self",
+        "mon": "unreachable:OSError"
+      },
+      "mon": {
+        "wan": "unreachable:OSError",
+        "dmz": "routed",
+        "edge": "routed",
+        "corp": "routed",
+        "prod": "routed",
+        "signer": "unreachable:OSError",
+        "hsm": "unreachable:OSError",
+        "chain": "unreachable:OSError",
+        "mon": "self"
+      }
+    }
+  },
+  "egress": {
+    "zones": 9,
+    "results": {
+      "wan": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "dmz": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "edge": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "corp": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "prod": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "signer": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "hsm": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "chain": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      },
+      "mon": {
+        "1.1.1.1:443": "OSError",
+        "8.8.8.8:53": "OSError",
+        "93.184.216.34:80": "OSError"
+      }
+    },
+    "leaks": [],
+    "isolated": true
+  },
+  "pass1": {
+    "S1": {
+      "id": "S1",
+      "verdict": "attack_possible",
+      "seconds": 0.13,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        },
+        {
+          "zone": "wan",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "role": "setup",
+          "steps": [
+            {
+              "action": "password+TOTP login as ops1",
+              "ok": true,
+              "claims": {
+                "sub": "user:ops1",
+                "scope": "transfer:write",
+                "jti": "7e1b23f1ab064a0a8cabfb2c59139d88",
+                "iat": 1793448069,
+                "exp": 1793448369,
+                "aud": "prism-range",
+                "mfa": "totp",
+                "zone": "edge"
+              }
+            },
+            {
+              "action": "use token from corp zone",
+              "http": 200
+            }
+          ],
+          "proofs": [
+            {
+              "jti": "7e1b23f1ab064a0a8cabfb2c59139d88",
+              "ttl_s": 300,
+              "corp_http": 200
+            }
+          ],
+          "needs": [
+            "L-1 (no device binding)",
+            "L-7 (single-actor scale)"
+          ],
+          "id": "S1a",
+          "name": "session_replay_corp",
+          "severity": "high",
+          "zone": "corp",
+          "seconds": 0.01,
+          "ts": 1793448069.3206162
+        },
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "send part A token from the wan zone",
+              "http": 200
+            }
+          ],
+          "proofs": [
+            {
+              "wan_replay_http": 200
+            }
+          ],
+          "note": "same bearer token accepted from a second zone -> no origin binding",
+          "id": "S1b",
+          "name": "session_replay_wan",
+          "severity": "high",
+          "zone": "wan",
+          "seconds": 0.01,
+          "ts": 1793448069.3793604
+        }
+      ]
+    },
+    "S2": {
+      "id": "S2",
+      "verdict": "attack_possible",
+      "seconds": 0.13,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "client_credentials as ci-runner",
+              "scope": "ci:run secrets:read transfer:write"
+            },
+            {
+              "action": "run pipeline (real subprocesses)",
+              "http": 200,
+              "steps": [
+                [
+                  "git-init",
+                  0
+                ],
+                [
+                  "build",
+                  0
+                ],
+                [
+                  "test",
+                  0
+                ],
+                [
+                  "secrets",
+                  0
+                ]
+              ],
+              "secret_fetched": true
+            },
+            {
+              "action": "read signer-token with CI scope",
+              "http": 200,
+              "secret_returned": true
+            },
+            {
+              "action": "ask gateway /v1/sign-only with CI token",
+              "http": 200,
+              "policy_checked": false
+            }
+          ],
+          "proofs": [
+            {
+              "pipeline_run": "93b8e536"
+            },
+            {
+              "secret_lease": "e22cf0971a62411fa281f5d93d8e43e7"
+            },
+            {
+              "signed_payload": "FORGED-TRANSFER:b43aca89cdf24d03ad59e43c5fc91802",
+              "signature_prefix": "30450221009ff1a113a5da0a758ad6f9",
+              "policy_checked": false
+            }
+          ],
+          "needs": [
+            "L-3 (services written for the lab)",
+            "L-6 (CI simplified)"
+          ],
+          "note": "an unprivileged CI identity obtained a production signature with no policy decision",
+          "id": "S2",
+          "name": "ci_to_signature",
+          "severity": "critical",
+          "zone": "corp",
+          "seconds": 0.07,
+          "ts": 1793448069.6358101
+        }
+      ]
+    },
+    "S3": {
+      "id": "S3",
+      "verdict": "attack_possible",
+      "seconds": 0.65,
+      "parts": [
+        {
+          "zone": "edge",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "read starting balance",
+              "balance": 100.0
+            },
+            {
+              "action": "two concurrent debits of 80.0",
+              "results": [
+                {
+                  "http": 200,
+                  "debit": {
+                    "ok": true,
+                    "mode": "racy",
+                    "balance": 20.0,
+                    "observed": 100.0
+                  }
+                },
+                {
+                  "http": 200,
+                  "debit": {
+                    "ok": true,
+                    "mode": "racy",
+                    "balance": 20.0,
+                    "observed": 100.0
+                  }
+                }
+              ]
+            },
+            {
+              "action": "read final balance",
+              "balance": 20.0
+            }
+          ],
+          "proofs": [
+            {
+              "start": 100.0,
+              "end": 20.0,
+              "requested_total": 160.0,
+              "ledger_debits": 160.0,
+              "ledger_consistency": false
+            }
+          ],
+          "needs": [
+            "L-3",
+            "L-7"
+          ],
+          "note": "double spend: two debits accepted against one balance",
+          "id": "S3",
+          "name": "wallet_race",
+          "severity": "high",
+          "zone": "edge",
+          "seconds": 0.58,
+          "ts": 1793448070.4192448
+        }
+      ]
+    },
+    "S4": {
+      "id": "S4",
+      "verdict": "attack_possible",
+      "seconds": 0.23,
+      "parts": [
+        {
+          "zone": "dmz",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "gateway reachable from dmz (expected)",
+              "http": 200
+            },
+            {
+              "action": "call internal transaction port directly from dmz",
+              "http": 200,
+              "policy_checked": false
+            },
+            {
+              "action": "reach sign-only endpoint directly from dmz",
+              "http": 200,
+              "signed": true
+            }
+          ],
+          "proofs": [
+            {
+              "internal_transfer_http": 200,
+              "sign_only_http": 200
+            }
+          ],
+          "needs": [
+            "L-3"
+          ],
+          "note": "no port-level policy between DMZ and prod: only topology",
+          "id": "S4",
+          "name": "dmz_lateral",
+          "severity": "high",
+          "zone": "dmz",
+          "seconds": 0.18,
+          "ts": 1793448071.3010685
+        }
+      ]
+    },
+    "S6": {
+      "id": "S6",
+      "verdict": "attack_possible",
+      "seconds": 0.26,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "authenticate as ops1",
+              "ok": true
+            },
+            {
+              "action": "send transfer with X-Debug-Actor: alice",
+              "http": 200
+            },
+            {
+              "action": "read back recorded actor",
+              "actor": "alice"
+            }
+          ],
+          "proofs": [
+            {
+              "authenticated_as": "user:ops1",
+              "recorded_actor": "alice",
+              "http": 200
+            }
+          ],
+          "needs": [
+            "L-3"
+          ],
+          "note": "attribution spoofed: the audit trail names an innocent actor",
+          "id": "S6",
+          "name": "actor_spoof_undisclosed",
+          "severity": "high",
+          "zone": "corp",
+          "seconds": 0.21,
+          "ts": 1793448071.8165655
+        }
+      ]
+    },
+    "S5": {
+      "id": "S5",
+      "verdict": "protected",
+      "seconds": 0.13,
+      "parts": [
+        {
+          "zone": "prod",
+          "verdict": "blocked"
+        },
+        {
+          "zone": "signer",
+          "verdict": "blocked"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "blocked",
+          "role": "control",
+          "steps": [
+            {
+              "action": "direct HSM request from the prod zone",
+              "http": 0,
+              "outcome": "unreachable (no route)"
+            }
+          ],
+          "proofs": [
+            {
+              "prod_to_hsm_http": 0
+            }
+          ],
+          "note": "HSM has a link only to the signer zone; the kernel drops the packet",
+          "id": "S5a",
+          "name": "hsm_unreachable",
+          "severity": "control",
+          "zone": "prod",
+          "seconds": 0.0,
+          "ts": 1793448072.1480262
+        },
+        {
+          "verdict": "blocked",
+          "role": "control",
+          "steps": [
+            {
+              "action": "sign via the allowed path",
+              "http": 200,
+              "signed": true
+            },
+            {
+              "action": "attempt key export",
+              "http": 403,
+              "reason": "CKA_EXTRACTABLE=false"
+            }
+          ],
+          "proofs": [
+            {
+              "sign_http": 200,
+              "export_http": 403,
+              "export_reason": "CKA_EXTRACTABLE=false"
+            }
+          ],
+          "needs": [
+            "L-1 (emulated attributes, not hardware)"
+          ],
+          "note": "signature produced, export refused by CKA_EXTRACTABLE=false",
+          "id": "S5b",
+          "name": "hsm_attributes",
+          "severity": "control",
+          "zone": "signer",
+          "seconds": 0.02,
+          "ts": 1793448072.2188675
+        }
+      ]
+    },
+    "S7": {
+      "id": "S7",
+      "verdict": "protected",
+      "seconds": 1.26,
+      "parts": [
+        {
+          "zone": "prod",
+          "verdict": "control_ok"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "control_ok",
+          "role": "control",
+          "steps": [
+            {
+              "action": "policy-checked transfer to the chain",
+              "http": 200,
+              "chain": {
+                "submitted": true,
+                "digest": "c3fd7040db8ff9b7",
+                "chain_tx": "0x09ff5098c529e11d25cf53efdab0e2ff6c131e7e51ac09e0460af75a6706a36c"
+              },
+              "decision": {
+                "allow": true,
+                "reasons": [],
+                "account_id": "acct-hot-1",
+                "asset": "ETH",
+                "amount": 1.0,
+                "velocity_window": 0.0,
+                "destination": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+                "time_utc": "2026-10-31T12:01:12Z"
+              }
+            },
+            {
+              "action": "read receipt",
+              "status": "0x1",
+              "block": "0x9"
+            }
+          ],
+          "proofs": [
+            {
+              "transfer": "e06b7ab69c06",
+              "chain_tx": "0x09ff5098c529e11d25cf53efdab0e2ff6c131e7e51ac09e0460af75a6706a36c",
+              "destination": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+            },
+            {
+              "receipt_status": "0x1",
+              "block": "0x9"
+            }
+          ],
+          "note": "nominal path works end-to-end (control scenario, not an attack)",
+          "kind": "control",
+          "id": "S7",
+          "name": "chain_end_to_end",
+          "severity": "control",
+          "zone": "prod",
+          "seconds": 1.2,
+          "ts": 1793448073.609771
+        }
+      ]
+    }
+  },
+  "pass2": {
+    "S1": {
+      "id": "S1",
+      "verdict": "attack_possible",
+      "seconds": 0.12,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        },
+        {
+          "zone": "wan",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "role": "setup",
+          "steps": [
+            {
+              "action": "password+TOTP login as ops1",
+              "ok": true,
+              "claims": {
+                "sub": "user:ops1",
+                "scope": "transfer:write",
+                "jti": "0aa631200c2444c4983d2b7da9795fe7",
+                "iat": 1793448069,
+                "exp": 1793448369,
+                "aud": "prism-range",
+                "mfa": "totp",
+                "zone": "edge"
+              }
+            },
+            {
+              "action": "use token from corp zone",
+              "http": 200
+            }
+          ],
+          "proofs": [
+            {
+              "jti": "0aa631200c2444c4983d2b7da9795fe7",
+              "ttl_s": 300,
+              "corp_http": 200
+            }
+          ],
+          "needs": [
+            "L-1 (no device binding)",
+            "L-7 (single-actor scale)"
+          ],
+          "id": "S1a",
+          "name": "session_replay_corp",
+          "severity": "high",
+          "zone": "corp",
+          "seconds": 0.01,
+          "ts": 1793448069.445798
+        },
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "send part A token from the wan zone",
+              "http": 200
+            }
+          ],
+          "proofs": [
+            {
+              "wan_replay_http": 200
+            }
+          ],
+          "note": "same bearer token accepted from a second zone -> no origin binding",
+          "id": "S1b",
+          "name": "session_replay_wan",
+          "severity": "high",
+          "zone": "wan",
+          "seconds": 0.0,
+          "ts": 1793448069.5033636
+        }
+      ]
+    },
+    "S2": {
+      "id": "S2",
+      "verdict": "attack_possible",
+      "seconds": 0.12,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "client_credentials as ci-runner",
+              "scope": "ci:run secrets:read transfer:write"
+            },
+            {
+              "action": "run pipeline (real subprocesses)",
+              "http": 200,
+              "steps": [
+                [
+                  "git-init",
+                  0
+                ],
+                [
+                  "build",
+                  0
+                ],
+                [
+                  "test",
+                  0
+                ],
+                [
+                  "secrets",
+                  0
+                ]
+              ],
+              "secret_fetched": true
+            },
+            {
+              "action": "read signer-token with CI scope",
+              "http": 200,
+              "secret_returned": true
+            },
+            {
+              "action": "ask gateway /v1/sign-only with CI token",
+              "http": 200,
+              "policy_checked": false
+            }
+          ],
+          "proofs": [
+            {
+              "pipeline_run": "b4581d99"
+            },
+            {
+              "secret_lease": "bbb46d4aa5344bc0a9818832b220acd1"
+            },
+            {
+              "signed_payload": "FORGED-TRANSFER:fe97181302b840898da0628d45f9bd67",
+              "signature_prefix": "30450220421038f21c62bac2fa9a06f9",
+              "policy_checked": false
+            }
+          ],
+          "needs": [
+            "L-3 (services written for the lab)",
+            "L-6 (CI simplified)"
+          ],
+          "note": "an unprivileged CI identity obtained a production signature with no policy decision",
+          "id": "S2",
+          "name": "ci_to_signature",
+          "severity": "critical",
+          "zone": "corp",
+          "seconds": 0.07,
+          "ts": 1793448069.7647169
+        }
+      ]
+    },
+    "S3": {
+      "id": "S3",
+      "verdict": "attack_possible",
+      "seconds": 0.63,
+      "parts": [
+        {
+          "zone": "edge",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "read starting balance",
+              "balance": 100.0
+            },
+            {
+              "action": "two concurrent debits of 80.0",
+              "results": [
+                {
+                  "http": 200,
+                  "debit": {
+                    "ok": true,
+                    "mode": "racy",
+                    "balance": 20.0,
+                    "observed": 100.0
+                  }
+                },
+                {
+                  "http": 200,
+                  "debit": {
+                    "ok": true,
+                    "mode": "racy",
+                    "balance": 20.0,
+                    "observed": 100.0
+                  }
+                }
+              ]
+            },
+            {
+              "action": "read final balance",
+              "balance": 20.0
+            }
+          ],
+          "proofs": [
+            {
+              "start": 100.0,
+              "end": 20.0,
+              "requested_total": 160.0,
+              "ledger_debits": 160.0,
+              "ledger_consistency": false
+            }
+          ],
+          "needs": [
+            "L-3",
+            "L-7"
+          ],
+          "note": "double spend: two debits accepted against one balance",
+          "id": "S3",
+          "name": "wallet_race",
+          "severity": "high",
+          "zone": "edge",
+          "seconds": 0.57,
+          "ts": 1793448071.058216
+        }
+      ]
+    },
+    "S4": {
+      "id": "S4",
+      "verdict": "attack_possible",
+      "seconds": 0.24,
+      "parts": [
+        {
+          "zone": "dmz",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "gateway reachable from dmz (expected)",
+              "http": 200
+            },
+            {
+              "action": "call internal transaction port directly from dmz",
+              "http": 200,
+              "policy_checked": false
+            },
+            {
+              "action": "reach sign-only endpoint directly from dmz",
+              "http": 200,
+              "signed": true
+            }
+          ],
+          "proofs": [
+            {
+              "internal_transfer_http": 200,
+              "sign_only_http": 200
+            }
+          ],
+          "needs": [
+            "L-3"
+          ],
+          "note": "no port-level policy between DMZ and prod: only topology",
+          "id": "S4",
+          "name": "dmz_lateral",
+          "severity": "high",
+          "zone": "dmz",
+          "seconds": 0.18,
+          "ts": 1793448071.5457816
+        }
+      ]
+    },
+    "S6": {
+      "id": "S6",
+      "verdict": "attack_possible",
+      "seconds": 0.26,
+      "parts": [
+        {
+          "zone": "corp",
+          "verdict": "attack_possible"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "attack_possible",
+          "steps": [
+            {
+              "action": "authenticate as ops1",
+              "ok": true
+            },
+            {
+              "action": "send transfer with X-Debug-Actor: alice",
+              "http": 200
+            },
+            {
+              "action": "read back recorded actor",
+              "actor": "alice"
+            }
+          ],
+          "proofs": [
+            {
+              "authenticated_as": "user:ops1",
+              "recorded_actor": "alice",
+              "http": 200
+            }
+          ],
+          "needs": [
+            "L-3"
+          ],
+          "note": "attribution spoofed: the audit trail names an innocent actor",
+          "id": "S6",
+          "name": "actor_spoof_undisclosed",
+          "severity": "high",
+          "zone": "corp",
+          "seconds": 0.2,
+          "ts": 1793448072.0830214
+        }
+      ]
+    },
+    "S5": {
+      "id": "S5",
+      "verdict": "protected",
+      "seconds": 0.12,
+      "parts": [
+        {
+          "zone": "prod",
+          "verdict": "blocked"
+        },
+        {
+          "zone": "signer",
+          "verdict": "blocked"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "blocked",
+          "role": "control",
+          "steps": [
+            {
+              "action": "direct HSM request from the prod zone",
+              "http": 0,
+              "outcome": "unreachable (no route)"
+            }
+          ],
+          "proofs": [
+            {
+              "prod_to_hsm_http": 0
+            }
+          ],
+          "note": "HSM has a link only to the signer zone; the kernel drops the packet",
+          "id": "S5a",
+          "name": "hsm_unreachable",
+          "severity": "control",
+          "zone": "prod",
+          "seconds": 0.0,
+          "ts": 1793448072.2802348
+        },
+        {
+          "verdict": "blocked",
+          "role": "control",
+          "steps": [
+            {
+              "action": "sign via the allowed path",
+              "http": 200,
+              "signed": true
+            },
+            {
+              "action": "attempt key export",
+              "http": 403,
+              "reason": "CKA_EXTRACTABLE=false"
+            }
+          ],
+          "proofs": [
+            {
+              "sign_http": 200,
+              "export_http": 403,
+              "export_reason": "CKA_EXTRACTABLE=false"
+            }
+          ],
+          "needs": [
+            "L-1 (emulated attributes, not hardware)"
+          ],
+          "note": "signature produced, export refused by CKA_EXTRACTABLE=false",
+          "id": "S5b",
+          "name": "hsm_attributes",
+          "severity": "control",
+          "zone": "signer",
+          "seconds": 0.02,
+          "ts": 1793448072.3490837
+        }
+      ]
+    },
+    "S7": {
+      "id": "S7",
+      "verdict": "protected",
+      "seconds": 1.26,
+      "parts": [
+        {
+          "zone": "prod",
+          "verdict": "control_ok"
+        }
+      ],
+      "parts_full": [
+        {
+          "verdict": "control_ok",
+          "role": "control",
+          "steps": [
+            {
+              "action": "policy-checked transfer to the chain",
+              "http": 200,
+              "chain": {
+                "submitted": true,
+                "digest": "66255286a39ff4c2",
+                "chain_tx": "0x7b074849ef83886b68b17697e13fde20c85958d3c74fd3350736b486fd37bbb1"
+              },
+              "decision": {
+                "allow": true,
+                "reasons": [],
+                "account_id": "acct-hot-1",
+                "asset": "ETH",
+                "amount": 1.0,
+                "velocity_window": 0.0,
+                "destination": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+                "time_utc": "2026-10-31T12:01:13Z"
+              }
+            },
+            {
+              "action": "read receipt",
+              "status": "0x1",
+              "block": "0xa"
+            }
+          ],
+          "proofs": [
+            {
+              "transfer": "28cfddeed39a",
+              "chain_tx": "0x7b074849ef83886b68b17697e13fde20c85958d3c74fd3350736b486fd37bbb1",
+              "destination": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+            },
+            {
+              "receipt_status": "0x1",
+              "block": "0xa"
+            }
+          ],
+          "note": "nominal path works end-to-end (control scenario, not an attack)",
+          "kind": "control",
+          "id": "S7",
+          "name": "chain_end_to_end",
+          "severity": "control",
+          "zone": "prod",
+          "seconds": 1.2,
+          "ts": 1793448074.8739028
+        }
+      ]
+    }
+  },
+  "reproducible": true,
+  "mitigations": {
+    "S1": {
+      "fix": "session_binding",
+      "with_fix": "blocked",
+      "reverted": "attack_possible"
+    },
+    "S2": {
+      "fix": "gateway_sign_only_authz",
+      "with_fix": "blocked",
+      "reverted": "attack_possible"
+    },
+    "S3": {
+      "fix": "wallet_atomic",
+      "with_fix": "blocked",
+      "reverted": "attack_possible"
+    },
+    "S4": {
+      "fix": "dmz_port_isolation",
+      "with_fix": "blocked",
+      "reverted": "attack_possible"
+    },
+    "S6": {
+      "fix": "gateway_debug_header",
+      "with_fix": "blocked",
+      "reverted": "attack_possible"
+    }
+  },
+  "fixes_effective": true,
+  "baseline_expected": true,
+  "reset": {
+    "ok": true,
+    "state": "up",
+    "fabric": {
+      "zones": 9,
+      "links": 12,
+      "ip_pairs": 12,
+      "build_seconds": 1.12
+    },
+    "chain": {
+      "enabled": true,
+      "accounts": 4,
+      "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+    },
+    "health": {
+      "services": {
+        "idp": true,
+        "secrets": true,
+        "ci": true,
+        "dmz": true,
+        "gateway": true,
+        "tx": true,
+        "wallet": true,
+        "policy": true,
+        "signer": true,
+        "hsm": true,
+        "relayer": true,
+        "mon": true,
+        "decoy": true
+      },
+      "healthy": 13,
+      "total": 13
+    },
+    "run_id": "run-20261031T120117Z",
+    "reset": true
+  },
+  "reset_health": {
+    "services": {
+      "idp": true,
+      "secrets": true,
+      "ci": true,
+      "dmz": true,
+      "gateway": true,
+      "tx": true,
+      "wallet": true,
+      "policy": true,
+      "signer": true,
+      "hsm": true,
+      "relayer": true,
+      "mon": true,
+      "decoy": true
+    },
+    "healthy": 13,
+    "total": 13
+  },
+  "after_reset": {
+    "id": "S2",
+    "verdict": "attack_possible",
+    "seconds": 0.12,
+    "parts": [
+      {
+        "zone": "corp",
+        "verdict": "attack_possible"
+      }
+    ]
+  },
+  "restored": {
+    "health": true,
+    "ephemeral_findings_cleared": true,
+    "vulnerability_present_again": true
+  },
+  "metrics": {
+    "services": [
+      {
+        "service": "mon",
+        "zone": "mon",
+        "pid": 18324,
+        "alive": true,
+        "rss_kb": 21824
+      },
+      {
+        "service": "idp",
+        "zone": "edge",
+        "pid": 18325,
+        "alive": true,
+        "rss_kb": 21784
+      },
+      {
+        "service": "secrets",
+        "zone": "edge",
+        "pid": 18326,
+        "alive": true,
+        "rss_kb": 21640
+      },
+      {
+        "service": "ci",
+        "zone": "corp",
+        "pid": 18327,
+        "alive": true,
+        "rss_kb": 21696
+      },
+      {
+        "service": "dmz",
+        "zone": "dmz",
+        "pid": 18328,
+        "alive": true,
+        "rss_kb": 21720
+      },
+      {
+        "service": "gateway",
+        "zone": "prod",
+        "pid": 18329,
+        "alive": true,
+        "rss_kb": 21668
+      },
+      {
+        "service": "tx",
+        "zone": "prod",
+        "pid": 18330,
+        "alive": true,
+        "rss_kb": 21660
+      },
+      {
+        "service": "wallet",
+        "zone": "prod",
+        "pid": 18331,
+        "alive": true,
+        "rss_kb": 21548
+      },
+      {
+        "service": "policy",
+        "zone": "prod",
+        "pid": 18332,
+        "alive": true,
+        "rss_kb": 21592
+      },
+      {
+        "service": "signer",
+        "zone": "signer",
+        "pid": 18333,
+        "alive": true,
+        "rss_kb": 21744
+      },
+      {
+        "service": "hsm",
+        "zone": "hsm",
+        "pid": 18334,
+        "alive": true,
+        "rss_kb": 21664
+      },
+      {
+        "service": "relayer",
+        "zone": "chain",
+        "pid": 18335,
+        "alive": true,
+        "rss_kb": 21536
+      },
+      {
+        "service": "decoy",
+        "zone": "wan",
+        "pid": 18336,
+        "alive": true,
+        "rss_kb": 21596
+      },
+      {
+        "service": "anvil",
+        "zone": "chain",
+        "pid": 18337,
+        "alive": true,
+        "rss_kb": 19652
+      }
+    ],
+    "rss_total_kb": 301324,
+    "rss_total_mb": 294.3,
+    "disk_bytes": {
+      "state": 44601244,
+      "evidence": 6158,
+      "logs": 5929,
+      "db": 57344
+    },
+    "uptime_s": 0.7,
+    "host": {
+      "load1": 0.14,
+      "mem_total_mb": 3940,
+      "mem_available_mb": 3509
+    }
+  },
+  "evidence": {
+    "runs": 25,
+    "dir": "/home/user/PRISM/range/state/evidence"
+  },
+  "preservation": {
+    "files_checked": 48,
+    "changed": [],
+    "removed": [],
+    "clean": true
+  },
+  "seconds": 20.8
+}
