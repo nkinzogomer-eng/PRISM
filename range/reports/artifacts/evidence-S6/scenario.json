@@ -1,0 +1,46 @@
+{
+  "id": "S6",
+  "title": "UNDISCLOSED: actor spoofing via debug header",
+  "complexity": "unknown-cause",
+  "fix": "gateway_debug_header",
+  "run_id": "run-20261031T120117Z",
+  "parts": [
+    {
+      "verdict": "attack_possible",
+      "steps": [
+        {
+          "action": "authenticate as ops1",
+          "ok": true
+        },
+        {
+          "action": "send transfer with X-Debug-Actor: alice",
+          "http": 200
+        },
+        {
+          "action": "read back recorded actor",
+          "actor": "alice"
+        }
+      ],
+      "proofs": [
+        {
+          "authenticated_as": "user:ops1",
+          "recorded_actor": "alice",
+          "http": 200
+        }
+      ],
+      "needs": [
+        "L-3"
+      ],
+      "note": "attribution spoofed: the audit trail names an innocent actor",
+      "id": "S6",
+      "name": "actor_spoof_undisclosed",
+      "severity": "high",
+      "zone": "corp",
+      "seconds": 0.21,
+      "ts": 1793448085.7523808
+    }
+  ],
+  "started": 1793448085.4956837,
+  "verdict": "attack_possible",
+  "seconds": 0.27
+}

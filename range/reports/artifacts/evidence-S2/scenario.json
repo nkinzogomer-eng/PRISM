@@ -1,0 +1,78 @@
+{
+  "id": "S2",
+  "title": "Over-broad CI scope to production signature",
+  "complexity": "high",
+  "fix": "gateway_sign_only_authz",
+  "run_id": "run-20261031T120117Z",
+  "parts": [
+    {
+      "verdict": "attack_possible",
+      "steps": [
+        {
+          "action": "client_credentials as ci-runner",
+          "scope": "ci:run secrets:read transfer:write"
+        },
+        {
+          "action": "run pipeline (real subprocesses)",
+          "http": 200,
+          "steps": [
+            [
+              "git-init",
+              0
+            ],
+            [
+              "build",
+              0
+            ],
+            [
+              "test",
+              0
+            ],
+            [
+              "secrets",
+              0
+            ]
+          ],
+          "secret_fetched": true
+        },
+        {
+          "action": "read signer-token with CI scope",
+          "http": 200,
+          "secret_returned": true
+        },
+        {
+          "action": "ask gateway /v1/sign-only with CI token",
+          "http": 200,
+          "policy_checked": false
+        }
+      ],
+      "proofs": [
+        {
+          "pipeline_run": "a2030306"
+        },
+        {
+          "secret_lease": "a2713c8f87254c0aba47db8f9bf6c649"
+        },
+        {
+          "signed_payload": "FORGED-TRANSFER:26c6b923a28244f1a89f31955a0bc8d7",
+          "signature_prefix": "3046022100d7504cb80e3c501efc0429",
+          "policy_checked": false
+        }
+      ],
+      "needs": [
+        "L-3 (services written for the lab)",
+        "L-6 (CI simplified)"
+      ],
+      "note": "an unprivileged CI identity obtained a production signature with no policy decision",
+      "id": "S2",
+      "name": "ci_to_signature",
+      "severity": "critical",
+      "zone": "corp",
+      "seconds": 0.06,
+      "ts": 1793448085.449859
+    }
+  ],
+  "started": 1793448085.3412118,
+  "verdict": "attack_possible",
+  "seconds": 0.12
+}

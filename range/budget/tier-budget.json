@@ -1,0 +1,137 @@
+{
+  "schema": "prism-range-budget/1",
+  "generated": "2026-10-31",
+  "note": "Estimates are engineering estimates derived from each component's documented/minimum footprint and the D2.5 Stage 1 measurements on this class of hardware. They are budgets to build against, not measurements. After the first build, range/reports/ replaces them with measured values.",
+  "tiers": {
+    "A": {
+      "label": "Analyst — laptop/VM, Compose only",
+      "cpu_vcpu": 8,
+      "ram_total_gb": 16,
+      "ram_reserve_gb": 2.0,
+      "disk_gb": 200,
+      "kvm_vms": 0,
+      "eligible_layers": ["L0", "L1", "L3-lite", "L4", "L5", "L6-lite", "L7-lite"],
+      "expected_concurrent_scenarios": 1
+    },
+    "B": {
+      "label": "Lab — single host + k3s",
+      "cpu_vcpu": 16,
+      "ram_total_gb": 32,
+      "ram_reserve_gb": 3.0,
+      "disk_gb": 400,
+      "kvm_vms": 0,
+      "eligible_layers": ["L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7-lite"],
+      "expected_concurrent_scenarios": 2
+    },
+    "C": {
+      "label": "Full — dedicated host",
+      "cpu_vcpu": 24,
+      "ram_total_gb": 64,
+      "ram_reserve_gb": 6.0,
+      "disk_gb": 1000,
+      "kvm_vms": 2,
+      "eligible_layers": ["L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7"],
+      "expected_concurrent_scenarios": 4
+    }
+  },
+  "services": [
+    {"id": "host-os", "layer": "L0", "tiers": ["A","B","C"], "ram_mb": [350, 500], "cpu_share": 2, "disk_gb": 20, "always_on": true},
+    {"id": "docker-engine", "layer": "L0", "tiers": ["A","B","C"], "ram_mb": [120, 250], "cpu_share": 2, "disk_gb": 15, "always_on": true},
+    {"id": "sops-age", "layer": "L0", "tiers": ["A","B","C"], "ram_mb": [10, 30], "cpu_share": 0, "disk_gb": 0.1, "always_on": false},
+    {"id": "authelia", "layer": "L1", "tiers": ["A"], "ram_mb": [40, 120], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "keycloak", "layer": "L1", "tiers": ["B","C"], "ram_mb": [700, 1400], "cpu_share": 4, "disk_gb": 4, "always_on": true},
+    {"id": "step-ca", "layer": "L1", "tiers": ["A","B","C"], "ram_mb": [30, 90], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "openbao", "layer": "L1", "tiers": ["A","B","C"], "ram_mb": [120, 260], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "jump-ssh", "layer": "L1", "tiers": ["A","B","C"], "ram_mb": [30, 80], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "workspace-dev", "layer": "L1", "tiers": ["A","B","C"], "ram_mb": [400, 1200], "cpu_share": 4, "disk_gb": 25, "always_on": false},
+    {"id": "k3s-server", "layer": "L2", "tiers": ["B","C"], "ram_mb": [600, 1200], "cpu_share": 4, "disk_gb": 10, "always_on": true},
+    {"id": "cilium", "layer": "L2", "tiers": ["B","C"], "ram_mb": [300, 700], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "kyverno", "layer": "L2", "tiers": ["B","C"], "ram_mb": [150, 350], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "gitea", "layer": "L3", "tiers": ["A","B","C"], "ram_mb": [150, 350], "cpu_share": 1, "disk_gb": 8, "always_on": true},
+    {"id": "woodpecker-server", "layer": "L3", "tiers": ["A","B","C"], "ram_mb": [100, 250], "cpu_share": 1, "disk_gb": 2, "always_on": true},
+    {"id": "woodpecker-agent", "layer": "L3", "tiers": ["A","B","C"], "ram_mb": [150, 400], "cpu_share": 3, "disk_gb": 5, "always_on": true},
+    {"id": "registry", "layer": "L3", "tiers": ["A","B","C"], "ram_mb": [60, 150], "cpu_share": 1, "disk_gb": 15, "always_on": true},
+    {"id": "trivy-gitleaks", "layer": "L3", "tiers": ["A","B","C"], "ram_mb": [60, 200], "cpu_share": 1, "disk_gb": 3, "always_on": false},
+    {"id": "svc-transaction", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [120, 300], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "svc-wallet", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [100, 250], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "svc-signer", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [120, 300], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "softhsm2", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [20, 60], "cpu_share": 1, "disk_gb": 0.5, "always_on": true},
+    {"id": "opa", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [40, 120], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "postgres", "layer": "L4", "tiers": ["A","B","C"], "ram_mb": [200, 500], "cpu_share": 2, "disk_gb": 20, "always_on": true},
+    {"id": "anvil", "layer": "L5", "tiers": ["A","B","C"], "ram_mb": [100, 300], "cpu_share": 2, "disk_gb": 5, "always_on": true},
+    {"id": "bundler-alto", "layer": "L5", "tiers": ["A","B","C"], "ram_mb": [120, 300], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "relayer", "layer": "L5", "tiers": ["A","B","C"], "ram_mb": [80, 200], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "suricata", "layer": "L6", "tiers": ["B","C"], "ram_mb": [300, 700], "cpu_share": 3, "disk_gb": 30, "always_on": true},
+    {"id": "zeek", "layer": "L6", "tiers": ["B","C"], "ram_mb": [400, 800], "cpu_share": 3, "disk_gb": 40, "always_on": true},
+    {"id": "falco", "layer": "L6", "tiers": ["B","C"], "ram_mb": [250, 500], "cpu_share": 2, "disk_gb": 2, "always_on": true},
+    {"id": "osquery", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [50, 120], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "loki", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [300, 700], "cpu_share": 2, "disk_gb": 60, "always_on": true},
+    {"id": "prometheus", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [250, 600], "cpu_share": 2, "disk_gb": 40, "always_on": true},
+    {"id": "grafana", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [200, 450], "cpu_share": 1, "disk_gb": 2, "always_on": true},
+    {"id": "alloy", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [80, 200], "cpu_share": 1, "disk_gb": 1, "always_on": true},
+    {"id": "wazuh-suite", "layer": "L6", "tiers": ["C"], "ram_mb": [4000, 8000], "cpu_share": 6, "disk_gb": 150, "always_on": true},
+    {"id": "velociraptor", "layer": "L7", "tiers": ["B","C"], "ram_mb": [250, 600], "cpu_share": 2, "disk_gb": 30, "always_on": true},
+    {"id": "pcap-store", "layer": "L6", "tiers": ["A","B","C"], "ram_mb": [0, 0], "cpu_share": 0, "disk_gb": 40, "always_on": false}
+  ],
+  "measured_comparison": {
+    "source": "reports/d25-step1-target-validation-2026-10-30.md",
+    "note": "A single Anvil + forge toolchain run (228 files compiled, 292 tests) used well under 4 GB RAM and 2 vCPU on this sandbox, which is why L5 is affordable even in Tier A.",
+    "forge_test_wall_seconds": 18.53,
+    "solc_build_wall_seconds": 31.72
+  },
+  "cost_model": {
+    "currency": "EUR",
+    "assumptions": {
+      "hardware_owned": "homelab/lab workstation already owned: marginal cost = electricity only",
+      "electricity_eur_per_kwh": 0.30,
+      "typical_idle_watts": 35,
+      "typical_load_watts": 95,
+      "hours_per_month_used": 120,
+      "cloud_prices_ex_vat": true
+    },
+    "options": [
+      {
+        "id": "design-only-codespace",
+        "tier": "none",
+        "description": "Authoring and artefact validation on an existing laptop/sandbox",
+        "monthly_eur_min": 0,
+        "monthly_eur_max": 0,
+        "notes": "What this delivery used: 2 vCPU, 4 GB, no runtime — sufficient for docs, schemas and CI-style checks, never for running the range."
+      },
+      {
+        "id": "homelab-owned",
+        "tier": "B",
+        "description": "Existing 16-32 GB workstation, electricity only",
+        "monthly_eur_min": 2.5,
+        "monthly_eur_max": 6.5,
+        "notes": "35 W idle .. 95 W loaded for 120 h/month at 0.30 EUR/kWh. Lowest cost, but hardware must already exist."
+      },
+      {
+        "id": "cloud-cx42",
+        "tier": "B",
+        "description": "Hetzner CX42-class shared vCPU: 8 vCPU / 16 GB / 160 GB",
+        "monthly_eur_min": 16.4,
+        "monthly_eur_max": 41.5,
+        "notes": "Published plan price has been repriced during 2026; the range keeps a range rather than one number. Adequate for Tier A, tight for Tier B.",
+        "source": "https://www.hetzner.com/cloud/"
+      },
+      {
+        "id": "cloud-cx52",
+        "tier": "C",
+        "description": "Hetzner CX52-class: 16 vCPU / 32 GB / 320 GB",
+        "monthly_eur_min": 33.1,
+        "monthly_eur_max": 41.5,
+        "notes": "Best fit for Tier B; Tier C needs a second box or a larger dedicated plan.",
+        "source": "https://cloudtally.eu/hetzner-cloud-prices"
+      },
+      {
+        "id": "cloud-cpx52-us",
+        "tier": "C",
+        "description": "Hetzner CPX52-class (US region) for Tier C",
+        "monthly_eur_min": 100.5,
+        "monthly_eur_max": 120.5,
+        "notes": "Included for completeness: 2026 repricing made AMD/US shared plans 3x more expensive than CX equivalents, which is why the recommendation is CX52."
+      }
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+# Admission guardrails. These are the guardrails the Blue Team is expected to
+# *find already installed* and then test; scenarios that need them absent use
+# their own namespace copy with the policy disabled, so the two states are
+# explicit in git history rather than implied.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: rg-disallow-host-access
+  annotations:
+    policies.kyverno.io/title: No host namespace or hostPath in the range
+    policies.kyverno.io/severity: high
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-host-network-or-pid
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["rg-prod", "rg-mon"]
+      validate:
+        message: "hostNetwork/hostPID/hostIPC are forbidden in rg-prod and rg-mon"
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"
+    - name: no-privileged-containers
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["rg-prod", "rg-mon"]
+      validate:
+        message: "privileged containers and added capabilities are forbidden"
+        pattern:
+          spec:
+            containers:
+              - =(securityContext):
+                  =(privileged): "false"
+                  =(capabilities):
+                    =(add): "[]"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: rg-require-image-digest
+  annotations:
+    policies.kyverno.io/title: Images in rg-prod must be pinned by digest
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-digest
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["rg-prod"]
+      validate:
+        message: "image must be referenced by sha256 digest (tag-only is not a pin)"
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: NotContains
+                    value: "@sha256:"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: rg-require-signed-images
+  annotations:
+    policies.kyverno.io/title: cosign verification for rg-prod images
+spec:
+  validationFailureAction: Audit   # starts in Audit: the drift is itself a finding
+  background: true
+  rules:
+    - name: verify-cosign
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["rg-prod"]
+      verifyImages:
+        - imageReferences: ["registry.rg-corp/*"]
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      REPLACED_AT_BUILD_BY_range/scripts/build.sh_FROM_LOCAL_COSIGN_KEY
+                      -----END PUBLIC KEY-----
