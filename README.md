@@ -59,3 +59,16 @@ validation only.
 - [D2.5 Stage 1 target validation report (2026-10-30)](reports/d25-step1-target-validation-2026-10-30.md)
 - [Stage 1 environment lock](reports/d25-step1/environment.lock.json) and [artifact manifest](reports/d25-step1/artifacts.sha256)
 - [Stage 1 validation script](scripts/d25/validate_target.sh)
+
+## PRISM Cyber Range (D3)
+
+An isolated, reproducible security laboratory for Red Team, Blue Team and
+independent-verification research. **Delivery 1 (design) only — no layer is
+built yet, and this is measured, not assumed.**
+
+- [Range design index](docs/cyber-range/README.md) — scope, build order, what is and is not delivered
+- [Host inventory](docs/cyber-range/01-inventaire.md) · [Architecture](docs/cyber-range/02-architecture.md) · [Component matrix](docs/cyber-range/03-component-matrix.md)
+- [Resource budget](docs/cyber-range/04-resource-budget.md) · [Installation plan](docs/cyber-range/05-installation.md) · [Security boundaries](docs/cyber-range/06-security-boundaries.md)
+- [Scenario catalogue S1–S8](docs/cyber-range/07-scenario-catalogue.md) · [Realism limits L-1…L-12](docs/cyber-range/08-realism-limits.md) · [Risk register](docs/cyber-range/09-risks.md)
+- [Pinned component inventory](range/versions.lock.json) · [Zone policy](range/network/nftables-range.nft)
+- Verification: `./range/scripts/preflight.sh` and `python3 range/scripts/verify_artifacts.py` ([report](range/reports/2026-10-31-delivery1-verification.md))

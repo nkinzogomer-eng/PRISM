@@ -1,0 +1,31 @@
+# Tier B/C only. Namespace layout mirrors the nftables zones so that a finding
+# can be stated either in network terms or in Kubernetes terms and still mean
+# the same boundary.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rg-prod
+  labels:
+    prism.range/zone: prod
+    # Enforced (not just audited): a privileged pod in rg-prod is a policy
+    # violation the scenario expects Kyverno to block.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rg-corp
+  labels:
+    prism.range/zone: corp
+    pod-security.kubernetes.io/enforce: baseline
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rg-mon
+  labels:
+    prism.range/zone: mon
+    pod-security.kubernetes.io/enforce: restricted

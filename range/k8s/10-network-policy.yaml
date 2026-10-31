@@ -1,0 +1,66 @@
+# Default-deny plus explicit allow, per namespace. This is the Kubernetes
+# expression of the same matrix that range/network/nftables-range.nft encodes.
+# Deliberate difference (documented in 02-architecture.md §7): nftables is the
+# outer ring and cannot be bypassed by a misconfigured pod; NetworkPolicy is the
+# inner ring and CAN be bypassed by anything running with hostNetwork. Both are
+# kept so the Blue Team can discover that difference.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: rg-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: signer-ingress-only-from-transaction
+  namespace: rg-prod
+spec:
+  podSelector:
+    matchLabels: { app: svc-signer }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: svc-transaction } }
+      ports:
+        - protocol: TCP
+          port: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wallet-egress-only-to-chain
+  namespace: rg-prod
+spec:
+  podSelector:
+    matchLabels: { app: svc-wallet }
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector: { matchLabels: { app: anvil } }
+      ports:
+        - protocol: TCP
+          port: 8545
+    - to:                          # DNS is still needed and is a real exfil path
+        - namespaceSelector: { matchLabels: { prism.range/zone: mon } }
+      ports:
+        - protocol: UDP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-may-scrape-all
+  namespace: rg-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { prism.range/zone: mon } }
+      ports:
+        - protocol: TCP
+          port: 9100

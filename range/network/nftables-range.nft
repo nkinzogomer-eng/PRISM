@@ -1,0 +1,92 @@
+# ---------------------------------------------------------------------------
+# PRISM Cyber Range — zone segmentation (nftables)
+#
+# This file IS the trust-boundary definition. The architecture document
+# (docs/cyber-range/02-architecture.md) and this ruleset must agree; the
+# verifier (range/scripts/verify_artifacts.py) fails if they drift.
+#
+# Zones -> bridge interfaces (created by range/scripts/build.sh):
+#   rg-wan   10.10.0.0/24   simulated external world (chain RPC, "internet" decoy)
+#   rg-edge  10.20.0.0/24   jump host, SSO/IdP, PKI, secrets
+#   rg-corp  10.30.0.0/24   developer/admin workstations, CI forge
+#   rg-prod  10.40.0.0/24   transaction, wallet, signer, HSM, bundler, relayer
+#   rg-mon   10.50.0.0/24   SIEM, log store, metrics, forensic collectors
+#   rg-dmz   10.60.0.0/24   reverse proxy exposing the public "exchange API"
+#
+# Invariants enforced here:
+#   I1  default drop, both directions, on every zone interface
+#   I2  no zone may reach the real internet: egress to the host's uplink is dropped
+#       except DNS/NTP to the lab's own resolver and clock, listed explicitly
+#   I3  rg-prod accepts new connections ONLY from rg-edge (SSO/proxy) and rg-mon (pull)
+#   I4  rg-corp can reach rg-edge and the forged CI, never rg-prod directly
+#   I5  the HSM/signer subnet accepts connections only from the signer service
+#   I6  rg-mon is read-only towards every other zone (pull-only telemetry)
+#
+# Apply (host, requires root):
+#   nft -f range/network/nftables-range.nft
+# Rollback:
+#   nft delete table inet prism_range
+# ---------------------------------------------------------------------------
+
+table inet prism_range {
+  # ---- sets: the only permitted exceptions, kept explicit and tiny --------
+  set dns_collectors   { type ipv4_addr; flags interval; elements = { 10.50.0.10 } }
+  set ntp_servers      { type ipv4_addr; flags interval; elements = { 10.50.0.11 } }
+  set signer_hosts     { type ipv4_addr; flags interval; elements = { 10.40.0.20 } }
+  set hsm_hosts        { type ipv4_addr; flags interval; elements = { 10.40.0.21 } }
+  set mon_hosts        { type ipv4_addr; flags interval; elements = { 10.50.0.0/24 } }
+
+  chain ingress {
+    type filter hook input priority filter; policy drop;          # I1
+    ct state established,related accept
+    iifname "lo" accept
+    # lab management plane: only the host operator, on the management bridge
+    iifname "rg-mgmt" ip saddr 10.99.0.0/24 tcp dport { 22, 443 } accept
+    drop
+  }
+
+  chain egress {
+    type filter hook output priority filter; policy drop;         # I2
+    ct state established,related accept
+    oifname "lo" accept
+    # everything stays inside the lab prefixes
+    ip daddr { 10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24,
+               10.40.0.0/24, 10.50.0.0/24, 10.60.0.0/24, 10.99.0.0/24 } accept
+    # the ONLY outward traffic: DNS and NTP to the lab's own services
+    ip daddr @dns_collectors udp dport 53 accept
+    ip daddr @dns_collectors tcp dport 53 accept
+    ip daddr @ntp_servers udp dport 123 accept
+    # simulated external world (rg-wan) is where a scenario may "exfiltrate"
+    # to a decoy listener; it is still an isolated bridge, never the uplink
+    oifname "rg-wan" accept
+    drop
+  }
+
+  chain forward {
+    type filter hook forward priority filter; policy drop;         # I1
+    ct state established,related accept
+
+    # ---- zone-to-zone matrix -------------------------------------------
+    # edge -> everything except the signer/HSM pair (I5)
+    iifname "rg-edge" oifname { "rg-corp", "rg-dmz", "rg-mon", "rg-wan" } accept
+    iifname "rg-edge" oifname "rg-prod" ip daddr != @hsm_hosts accept
+
+    # corp -> edge (SSO), dmz (public API), forge; never prod (I4)
+    iifname "rg-corp" oifname { "rg-edge", "rg-dmz", "rg-wan" } accept
+
+    # dmz -> prod application ports only, never the HSM
+    iifname "rg-dmz" oifname "rg-prod" ip daddr != @hsm_hosts \
+        tcp dport { 8080, 8081, 8545 } accept
+
+    # prod internals: signer -> HSM is the single permitted pair (I5)
+    iifname "rg-prod" oifname "rg-prod" ip saddr @signer_hosts ip daddr @hsm_hosts tcp dport 5657 accept
+
+    # monitoring pulls (I6): mon may initiate to every zone, no zone initiates to mon
+    iifname "rg-mon" oifname { "rg-edge", "rg-corp", "rg-prod", "rg-dmz", "rg-wan" } accept
+
+    # wan (simulated internet) cannot initiate into any internal zone
+    iifname "rg-wan" oifname { "rg-edge", "rg-corp", "rg-prod", "rg-dmz", "rg-mon" } drop
+
+    drop
+  }
+}

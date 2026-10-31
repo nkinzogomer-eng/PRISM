@@ -1,0 +1,328 @@
+# ---------------------------------------------------------------------------
+# PRISM Cyber Range — Tier A ("Analyst") topology, Docker/Podman Compose
+#
+# Purpose: the smallest layout that still contains every *mechanism* the
+# scenarios need — real SSO, real PKCS#11 HSM emulation, real policy engine,
+# real chain, real ERC-4337 path, real telemetry — with Kubernetes dropped.
+#
+# What Tier A deliberately does NOT have (documented in 08-realism-limits.md):
+#   * no Kubernetes RBAC / admission / service-account findings
+#   * no Zeek, no Velociraptor, no Wazuh (single light log/metric stack instead)
+#
+# Image pins: tags are pinned to the versions in range/versions.lock.json.
+# Digests are resolved on the target host by range/scripts/pin_images.sh and
+# written into range/versions.lock.json (fields "image_digest"); a tag alone is
+# not accepted for an acceptance run.
+#
+# Secrets: every ${...} below is supplied from an age-encrypted file through
+# SOPS at build time (range/scripts/build.sh). No literal secret lives here.
+# ---------------------------------------------------------------------------
+name: prism-range-a
+
+x-common: &common
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+  security_opt: ["no-new-privileges:true"]
+
+networks:
+  edge:   { name: rg-edge,  ipam: { config: [{ subnet: 10.20.0.0/24 }] }, internal: true }
+  corp:   { name: rg-corp,  ipam: { config: [{ subnet: 10.30.0.0/24 }] }, internal: true }
+  prod:   { name: rg-prod,  ipam: { config: [{ subnet: 10.40.0.0/24 }] }, internal: true }
+  mon:    { name: rg-mon,   ipam: { config: [{ subnet: 10.50.0.0/24 }] }, internal: true }
+  dmz:    { name: rg-dmz,   ipam: { config: [{ subnet: 10.60.0.0/24 }] }, internal: true }
+  # rg-wan is the simulated outside world. `internal: true` keeps it off the
+  # host uplink: a scenario can "exfiltrate" only to a decoy listener here.
+  wan:    { name: rg-wan,   ipam: { config: [{ subnet: 10.10.0.0/24 }] }, internal: true }
+
+services:
+  # ---------------- L1: identity, PKI, secrets, access -------------------
+  authelia:
+    <<: *common
+    image: authelia/authelia:4.39.28
+    container_name: rg-authelia
+    volumes: [ "../config/authelia:/config:ro" ]
+    environment:
+      TZ: UTC
+      AUTHELIA_JWT_SECRET_FILE: /config/secrets/jwt
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/session
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/storage
+    networks:
+      edge: { ipv4_address: 10.20.0.10 }
+      dmz:  { ipv4_address: 10.60.0.10 }
+    ports: [ "127.0.0.1:9091:9091" ]   # operator console, loopback only
+
+  step-ca:
+    <<: *common
+    image: smallstep/step-ca:0.30.2
+    container_name: rg-stepca
+    volumes: [ "../config/step-ca:/home/step" ]
+    environment:
+      DOCKER_STEPCA_INIT_NAME: PRISM Range CA
+      DOCKER_STEPCA_INIT_DNS_NAMES: step-ca,rg-stepca,localhost
+    networks:
+      edge: { ipv4_address: 10.20.0.11 }
+
+  openbao:
+    <<: *common
+    image: openbao/openbao:2.7.2
+    container_name: rg-openbao
+    cap_add: [ "IPC_LOCK" ]
+    environment:
+      BAO_DEV_ROOT_TOKEN_ID: ${BAO_DEV_ROOT_TOKEN:?set by build.sh from sops}
+      BAO_ADDR: http://0.0.0.0:8200
+    command: [ "server", "-dev" ]   # dev mode: in-memory, dies with the container
+    networks:
+      edge: { ipv4_address: 10.20.0.12 }
+
+  jump-ssh:
+    <<: *common
+    image: linuxserver/openssh-server:version-10.2_p1-r0
+    container_name: rg-jump
+    environment:
+      PUID: 1000
+      PGID: 1000
+      USER_NAME: operator
+      PUBLIC_KEY_FILE: /config/keys/operator.pub
+      SUDO_ACCESS: "false"
+      PASSWORD_ACCESS: "false"
+    volumes: [ "../config/jump:/config" ]
+    networks:
+      edge: { ipv4_address: 10.20.0.20 }
+
+  # ---------------- L2: absent in Tier A (no Kubernetes) ----------------
+
+  # ---------------- L3: forge, CI, registry -----------------------------
+  gitea:
+    <<: *common
+    image: gitea/gitea:28.2.0
+    container_name: rg-gitea
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: postgres:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: gitea
+      GITEA__database__PASSWD: ${POSTGRES_GITEA_PASSWORD:?set by build.sh from sops}
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+    volumes: [ "../state/gitea:/data" ]
+    depends_on: [ postgres ]
+    networks:
+      corp: { ipv4_address: 10.30.0.10 }
+
+  woodpecker-server:
+    <<: *common
+    image: woodpeckerci/woodpecker-server:3.20.1
+    container_name: rg-woodpecker
+    environment:
+      WOODPECKER_OPEN: "false"
+      WOODPECKER_HOST: http://woodpecker.rg-corp
+      WOODPECKER_GITEA: "true"
+      WOODPECKER_GITEA_URL: http://gitea:3000
+      WOODPECKER_AGENT_SECRET: ${WOODPECKER_AGENT_SECRET:?set by build.sh from sops}
+    volumes: [ "../state/woodpecker:/var/lib/woodpecker" ]
+    networks:
+      corp: { ipv4_address: 10.30.0.11 }
+
+  woodpecker-agent:
+    <<: *common
+    image: woodpeckerci/woodpecker-agent:3.20.1
+    container_name: rg-woodpecker-agent
+    environment:
+      WOODPECKER_SERVER: woodpecker-server:9000
+      WOODPECKER_AGENT_SECRET: ${WOODPECKER_AGENT_SECRET:?set by build.sh from sops}
+      # Deliberate, documented realism: the agent can reach prod exactly as a
+      # CI runner with deploy rights would. Scenario S3 tests the consequences.
+      WOODPECKER_MAX_WORKFLOWS: "2"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # CI runs real containers
+    networks:
+      corp: { ipv4_address: 10.30.0.12 }
+      prod: { ipv4_address: 10.40.0.12 }            # <-- trust boundary crossing
+
+  registry:
+    <<: *common
+    image: registry:2
+    container_name: rg-registry
+    volumes: [ "../state/registry:/var/lib/registry" ]
+    networks:
+      corp: { ipv4_address: 10.30.0.13 }
+
+  # ---------------- L4: transaction, wallet, signing, policy ------------
+  postgres:
+    <<: *common
+    image: postgres:18.6
+    container_name: rg-postgres
+    environment:
+      POSTGRES_USER: prism
+      POSTGRES_DB: prism
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set by build.sh from sops}
+    volumes: [ "../state/postgres:/var/lib/postgresql/data" ]
+    networks:
+      prod: { ipv4_address: 10.40.0.10 }
+
+  opa:
+    <<: *common
+    image: openpolicyagent/opa:1.22.0
+    container_name: rg-opa
+    command: [ "run", "--server", "--addr=0.0.0.0:8181", "/policies" ]
+    volumes: [ "../config/opa:/policies:ro" ]
+    networks:
+      prod: { ipv4_address: 10.40.0.13 }
+
+  svc-transaction:
+    <<: *common
+    image: prism/range-svc-transaction:0.1.0-local
+    container_name: rg-svc-transaction
+    environment:
+      DATABASE_URL: postgres://prism:${POSTGRES_PASSWORD}@postgres:5432/prism
+      OPA_URL: http://opa:8181/v1/data/prism/tx/allow
+      SIGNER_URL: http://svc-signer:8081
+      IDP_ISSUER: https://authelia.rg-edge
+    depends_on: [ postgres, opa, svc-signer ]
+    networks:
+      prod:  { ipv4_address: 10.40.0.14 }
+      dmz:   { ipv4_address: 10.60.0.20 }
+
+  svc-wallet:
+    <<: *common
+    image: prism/range-svc-wallet:0.1.0-local
+    container_name: rg-svc-wallet
+    environment:
+      DATABASE_URL: postgres://prism:${POSTGRES_PASSWORD}@postgres:5432/prism
+      CHAIN_RPC: http://anvil:8545
+    depends_on: [ postgres, anvil ]
+    networks:
+      prod: { ipv4_address: 10.40.0.15 }
+
+  svc-signer:
+    <<: *common
+    image: prism/range-svc-signer:0.1.0-local
+    container_name: rg-svc-signer
+    environment:
+      PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
+      PKCS11_TOKEN_LABEL: prism-signer
+      PKCS11_PIN: ${SOFTHSM_USER_PIN:?set by build.sh from sops}
+      # The signer is the only process allowed to talk to the HSM (invariant I5)
+    volumes: [ "../state/softhsm:/var/lib/softhsm/tokens" ]
+    networks:
+      prod: { ipv4_address: 10.40.0.20 }
+
+  softhsm2:
+    <<: *common
+    image: prism/range-softhsm:2.6.1-local
+    container_name: rg-softhsm
+    # PKCS#11 is a shared-library API, not a network protocol: the module is
+    # mounted into the signer. This sidecar exists so the token store has its
+    # own lifecycle and can be snapshotted/restored independently.
+    volumes:
+      - "../state/softhsm:/var/lib/softhsm/tokens"
+      - "../config/softhsm:/etc/softhsm2:ro"
+    networks:
+      prod: { ipv4_address: 10.40.0.21 }
+    command: [ "sleep", "infinity" ]
+
+  # ---------------- L5: chain, accounts, bundler, relayer ---------------
+  anvil:
+    <<: *common
+    image: ghcr.io/foundry-rs/foundry:stable   # replaced by pinned digest at build
+    container_name: rg-anvil
+    entrypoint: [ "anvil" ]
+    command: [ "--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337",
+               "--block-time", "2", "--accounts", "20", "--state-interval", "5" ]
+    # NOTE: default anvil accounts are public test keys. They are NOT secrets and
+    # must never be confused with real ones; see 08-realism-limits.md L-5.
+    networks:
+      prod: { ipv4_address: 10.40.0.30 }
+      wan:  { ipv4_address: 10.10.0.30 }
+
+  bundler-alto:
+    <<: *common
+    image: ghcr.io/pimlicolabs/alto:0.0.19
+    container_name: rg-bundler
+    environment:
+      ALTO_ENTRYPOINT: "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+      ALTO_RPC_URL: http://anvil:8545
+      ALTO_PORT: "4337"
+    depends_on: [ anvil ]
+    networks:
+      prod: { ipv4_address: 10.40.0.31 }
+
+  relayer:
+    <<: *common
+    image: prism/range-relayer:0.1.0-local
+    container_name: rg-relayer
+    environment:
+      RPC_URL: http://anvil:8545
+      BUNDLER_URL: http://bundler-alto:4337
+      SIGNER_URL: http://svc-signer:8081
+    depends_on: [ anvil, bundler-alto, svc-signer ]
+    networks:
+      prod: { ipv4_address: 10.40.0.32 }
+
+  # ---------------- L6: telemetry ---------------------------------------
+  loki:
+    <<: *common
+    image: grafana/loki:3.7.9
+    container_name: rg-loki
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    volumes: [ "../config/loki:/etc/loki:ro", "../state/loki:/loki" ]
+    networks:
+      mon: { ipv4_address: 10.50.0.20 }
+
+  prometheus:
+    <<: *common
+    image: prom/prometheus:v3.15.1
+    container_name: rg-prometheus
+    volumes:
+      - "../config/prometheus:/etc/prometheus:ro"
+      - "../state/prometheus:/prometheus"
+    networks:
+      mon: { ipv4_address: 10.50.0.21 }
+
+  grafana:
+    <<: *common
+    image: grafana/grafana:13.3.0
+    container_name: rg-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set by build.sh from sops}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes: [ "../state/grafana:/var/lib/grafana" ]
+    networks:
+      mon: { ipv4_address: 10.50.0.22 }
+    ports: [ "127.0.0.1:3000:3000" ]
+
+  alloy:
+    <<: *common
+    image: grafana/alloy:v1.21.3
+    container_name: rg-alloy
+    command: [ "run", "/etc/alloy/config.alloy" ]
+    volumes:
+      - "../config/alloy:/etc/alloy:ro"
+      - "/var/log:/var/log:ro"
+      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+    networks:
+      mon: { ipv4_address: 10.50.0.23 }
+
+  osquery-flags:
+    <<: *common
+    image: osquery/osquery:5.24.0
+    container_name: rg-osquery
+    command: [ "--flagfile=/etc/osquery/osquery.flags" ]
+    volumes:
+      - "../config/osquery:/etc/osquery:ro"
+      - "/proc:/host/proc:ro"
+      - "/etc:/host/etc:ro"
+    networks:
+      mon: { ipv4_address: 10.50.0.24 }
+
+  # ---------------- L7: forensic capture (light) ------------------------
+  tcpdump-wan:
+    <<: *common
+    image: nicolaka/netshoot:v0.14
+    container_name: rg-tcpdump
+    command: [ "tcpdump", "-i", "any", "-w", "/pcap/wan-%Y%m%d.pcap", "-G", "3600", "-Z", "root" ]
+    volumes: [ "../state/pcap:/pcap" ]
+    cap_add: [ "NET_ADMIN", "NET_RAW" ]
+    network_mode: "container:rg-anvil"   # captures the simulated WAN link

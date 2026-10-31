@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# SCENARIO FIXTURE — deliberately over-privileged CI identity
+#
+# This is NOT a fake vulnerable application. It is a realistic configuration
+# error of the kind found in real exchange infrastructure: the CI runner that
+# deploys to the production namespace was given cluster-admin "because it was
+# easier", and its long-lived token was never rotated.
+#
+# Scenario S3 ("CI-to-keys") exists to test whether PRISM can find this path,
+# and whether the Blue Team controls (Kyverno + token TTL + OIDC federation)
+# actually break it. The fixture is versioned so the *before* state is
+# reproducible; the mitigation candidate lives in 31-fixture-rbac-fixed.yaml.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deploy-bot
+  namespace: rg-corp
+  annotations:
+    prism.range/fixture: "S3-before"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rg-deploy-bot-cluster-admin
+  annotations:
+    prism.range/fixture: "S3-before"
+    prism.range/why: "misconfiguration under study — not a requirement of the lab"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: deploy-bot
+    namespace: rg-corp
+---
+# Long-lived, non-expiring token: the actual enabler. Kubernetes 1.24+ no
+# longer auto-creates these, so the fixture must request it explicitly — which
+# is exactly what an operator following an old runbook would do.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deploy-bot-token
+  namespace: rg-corp
+  annotations:
+    kubernetes.io/service-account.name: deploy-bot
+    prism.range/fixture: "S3-before"
+type: kubernetes.io/service-account-token
