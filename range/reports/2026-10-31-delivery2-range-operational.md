@@ -141,7 +141,7 @@ scellé de preuve (`scenario.json` + `alerts.jsonl` + `SHA256SUMS`).
 ## 5. Tests et résultats
 
 Campagne complète : `python3 range/lab/campaign.py` → **code de sortie 0**,
-20,3 s, 7 étapes. Rapport brut :
+20,8 s, 9 étapes. Rapport brut :
 `range/reports/artifacts/campaign-2026-10-31.json`.
 
 ### 5.1 Démarrage à froid et santé
@@ -301,7 +301,7 @@ mesuré, pas supposé.
 | Disque — journaux | 5,9 KB par campagne |
 | Disque — preuves | 6,2 KB par campagne |
 | Réseau | 9 zones, 12 liens veth, 24 adresses de transit `/30`, 0 route par défaut |
-| Durée | `up` ≈ 6 s ; campagne complète (7 étapes, 25 exécutions) ≈ 20 s ; `reset` ≈ 6 s |
+| Durée | `up` ≈ 6 s ; campagne complète (9 étapes, 25 exécutions) ≈ 21 s ; `reset` ≈ 6 s |
 
 Le laboratoire tient donc dans **< 512 MB de RAM** et **< 100 MB de disque**,
 hors binaires d'outils.
@@ -402,7 +402,7 @@ stable en `/v1` ; toute rupture imposera `/v2`.
 | `range/lab/scenarios.py` | 7 scénarios exécutables |
 | `range/lab/labd.py` | superviseur + plan de contrôle v1 |
 | `range/lab/ctl.py` | client de référence |
-| `range/lab/campaign.py` | campagne d'acceptation (8 étapes) |
+| `range/lab/campaign.py` | campagne d'acceptation (9 étapes) |
 | `range/lab/run.sh` | cycle de vie |
 | `range/lab/tools/install-anvil.sh` | installation épinglée d'Anvil |
 | `range/reports/artifacts/campaign-2026-10-31.json` | résultats bruts de la campagne |
