@@ -80,7 +80,7 @@ Avoid arbitrary test volume. The following focused suite would target the highes
 | Main CI evidence | GitHub Actions workflow runs and check-runs API | **INSPECTED**, not rerun; main run succeeded 2026-10-16 |
 | PR 13/14/18/36 checks | GitHub check-runs API | **INSPECTED**, recorded above |
 | PR 15/16/17 checks | GitHub check-runs API | **NOT FOUND** for inspected head SHAs; not treated as pass |
-| Audit PR GitHub CI | `python -m unittest discover -s tests -v`; `python scripts/run_comparison.py --runs 20`; `python scripts/benchmark_transformation.py --runs 20` | **PASS**, run 41473845841, CPython 3.12.15; 53 tests in 1.367 s, both 20-run scripts exited 0 ([workflow](https://github.com/nkinzogomer-eng/PRISM/actions/runs/41473845841)) |
+| Audit PR GitHub CI | `python -m unittest discover -s tests -v`; `python scripts/run_comparison.py --runs 20`; `python scripts/benchmark_transformation.py --runs 20` | **PASS**, run 41474161328, CPython 3.12.15; 53 tests in 0.831 s, both 20-run scripts exited 0 ([workflow](https://github.com/nkinzogomer-eng/PRISM/actions/runs/41474161328)) |
 | Local test suite | `python -m unittest discover -s tests -v` | **NOT EXECUTED**: Python runtime unavailable in this host |
 | Current GitHub `main` source tests | Not fetched into an isolated runnable checkout | **NOT EXECUTED locally**; the same `main` tree plus documentation-only changes was exercised by the PR workflow below |
 | Benchmarks / scientific replication | CI records and branch protocols only | **NOT EXECUTED locally in this audit**; GitHub CI ran the two main synthetic scripts, which are engineering evidence only |
