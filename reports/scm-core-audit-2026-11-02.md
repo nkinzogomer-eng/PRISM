@@ -115,5 +115,5 @@ This change is in PR #38 only. On its code-fix head, GitHub Actions ran 56 unit 
 
 ### Next action
 
-Create a clean isolated checkout of `main` plus a new audit branch, install a pinned Python 3.12 toolchain, run the baseline suite, add the malformed-certificate tests and the minimal verifier hardening as the first reversible code change, then run the full unit suite and targeted finite differential properties. Only after those results are recorded should broader transformation, cost-vector, persistence, or API work be split into separate reviewed stages. Keep PR #36 and all cyber experiments outside that core change path.
+Review PR #38 as a bounded first fix. If accepted, keep the general kernel NO-GO and split the next work into reviewed stages: (1) state the generic model/operation and transformation contracts precisely; (2) design exact or sound-approximation interfaces and independent proof checks; (3) add dependency-aware invalidation and the full resource-vector planner; and (4) define versioned persistence, API/CLI, and isolation boundaries. Each stage needs targeted differential/adversarial tests and explicit hardware/tool versions. Keep PR #36 and all cyber experiments outside the core change path.
 
