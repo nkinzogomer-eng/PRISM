@@ -42,6 +42,30 @@ class ReferenceTests(unittest.TestCase):
         )
         self.assertFalse(p.verify(external_claim))
 
+    def test_certificate_rejects_unknown_evidence_key(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            valid.hypothesis_ids, (("unknown", "0"),), valid.decision
+        )
+        self.assertFalse(p.verify(forged))
+
+    def test_certificate_rejects_duplicate_evidence_keys(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            valid.hypothesis_ids, (("a", "0"), ("a", "0")), valid.decision
+        )
+        self.assertFalse(p.verify(forged))
+
+    def test_certificate_rejects_duplicate_hypothesis_ids(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            ("h00", "h01", "h00"), valid.evidence, valid.decision
+        )
+        self.assertFalse(p.verify(forged))
+
     def test_evidence_can_reduce_to_one_model(self):
         p = problem()
         s = p.apply(p.apply(p.initial_state(), "a", "0"), "b", "0")

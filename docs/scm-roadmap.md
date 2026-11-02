@@ -1,7 +1,15 @@
 # SCM → PRISM: staged research and implementation roadmap
 
 **Plan version:** 1.0  
-**Last reviewed:** 2026-10-16
+**Last reviewed:** 2026-11-02
+
+
+
+## Readiness snapshot — 2026-11-02
+
+GitHub `main` is at `da6980ae9e9b499795fdbf31f137e5a6a0dd5840`. The core readiness audit is recorded in [reports/scm-core-audit-2026-11-02.md](../reports/scm-core-audit-2026-11-02.md). It finds the kernel useful as a finite research reference but **NO-GO as a complete general SCM kernel or production runtime**.
+
+The Phase 4 experiments in open PRs #13–#18 are not merged into `main`; they remain separate evidence and must not be counted as completed core capabilities. PR #36 is an independent D2.5/cyber-range delivery and does not change any `prism/` core module. Keep Phase 4 open pending review of its explicit exit criteria; do not mark a research phase complete merely because a workflow passed.
 
 ## Phase tracker
 

@@ -125,11 +125,35 @@ class FiniteProblem:
     def verify(self, certificate: Certificate) -> bool:
         # The finite reference verifier cannot establish external-world
         # completeness or validation. Reject stronger, unsupported scope claims.
+        if not isinstance(certificate, Certificate):
+            return False
         if certificate.scope != "declared_hypothesis_class":
             return False
-        if not certificate.hypothesis_ids:
+        if (
+            not isinstance(certificate.hypothesis_ids, tuple)
+            or not certificate.hypothesis_ids
+            or any(not isinstance(h_id, str) for h_id in certificate.hypothesis_ids)
+            or len(set(certificate.hypothesis_ids)) != len(certificate.hypothesis_ids)
+        ):
             return False
         if any(h_id not in self.hypotheses for h_id in certificate.hypothesis_ids):
+            return False
+        if (
+            not isinstance(certificate.evidence, tuple)
+            or any(
+                not isinstance(item, tuple)
+                or len(item) != 2
+                or any(not isinstance(value, str) for value in item)
+                for item in certificate.evidence
+            )
+            or not isinstance(certificate.decision, str)
+        ):
+            return False
+        evidence_ids = tuple(item[0] for item in certificate.evidence)
+        if (
+            len(set(evidence_ids)) != len(evidence_ids)
+            or any(obs_id not in self.observations for obs_id in evidence_ids)
+        ):
             return False
         compatible = {
             h_id for h_id, h in self.hypotheses.items()
