@@ -1,8 +1,12 @@
 # SCM → PRISM phase register
 
 **Plan version:** 1.0 (working baseline)  
-**Last reviewed:** 2026-10-16  
+**Last reviewed:** 2026-11-02  
 **Rule:** A phase is checked only when its stated exit criteria have been reviewed and met. A checked research-planning phase does not imply that the scientific hypotheses it defines have been proven.
+
+## Audit note — 2026-11-02
+
+See [the current SCM core readiness audit](../reports/scm-core-audit-2026-11-02.md). GitHub `main` remains at `da6980ae9e9b499795fdbf31f137e5a6a0dd5840`. Open research PRs #13–#18, including Phase 4 experiments, are not merged and do not complete the main-branch kernel. PR #36 is a separate D2.5/cyber-range change with no `prism/` module changes. Phase status remains unchecked until phase-specific review gates are met; a passing CI check is software evidence, not scientific proof.
 
 ## Status
 
