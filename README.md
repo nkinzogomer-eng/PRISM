@@ -37,6 +37,10 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 ## Code and research notes
 
 - [Core specification](docs/core.md)
+- [Operational architecture](docs/architecture.md)
+- [CLI and JSON interface](docs/cli.md)
+- [Security and threat model](docs/security.md)
+- [SCM conformance matrix](docs/scm-conformance-matrix.md)
 - [SCM → PRISM roadmap](docs/scm-roadmap.md)
 - [SCM phase tracker](docs/scm-phase-status.md)
 - [Phase 1 theoretical audit](docs/scm-phase1-theory-audit.md)

@@ -33,6 +33,10 @@ research claims are not promoted to core guarantees.
 6. Added `docs/scm-conformance-matrix.md` and this report.
 7. Clarified that `docs/architecture.md` describes an executable finite
    reference architecture rather than a fully general adapter framework.
+8. Added the required CLI/API guide and security/threat-model document.
+9. Added adversarial CLI tests and a CI installation/CLI smoke test.
+10. Replaced the external build dependency with a local PEP 517 backend so a
+    clean venv can install the package without setuptools or network access.
 
 ## Commands actually executed
 
@@ -46,14 +50,21 @@ python3 -m venv /tmp/prism-venv
 /tmp/prism-venv/bin/python -m pip install --no-deps .
 /tmp/prism-venv/bin/python -m prism run /tmp/prism-cli/problem.json --evidence '{"a":"0"}'
 /tmp/prism-venv/bin/prism verify-certificate /tmp/prism-cli/problem.json /tmp/prism-cli/certificate.json
+python3 scripts/run_phase2_reference.py --runs 100 --outdir /tmp/prism-phase2-final
+python3 scripts/run_phase3_controlled.py --runs 100 --outdir /tmp/prism-phase3-final
 ```
 
 ## Test and benchmark results
 
 The baseline on the original `main` ran 53 tests: 52 passed and one explicitly
 expected failure for the known omitted-world misspecification case. After the
-hardening and CLI changes, the suite ran **56 tests: 55 passed and one
-expected failure**. No unexpected failure occurred.
+hardening, CLI, and adversarial test changes, the suite ran **60 tests: 59
+passed and one expected failure**. No unexpected failure occurred.
+
+An initial clean-venv validation exposed that the first packaging draft
+implicitly required `setuptools`. That was treated as a real defect, not
+hidden: the build configuration was corrected with a local dependency-free
+PEP 517 backend, and the clean-venv install was then rerun successfully.
 
 The existing Phase 2 and Phase 3 suites passed their hard gates. They cover
 finite deterministic synthetic instances, independent checks for the two
@@ -68,6 +79,10 @@ The clean virtual-environment install and CLI smoke path produced:
 - `VERIFIED` for the generated certificate;
 - structured JSON output;
 - no network or model dependency.
+
+The 100-run Phase 2 reference benchmark and 100-run-per-regime Phase 3
+controlled benchmark both returned `PASS`, including their independent
+verifier and preservation hard gates.
 
 ## Remaining gaps and risks
 

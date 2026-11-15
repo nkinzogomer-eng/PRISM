@@ -1,7 +1,7 @@
 # SCM → PRISM: staged research and implementation roadmap
 
 **Plan version:** 1.0  
-**Last reviewed:** 2026-10-16
+**Last reviewed:** 2026-11-15
 
 ## Phase tracker
 
@@ -21,7 +21,13 @@ Phase 1 deliverable: [theoretical audit](scm-phase1-theory-audit.md).
 ---
 
 
-Status: research plan. This document records intended gates; it is not evidence that the gates have passed.
+Status: research plan plus bounded implementation status. This document records
+intended gates; it is not evidence that the broader SCM hypothesis has passed.
+
+The 2026-11-15 finalization branch adds offline packaging, a structured JSON
+CLI, certificate hardening, a conformance matrix, and adversarial CLI tests.
+These changes improve software readiness but do not upgrade the scientific
+claim beyond the finite deterministic reference scope.
 
 ## Preserve before changing
 

@@ -1,6 +1,7 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = []
+build-backend = "backend"
+backend-path = ["build_backend"]
 
 [project]
 name = "prism-scm"
@@ -12,9 +13,3 @@ authors = [{name = "PRISM contributors"}]
 
 [project.scripts]
 prism = "prism.cli:main"
-
-[tool.setuptools.packages.find]
-include = ["prism*"]
-
-[tool.unittest]
-# The project uses the Python standard-library unittest suite.
