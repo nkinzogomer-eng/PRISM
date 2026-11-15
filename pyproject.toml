@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prism-scm"
+version = "0.1.0"
+description = "Dependency-free reference kernel for decision-preserving structural computation"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "PRISM contributors"}]
+
+[project.scripts]
+prism = "prism.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["prism*"]
+
+[tool.unittest]
+# The project uses the Python standard-library unittest suite.

@@ -1,6 +1,7 @@
 # PRISM Operational Architecture
 
-Status: pre-implementation design. This document turns the core specification into implementable contracts.
+Status: executable reference architecture. The finite reference kernel implements
+the bounded contracts below; general domain adapters remain an extension point.
 
 ## 1. Separation of responsibilities
 
