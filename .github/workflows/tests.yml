@@ -19,8 +19,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install package without runtime dependencies
+        run: python -m pip install --no-deps --no-build-isolation .
       - name: Run standard-library test suite
         run: python -m unittest discover -s tests -v
+      - name: Smoke test structured CLI
+        run: |
+          printf '%s\n' '{"hypotheses":[{"id":"h0","observations":{"a":"0"},"decision":"safe"}],"observations":[{"id":"a","cost":1}]}' > /tmp/prism-problem.json
+          prism run /tmp/prism-problem.json --evidence '{"a":"0"}'
       - name: Run reproducible synthetic policy comparison
         run: python scripts/run_comparison.py --runs 20
       - name: Benchmark decision-equivalence transformation

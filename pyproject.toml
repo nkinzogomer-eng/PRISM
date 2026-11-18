@@ -1,0 +1,15 @@
+[build-system]
+requires = []
+build-backend = "backend"
+backend-path = ["build_backend"]
+
+[project]
+name = "prism-scm"
+version = "0.1.0"
+description = "Dependency-free reference kernel for decision-preserving structural computation"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "PRISM contributors"}]
+
+[project.scripts]
+prism = "prism.cli:main"

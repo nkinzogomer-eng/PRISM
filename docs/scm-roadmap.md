@@ -1,7 +1,7 @@
 # SCM → PRISM: staged research and implementation roadmap
 
 **Plan version:** 1.0  
-**Last reviewed:** 2026-10-16
+**Last reviewed:** 2026-11-15
 
 ## Phase tracker
 
@@ -21,7 +21,17 @@ Phase 1 deliverable: [theoretical audit](scm-phase1-theory-audit.md).
 ---
 
 
-Status: research plan. This document records intended gates; it is not evidence that the gates have passed.
+Status: research plan plus bounded implementation status. This document records
+intended gates; it is not evidence that the broader SCM hypothesis has passed.
+
+The finalization branch adds offline packaging, a structured JSON CLI, strict
+cost validation, independent certificate verification, a conformance matrix,
+and adversarial CLI tests. The current suite has 73 tests (72 successes and
+one explicit expected failure). Raw Phase 2/3 artifacts are committed under
+`reports/experiments/finalization/`, and `.github/workflows/experiments.yml`
+provides a manual rerun with uploaded artifacts. These changes improve
+software readiness but do not upgrade the scientific claim beyond the finite
+deterministic reference scope.
 
 ## Preserve before changing
 
@@ -111,6 +121,16 @@ Astronomy:
 No general performance claim is allowed from one dataset, one seed, or synthetic tasks alone.
 
 ## Version gates
+
+### 0.1.0 closure boundary
+
+The 0.1.0 reference release freezes the finite deterministic kernel, its two
+scoped transformations, independent certificate verifier, offline CLI, and
+reproducible synthetic evidence. General structural graphs, universal
+transformation composition, general dependency invalidation, checkpoints and
+resume, general probabilistic semantics, external-system validation, and broad
+cyber/DeFi efficacy remain future work. They are not simulated or marked
+complete in this release.
 
 ### V1 — trustworthy finite controller
 Adaptive selection, explicit planning cost, certificate-scope semantics, reproducible traces, and complete finite benchmark reporting.

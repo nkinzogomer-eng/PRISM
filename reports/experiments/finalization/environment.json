@@ -1,0 +1,9 @@
+{
+  "commit": "c9d8b6f2fc075828c915da90d2251fc3eebae0ae",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "python_executable": "/usr/bin/python3",
+  "platform": "Linux-6.18.38+-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "phase2_runs": 100,
+  "phase3_runs_per_regime": 100
+}

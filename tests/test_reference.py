@@ -1,6 +1,7 @@
 import unittest
 
 from prism.reference import FiniteProblem, Hypothesis, Observation, abstain, certified_stop
+from prism.verifier import verify_certificate
 
 
 def problem():
@@ -41,6 +42,39 @@ class ReferenceTests(unittest.TestCase):
             c.hypothesis_ids, c.evidence, c.decision, scope="external_world"
         )
         self.assertFalse(p.verify(external_claim))
+
+    def test_independent_verifier_matches_reference_api_without_generation(self):
+        p = problem()
+        certificate = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        self.assertTrue(verify_certificate(p, certificate))
+        forged = certificate.__class__(
+            certificate.hypothesis_ids, certificate.evidence, "wrong"
+        )
+        self.assertFalse(verify_certificate(p, forged))
+
+    def test_certificate_rejects_unknown_evidence_key(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            valid.hypothesis_ids, (("unknown", "0"),), valid.decision
+        )
+        self.assertFalse(p.verify(forged))
+
+    def test_certificate_rejects_duplicate_evidence_keys(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            valid.hypothesis_ids, (("a", "0"), ("a", "0")), valid.decision
+        )
+        self.assertFalse(p.verify(forged))
+
+    def test_certificate_rejects_duplicate_hypothesis_ids(self):
+        p = problem()
+        valid = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        forged = valid.__class__(
+            ("h00", "h01", "h00"), valid.evidence, valid.decision
+        )
+        self.assertFalse(p.verify(forged))
 
     def test_evidence_can_reduce_to_one_model(self):
         p = problem()

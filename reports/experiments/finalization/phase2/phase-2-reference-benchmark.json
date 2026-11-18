@@ -1,0 +1,290 @@
+{
+  "decision_equivalence_quotient": {
+    "after": {
+      "adaptive_greedy": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 6.230092000805598e-05,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.0823109992088576e-05,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "decision_disagreement": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 0.0001086111099948539,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.3110520003465353e-05,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "fixed_cost": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 9.842132998073794e-05,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.1576400220292271e-06,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "random_order": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 9.708498001600674e-05,
+        "mean_execution_cost_units": 3.71,
+        "mean_planning_seconds": 6.1053299850755135e-06,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      }
+    },
+    "all_independent_checks_passed": true,
+    "before": {
+      "adaptive_greedy": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 7.105032000254141e-05,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.3515640021068975e-05,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "decision_disagreement": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 0.00012313062001794605,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.64625200068258e-05,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "fixed_cost": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 0.00011671891001697077,
+        "mean_execution_cost_units": 4.0,
+        "mean_planning_seconds": 1.3178700010030297e-06,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      },
+      "random_order": {
+        "correct_certificate_rate": 1.0,
+        "mean_elapsed_seconds": 0.00010938795997844864,
+        "mean_execution_cost_units": 3.71,
+        "mean_planning_seconds": 6.4281100048901865e-06,
+        "runs": 100,
+        "wrong_certificate_rate": 0.0
+      }
+    },
+    "limits": [
+      "Synthetic redundant finite instances only.",
+      "The quotient preserves decision sets, not a uniform prior over hypothesis IDs.",
+      "Execution cost is an abstract operation-cost unit; timing is runner-dependent.",
+      "This experiment measures one narrow transformation, not general SCM superiority."
+    ],
+    "mean_hypothesis_reduction_fraction": 0.2,
+    "mean_original_hypotheses": 10,
+    "mean_quotient_hypotheses": 8,
+    "mean_transform_runtime_seconds": 2.1401630024229236e-05,
+    "preserves_decision_sets": true,
+    "preserves_uniform_hypothesis_prior": false,
+    "runs": 100
+  },
+  "dominated_observation_pruning": {
+    "all_independent_checks_passed": true,
+    "mean_exact_expected_cost_after": 1.0,
+    "mean_exact_expected_cost_before": 1.0,
+    "mean_observation_reduction_fraction": 0.5,
+    "mean_original_observations": 2,
+    "mean_retained_observations": 1,
+    "mean_transform_runtime_seconds": 1.114855000651005e-05,
+    "note": "Synthetic case where a cheaper rich observation determines a more expensive coarse observation.",
+    "optimal_expected_cost_preserved": true,
+    "runs": 100,
+    "uniform_hypothesis_prior_preserved": true
+  },
+  "elapsed_suite_seconds_diagnostic_only": 0.27595367899994017,
+  "environment": {
+    "machine": "x86_64",
+    "platform": "Linux-6.18.38+-x86_64-with-glibc2.39",
+    "python": "3.12.3"
+  },
+  "hard_gates": {
+    "pruning_exact_optimum_preserved": true,
+    "pruning_independent_checks": true,
+    "quotient_independent_checks": true,
+    "uniform_prior_preserved_by_pruning": true
+  },
+  "limitations": [
+    "Synthetic finite deterministic instances only; no real-world cyber, finance, or astronomy efficacy claim.",
+    "Execution costs are abstract operation-cost units and cannot be added to seconds without an explicit calibration.",
+    "Wall-clock values are runner-dependent diagnostics, not portable speedup claims.",
+    "The exact solver is a small-instance reference relative to the declared model and its implicit uniform prior.",
+    "The quotient preserves decision sets but not necessarily the uniform prior over hypothesis IDs.",
+    "The dominated-observation result applies only where its finite deterministic dominance witness is valid.",
+    "A certificate over an incomplete declared hypothesis class can still disagree with hidden truth."
+  ],
+  "policy_comparison": {
+    "exact_reference": {
+      "parity_control": {
+        "mean_expected_execution_cost_units": 4.0,
+        "mean_solver_runtime_seconds": 0.0008021129997359822,
+        "note": "Exact cost is model-relative expected execution cost; solver runtime is measured separately.",
+        "runs": 1
+      },
+      "sparse_binary": {
+        "mean_expected_execution_cost_units": 6.06,
+        "mean_solver_runtime_seconds": 0.0006796987299958346,
+        "note": "Exact cost is model-relative expected execution cost; solver runtime is measured separately.",
+        "runs": 100
+      }
+    },
+    "families": {
+      "misspecified": {
+        "adaptive_greedy": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 0.14,
+          "incorrect_certificate_rate": 0.86,
+          "mean_elapsed_seconds": 4.8774940009934655e-05,
+          "mean_execution_cost_units": 5.07,
+          "mean_planning_seconds": 9.380089986734674e-06,
+          "mean_verification_seconds": null,
+          "runs": 100
+        },
+        "decision_disagreement_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 0.0,
+          "incorrect_certificate_rate": 1.0,
+          "mean_elapsed_seconds": 9.549894999054231e-05,
+          "mean_execution_cost_units": 5.38,
+          "mean_planning_seconds": 1.5118829996936257e-05,
+          "mean_verification_seconds": 1.0815539981194889e-05,
+          "runs": 100
+        },
+        "fixed_cost": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 0.48,
+          "incorrect_certificate_rate": 0.52,
+          "mean_elapsed_seconds": 0.00010514294002405223,
+          "mean_execution_cost_units": 4.91,
+          "mean_planning_seconds": 1.47818005643785e-06,
+          "mean_verification_seconds": 1.5256109995789303e-05,
+          "runs": 100
+        },
+        "random_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 0.29,
+          "incorrect_certificate_rate": 0.71,
+          "mean_elapsed_seconds": 9.051260001797346e-05,
+          "mean_execution_cost_units": 6.74,
+          "mean_planning_seconds": 7.119120009519975e-06,
+          "mean_verification_seconds": 1.2456069957806904e-05,
+          "runs": 100
+        }
+      },
+      "parity_control": {
+        "adaptive_greedy": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 8.66989998939971e-05,
+          "mean_execution_cost_units": 4.0,
+          "mean_planning_seconds": 2.1891999949730234e-05,
+          "mean_verification_seconds": null,
+          "runs": 1
+        },
+        "decision_disagreement_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.0001892020000013872,
+          "mean_execution_cost_units": 4.0,
+          "mean_planning_seconds": 2.6688000161811942e-05,
+          "mean_verification_seconds": 1.828699987527216e-05,
+          "runs": 1
+        },
+        "fixed_cost": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.00014569699987987406,
+          "mean_execution_cost_units": 4.0,
+          "mean_planning_seconds": 1.4629999895987567e-06,
+          "mean_verification_seconds": 1.592499938851688e-05,
+          "runs": 1
+        },
+        "random_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.00014433500018640189,
+          "mean_execution_cost_units": 4.0,
+          "mean_planning_seconds": 6.29800024398719e-06,
+          "mean_verification_seconds": 1.5183000414253911e-05,
+          "runs": 1
+        }
+      },
+      "sparse_binary": {
+        "adaptive_greedy": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 9.18443000091429e-05,
+          "mean_execution_cost_units": 11.72,
+          "mean_planning_seconds": 2.369380001709942e-05,
+          "mean_verification_seconds": null,
+          "runs": 100
+        },
+        "decision_disagreement_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.00017159103998892533,
+          "mean_execution_cost_units": 12.21,
+          "mean_planning_seconds": 2.897458000916231e-05,
+          "mean_verification_seconds": 1.6033739943850377e-05,
+          "runs": 100
+        },
+        "fixed_cost": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.00015498410998134203,
+          "mean_execution_cost_units": 8.51,
+          "mean_planning_seconds": 1.562479988024279e-06,
+          "mean_verification_seconds": 1.833792000525136e-05,
+          "runs": 100
+        },
+        "random_order": {
+          "abstention_rate": 0.0,
+          "certified_rate": 1.0,
+          "correct_certified_rate": 1.0,
+          "incorrect_certificate_rate": 0.0,
+          "mean_elapsed_seconds": 0.00014371110999036318,
+          "mean_execution_cost_units": 10.25,
+          "mean_planning_seconds": 6.862509999336908e-06,
+          "mean_verification_seconds": 1.591210998412862e-05,
+          "runs": 100
+        }
+      }
+    },
+    "interpretation_limits": [
+      "Synthetic finite deterministic instances only; no external-world or real vulnerability claims.",
+      "A declared-class certificate can be wrong when the true world is omitted; this is scored separately.",
+      "Execution cost is the generator's abstract operation-cost unit, not wall-clock seconds.",
+      "Planning, verification, and elapsed seconds are hardware/runner dependent.",
+      "The exact solver is an expected execution-cost reference under the declared model; its planning/runtime is reported separately."
+    ],
+    "runs_per_seeded_family": 100,
+    "seed_policy": "integer seeds 0..99; parity control has fixed hidden world",
+    "title": "PRISM finite synthetic policy comparison"
+  },
+  "protocol_version": 1,
+  "runs_per_seeded_family": 100,
+  "seed_policy": "integer seeds 0..99; deterministic finite generators",
+  "suite": "SCM-PRISM Phase 2 reference benchmark"
+}

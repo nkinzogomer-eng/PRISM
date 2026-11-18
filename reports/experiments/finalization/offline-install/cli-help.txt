@@ -1,0 +1,12 @@
+usage: prism [-h] {run,verify-certificate} ...
+
+Offline PRISM SCM reference CLI
+
+positional arguments:
+  {run,verify-certificate}
+    run                 apply declared observations and attempt certified
+                        stopping
+    verify-certificate  independently verify a certificate
+
+options:
+  -h, --help            show this help message and exit
