@@ -4,7 +4,8 @@
 **Repository:** `nkinzogomer-eng/PRISM`  
 **Branch:** `finalization/prism-complete`  
 **Pull request:** [#39](https://github.com/nkinzogomer-eng/PRISM/pull/39)  
-**Review HEAD:** `36edbdf54ebae79da59fa12591463ddc105ef1ef`
+**Reviewed implementation HEAD:** `36edbdf54ebae79da59fa12591463ddc105ef1ef`  
+**Review publication commit:** `f5701c13625f0f7cd138ca8a6d6746b56f622fc8`
 
 ## 1. Executive summary
 

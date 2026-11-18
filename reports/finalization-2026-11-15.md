@@ -8,8 +8,10 @@ superiority and external-world correctness remain unproven**. Cyber and DeFi
 research claims are not promoted to core guarantees.
 
 The independent closure review is recorded in
-`reports/closure-review-0.1.0.md`. Its final verdict is **READY FOR HUMAN
-APPROVAL**. PR #39 remains open and draft; no merge was performed.
+`reports/closure-review-0.1.0.md`. The reviewed implementation baseline is
+`36edbdf54ebae79da59fa12591463ddc105ef1ef`; the review publication commit is
+`f5701c13625f0f7cd138ca8a6d6746b56f622fc8`. Its final verdict is **READY FOR
+HUMAN APPROVAL**. PR #39 remains open and draft; no merge was performed.
 
 ## Repository preservation
 
