@@ -1,0 +1,11 @@
+Processing /home/ubuntu/PRISM
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: prism-scm
+  Building wheel for prism-scm (pyproject.toml): started
+  Building wheel for prism-scm (pyproject.toml): finished with status 'done'
+  Created wheel for prism-scm: filename=prism_scm-0.1.0-py3-none-any.whl size=19624 sha256=f19f408b18bb5fef1726d015d290a91ced86e05d353f614a7dea92fd5ab61ce4
+  Stored in directory: /tmp/pip-ephem-wheel-cache-p2t_82t7/wheels/3b/1f/1e/c3ecfa899de1cb70e32a2cd0f93a9763360d492d7c2b6c345c
+Successfully built prism-scm
+Installing collected packages: prism-scm
+Successfully installed prism-scm-0.1.0

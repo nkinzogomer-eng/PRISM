@@ -1,0 +1,49 @@
+name: PRISM reproducible experiments
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Runs per seeded family/regime"
+        required: false
+        default: "100"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  experiments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install offline without external index
+        run: python -m pip install --no-index --no-deps --no-build-isolation .
+      - name: Run Phase 2 reference benchmark
+        run: python scripts/run_phase2_reference.py --runs "${{ inputs.runs }}" --outdir reports/experiments/ci/phase2
+      - name: Run Phase 3 controlled benchmark
+        run: python scripts/run_phase3_controlled.py --runs "${{ inputs.runs }}" --outdir reports/experiments/ci/phase3
+      - name: Record environment and commit
+        run: |
+          python - <<'PY'
+          import json, platform, sys
+          from pathlib import Path
+          Path("reports/experiments/ci/environment.json").write_text(json.dumps({
+              "commit": "${{ github.sha }}",
+              "python": sys.version,
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "runs": "${{ inputs.runs }}",
+          }, indent=2) + "\n")
+          PY
+      - name: Upload raw experiment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-experiments-${{ github.sha }}
+          path: reports/experiments/ci/
+          if-no-files-found: error

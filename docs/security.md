@@ -10,10 +10,17 @@ repository targets a real system.
 ## Assets and guarantees
 
 The primary asset is the integrity of a decision certificate and its declared
-scope. `FiniteProblem.verify` recomputes compatibility and decision invariance;
-it does not trust the controller's claimed compatible set or decision. The
-verifier rejects malformed structures, unknown observations, duplicate keys,
-empty hypothesis sets, and unsupported external-world scopes.
+scope. `prism/verifier.py` recomputes compatibility and decision invariance;
+it does not call certificate generation or trust the controller's claimed
+compatible set or decision. The historical `FiniteProblem.verify` API delegates
+to this verifier for compatibility. The verifier rejects malformed structures,
+unknown observations, duplicate keys, empty hypothesis sets, and unsupported
+external-world scopes.
+
+All reference execution, planning, verification, representation, and
+preprocessing costs are validated as finite non-negative real numbers. Boolean,
+string, NaN, infinity, and structured values cannot enter through the kernel's
+cost constructors or additive updates.
 
 A `declared_hypothesis_class` certificate guarantees only that the decision is
 invariant over the hypotheses supplied to the verifier. It does not establish

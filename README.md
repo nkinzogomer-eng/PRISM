@@ -41,6 +41,7 @@ The hypothesis is unproven. Existing methods already cover many components: prog
 - [CLI and JSON interface](docs/cli.md)
 - [Security and threat model](docs/security.md)
 - [SCM conformance matrix](docs/scm-conformance-matrix.md)
+- [Finalization experiment artifacts](reports/experiments/finalization/README.md)
 - [SCM → PRISM roadmap](docs/scm-roadmap.md)
 - [SCM phase tracker](docs/scm-phase-status.md)
 - [Phase 1 theoretical audit](docs/scm-phase1-theory-audit.md)
@@ -80,6 +81,12 @@ malformed certificates and unsupported external-world claims; it cannot prove
 that the declared class contains reality. The CLI is an offline reference
 interface, not a domain-specific cyber or DeFi scanner.
 
+The current finalization suite contains 73 tests at the audited checkpoint:
+72 successes and one explicit expected failure for the omitted-world
+misspecification case. Phase 2 and Phase 3 raw JSON/Markdown artifacts are
+committed under `reports/experiments/finalization/`. A manual GitHub Actions
+workflow can rerun both 100-run experiments and upload the raw artifacts.
+
 ## Current readiness statement
 
 The finite reference kernel, its certificate verifier, two verified finite
@@ -87,3 +94,8 @@ transformations, benchmark runners, and adversarial regression tests are
 implemented. Packaging and a minimal JSON CLI are now available. General SCM
 superiority, external-world completeness, real-world vulnerability discovery,
 and broad domain generalization remain unproven and are not claimed.
+
+For version 0.1.0, general structural graphs, universal transformation
+composition, general invalidation/checkpointing, probabilistic semantics,
+external-system validation, and broad cyber/DeFi efficacy are intentionally
+frozen as future work rather than simulated or marked complete.
