@@ -10,12 +10,11 @@ from the legacy runner so existing experiments remain reproducible.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import isfinite
 from typing import Callable
 
 from .generators import Generated
 from .oracle import HiddenWorldOracle
-from .reference import FiniteProblem, Result, State, certified_stop
+from .reference import FiniteProblem, Result, State, certified_stop, validate_cost_value
 
 
 @dataclass(frozen=True)
@@ -61,7 +60,9 @@ def run_adaptive(generated: Generated, selector: Selector) -> AdaptiveOutcome:
                 tuple(executed),
             )
 
-        if not isfinite(selection.planning_cost) or selection.planning_cost < 0:
+        try:
+            validate_cost_value(selection.planning_cost, "planning cost")
+        except ValueError:
             return AdaptiveOutcome(
                 Result("INVALID_INSTANCE", None, None, state, "invalid_planning_cost"),
                 tuple(executed),

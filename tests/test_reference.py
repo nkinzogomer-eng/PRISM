@@ -1,6 +1,7 @@
 import unittest
 
 from prism.reference import FiniteProblem, Hypothesis, Observation, abstain, certified_stop
+from prism.verifier import verify_certificate
 
 
 def problem():
@@ -41,6 +42,15 @@ class ReferenceTests(unittest.TestCase):
             c.hypothesis_ids, c.evidence, c.decision, scope="external_world"
         )
         self.assertFalse(p.verify(external_claim))
+
+    def test_independent_verifier_matches_reference_api_without_generation(self):
+        p = problem()
+        certificate = p.certificate(p.apply(p.initial_state(), "a", "0"))
+        self.assertTrue(verify_certificate(p, certificate))
+        forged = certificate.__class__(
+            certificate.hypothesis_ids, certificate.evidence, "wrong"
+        )
+        self.assertFalse(verify_certificate(p, forged))
 
     def test_certificate_rejects_unknown_evidence_key(self):
         p = problem()

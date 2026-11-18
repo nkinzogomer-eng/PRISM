@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, replace
-from math import isfinite
 from time import perf_counter
 from typing import Callable, ClassVar, Sequence
 
 from .generators import Generated
+from .reference import validate_cost_value
 from .runner import Outcome, run_order
 
 
@@ -41,15 +41,15 @@ class CostVector:
     def __post_init__(self) -> None:
         for name in self.COMPONENTS:
             value = getattr(self, name)
-            if value is not None and (not isfinite(value) or value < 0):
-                raise ValueError(f"{name} cost must be finite and nonnegative")
+            if value is not None:
+                validate_cost_value(value, f"{name} cost")
 
     def weighted_total(self, weights: dict[str, float]) -> float:
         """Scalarize only when the benchmark explicitly supplies every weight."""
         if set(weights) != set(self.COMPONENTS):
             raise ValueError("weights must specify every cost component")
-        if any(not isfinite(weight) or weight < 0 for weight in weights.values()):
-            raise ValueError("weights must be finite and nonnegative")
+        for name, weight in weights.items():
+            validate_cost_value(weight, f"weight for {name}")
         if any(getattr(self, name) is None for name in self.COMPONENTS):
             raise ValueError("cannot scalarize a cost vector with unmeasured components")
         return sum(getattr(self, name) * weights[name] for name in self.COMPONENTS)

@@ -7,7 +7,19 @@ and auditable on finite deterministic hypothesis spaces.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
+from numbers import Real
 from typing import FrozenSet, Mapping, Sequence
+
+
+def validate_cost_value(value: object, field_name: str = "cost") -> float:
+    """Return a valid cost as float, rejecting coercion-prone inputs."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"{field_name} must be a finite nonnegative number")
+    numeric = float(value)
+    if not isfinite(numeric) or numeric < 0:
+        raise ValueError(f"{field_name} must be a finite nonnegative number")
+    return numeric
 
 
 @dataclass(frozen=True)
@@ -22,6 +34,9 @@ class Observation:
     id: str
     cost: float
 
+    def __post_init__(self) -> None:
+        validate_cost_value(self.cost, "observation cost")
+
 
 @dataclass(frozen=True)
 class Cost:
@@ -31,15 +46,24 @@ class Cost:
     representation: float = 0.0
     preprocessing: float = 0.0
 
+    COMPONENTS = ("planning", "execution", "verification", "representation", "preprocessing")
+
+    def __post_init__(self) -> None:
+        for name in self.COMPONENTS:
+            validate_cost_value(getattr(self, name), f"{name} cost")
+
     @property
     def scalar(self) -> float:
         return sum((self.planning, self.execution, self.verification,
                     self.representation, self.preprocessing))
 
     def add(self, **delta: float) -> "Cost":
+        unknown = set(delta) - set(self.COMPONENTS)
+        if unknown:
+            raise ValueError(f"unknown cost components: {sorted(unknown)}")
         values = {name: getattr(self, name) for name in self.__dataclass_fields__}
         for name, value in delta.items():
-            values[name] += value
+            values[name] = validate_cost_value(value, f"{name} cost") + values[name]
         return Cost(**values)
 
 
@@ -123,46 +147,10 @@ class FiniteProblem:
         )
 
     def verify(self, certificate: Certificate) -> bool:
-        # The finite reference verifier cannot establish external-world
-        # completeness or validation. Reject stronger, unsupported scope claims.
-        if not isinstance(certificate, Certificate):
-            return False
-        if certificate.scope != "declared_hypothesis_class":
-            return False
-        if (
-            not isinstance(certificate.hypothesis_ids, tuple)
-            or not certificate.hypothesis_ids
-            or any(not isinstance(h_id, str) for h_id in certificate.hypothesis_ids)
-            or len(set(certificate.hypothesis_ids)) != len(certificate.hypothesis_ids)
-        ):
-            return False
-        if any(h_id not in self.hypotheses for h_id in certificate.hypothesis_ids):
-            return False
-        if (
-            not isinstance(certificate.evidence, tuple)
-            or any(
-                not isinstance(item, tuple)
-                or len(item) != 2
-                or any(not isinstance(value, str) for value in item)
-                for item in certificate.evidence
-            )
-            or not isinstance(certificate.decision, str)
-        ):
-            return False
-        evidence_ids = tuple(item[0] for item in certificate.evidence)
-        if (
-            len(set(evidence_ids)) != len(evidence_ids)
-            or any(obs_id not in self.observations for obs_id in evidence_ids)
-        ):
-            return False
-        compatible = {
-            h_id for h_id, h in self.hypotheses.items()
-            if all(h.observations[k] == v for k, v in certificate.evidence)
-        }
-        if compatible != set(certificate.hypothesis_ids):
-            return False
-        decisions = {self.hypotheses[h].decision for h in compatible}
-        return decisions == {certificate.decision}
+        # Import lazily to keep the reference data model independent of the
+        # verifier module while preserving this historical API.
+        from .verifier import verify_certificate
+        return verify_certificate(self, certificate)
 
 
 def certified_stop(problem: FiniteProblem, state: State) -> Result | None:
